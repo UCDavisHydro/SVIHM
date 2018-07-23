@@ -24,13 +24,13 @@ MODULE irrigationmodule
 
   SUBROUTINE READ_KC_IRREFF 
   
-    open(unit=10,file="irr_eff_v1.02.txt",status="old")
+    open(unit=10,file="irr_eff.txt",status="old")
     read(10,*)irreff_flood                     ! flood
     read(10,*)irreff_wl_LU25, irreff_cp_LU25   ! alfalfa/grain wheel line, alfalfa/grain center pivot
     read(10,*)irreff_wl_LU2, irreff_cp_LU2     ! pasture wheel line, pasture center pivot
     close (10)
     
-    open(unit=11,file="crop_coeff_mult_v1.02.txt",status="old")
+    open(unit=11,file="crop_coeff_mult.txt",status="old")
     read(11,*)kc_alfalfa_mult, kc_grain_mult, kc_pasture_mult, kc_noirr
     close(11)
     

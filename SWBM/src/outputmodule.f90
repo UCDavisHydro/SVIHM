@@ -246,7 +246,7 @@ end subroutine monthly_pumping
   
   INTEGER :: im, total_n_wells, n_wel_param, iwell
   
-  open(unit=536, file='SVIHMv3.1.wel',Access = 'append', status='old')
+  open(unit=536, file='SVIHM.wel',Access = 'append', status='old')
   if (im == 1 .and. im .LT. 10) then
     write(536,*)
     write(536,'(I10,I10,A28,I2)')total_n_wells, n_wel_param, '               Stress Period',im
@@ -661,7 +661,7 @@ end subroutine monthly_pumping
     Extinction_depth_matrix = Extinction_depth_matrix 
     
     if (im==1) then
-    	open(unit=83, file='SVIHMv3.1.ets', status = 'old', position = 'append')
+    	open(unit=83, file='SVIHM.ets', status = 'old', position = 'append')
     	write(83, *)"       20   1.00000(10e14.6)                   -1     ET RATE"
       write(83,'(10e14.6)') ET_matrix_out                ! Write Max ET Rates 
       write(83,*)'       20   1.00000(10e14.6)                   -1     ET DEPTH'
@@ -969,11 +969,11 @@ end subroutine monthly_pumping
   Trib_width = 10
 
   if (im==1) then
-    open(unit=213, file='SVIHMv3.1.sfr',Access = 'append', status='old')
+    open(unit=213, file='SVIHM.sfr',Access = 'append', status='old')
     write(213,*)
     write(213,'(I4,A12)')nsegs,'  0  0  0  0'
   else
-  	open(unit=213, file='SVIHMv3.1.sfr',Access = 'append', status='old')
+  	open(unit=213, file='SVIHM.sfr',Access = 'append', status='old')
     write(213,'(I4,A12)')nsegs,'  0  0  0  0'
   end if
   
@@ -1108,15 +1108,15 @@ end subroutine monthly_pumping
   rough2 = '@rough2  @'  ! Scott River
   rough3 = '@rough3  @'  ! Tributaies 
 
-open(unit=214, file='SVIHMv3.1_SFR.jtf',Access = 'append', status='old')         
+open(unit=214, file='SVIHM_SFR.jtf',Access = 'append', status='old')         
     write(214,'(I4,A12)')nsegs,'  0  0  0  0'                                    
                                                                                  
 !  if (im==1) then                                                               ! Keep in case the beginning of the transient data section doesn't start printing on a new line 
-!    open(unit=214, file='SVIHMv3.1_SFR.jtf',Access = 'append', status='old')    ! Keep in case the beginning of the transient data section doesn't start printing on a new line
+!    open(unit=214, file='SVIHM_SFR.jtf',Access = 'append', status='old')    ! Keep in case the beginning of the transient data section doesn't start printing on a new line
 !    write(214,*)                                                                ! Keep in case the beginning of the transient data section doesn't start printing on a new line
 !    write(214,'(I4,A12)')nsegs,'  0  0  0  0'                                   ! Keep in case the beginning of the transient data section doesn't start printing on a new line
 !  else                                                                          ! Keep in case the beginning of the transient data section doesn't start printing on a new line
-!  	open(unit=214, file='SVIHMv3.1_SFR.jtf',Access = 'append', status='old')     ! Keep in case the beginning of the transient data section doesn't start printing on a new line
+!  	open(unit=214, file='SVIHM_SFR.jtf',Access = 'append', status='old')     ! Keep in case the beginning of the transient data section doesn't start printing on a new line
 !    write(214,'(I4,A12)')nsegs,'  0  0  0  0'                                   ! Keep in case the beginning of the transient data section doesn't start printing on a new line
 !  end if                                                                        ! Keep in case the beginning of the transient data section doesn't start printing on a new line
   
