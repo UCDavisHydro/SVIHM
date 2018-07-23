@@ -39,9 +39,9 @@
   INTEGER  :: ip_Pasture_MIX_CP, ip_Pasture_SUB_DRY, ip_ETnoIrr_Low_WC8, ip_ETnoIrr_High_WC8, ip_noETnoIrr, ip_Water_Landuse        ! Field IDs for Daily Output
   INTEGER  :: ip_SW_Flood_DZ
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
-  DOUBLE PRECISION   :: precip, Total_Ref_ET
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:)  :: drain_flow
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
+  REAL   :: precip, Total_Ref_ET
+  REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow
+  REAL, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
   REAL :: start, finish
   INTEGER, DIMENSION(0:11)  :: nday
   CHARACTER(9) :: param_dummy
@@ -206,10 +206,10 @@
    write(91,'("#WELL: amount of monthly water pumped in each polygon")')
    open(unit=530, file='Monthly_Pumping_Volume_By_Well.dat')
    write(530,*)'Monthly Pumping Volume (m^3) by well'
-   write(530,'(200i12)')single_well(:)%well_name
+   write(530,'(172i12)')single_well(:)%well_name
    open(unit=531, file='Monthly_Pumping_Rate_By_Well.dat')
    write(531,*)'Monthly Pumping Rate (m^3/day) by well'
-   write(531,'(200i12)')single_well(:)%well_name
+   write(531,'(172i12)')single_well(:)%well_name
    open(unit=537, file='daily_pumping.dat')
    write(537, *)"Daily pumping volume (m^3) for each well"
    write(537,'(200i12)')single_well(:)%well_name
@@ -247,7 +247,8 @@
    open (unit=111, file='monthly_deficiency_by_luse.dat')
    open (unit=112, file='monthly_actualET_by_luse.dat')
    open (unit=113, file='monthly_actualET_by_subw.dat')
- 
+   open (unit=114, file='monthly_moisture_by_subw.dat') 
+   open (unit=115, file='monthly_moisture_by_luse.dat') 
    open (unit=202, file='yearly_well_by_subw.dat')
    open (unit=203, file='yearly_irrig_by_subw.dat')
    open (unit=204, file='yearly_evapo_by_subw.dat')
@@ -260,7 +261,7 @@
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_ETS_template.txt SVIHM.ets')
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_SFR_template.txt SVIHM.sfr')
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_WEL_template.txt SVIHM.wel')
-   CALL EXECUTE_COMMAND_LINE('copy UCODE_SFR_template_.txt SVIHM_SFR.jtf')
+   CALL EXECUTE_COMMAND_LINE('copy UCODE_SFR_template.txt SVIHM_SFR.jtf')
    
    open (unit=220, file='Drains_m3day.txt')
    read(220,*)param_dummy     ! Read header comment line to dummy character string 
@@ -346,7 +347,6 @@
 		   Total_Ref_ET = 0.  ! Reset monthly Average ET
        call recharge_out (im)
 		   call recharge_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix)    
-       ! call recharge_out_MODFLOW_w_MAR(im,imonth,nday,nrows,ncols,output_zone_matrix,MAR_Matrix)
        call monthly_volume_out		   
        call write_MODFLOW_SFR(im, nmonth, nsegs, SFR_Flows, drain_flow)
        call write_UCODE_SFR_JTF (im, nmonth, nsegs, SFR_Flows, drain_flow)   ! Write JTF file for UCODE 
@@ -557,7 +557,9 @@
 
   else if ( poly(ip)%landuse==25 .or. poly(ip)%landuse==3 )  then  ! if alfalfa/grain/native veg 
     rch = max(0., (before(ip)%moisture+precip_adjusted+daily(ip)%irrigation-daily(ip)%actualET)-poly(ip)%WC8 )
-    daily(ip)%recharge = rch 
+    daily(ip)%recharge = rch
+  else if (poly(ip)%landuse==4) then  ! noET/NoIrr 
+    daily(ip)%recharge = precip_adjusted 
   endif
   daily(ip)%moisture=max(0.,before(ip)%moisture+precip_adjusted+daily(ip)%irrigation-daily(ip)%actualET-daily(ip)%recharge)
 
@@ -571,6 +573,7 @@
         call waterbudget(ip, precip_adjusted)
 
   before(ip)%moisture = daily(ip)%moisture
+  daily(ip)%change_in_storage = precip_adjusted+daily(ip)%irrigation-daily(ip)%actualET- daily(ip)%recharge 
 
   END SUBROUTINE RECHARGE
 
