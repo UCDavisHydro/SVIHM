@@ -722,7 +722,7 @@ end subroutine monthly_pumping
       INTEGER, INTENT(IN) :: im,imonth,nrows,ncols
       INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), nday(0:11)
       REAL, INTENT(IN) :: MAR_Matrix(nrows,ncols)
-      DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) ::  recharge_matrix
+      REAL, ALLOCATABLE, DIMENSION(:,:) ::  recharge_matrix
       INTEGER :: ip
   
       ALLOCATE(recharge_matrix(nrows,ncols))

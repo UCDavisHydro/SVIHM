@@ -41,7 +41,7 @@
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
   REAL   :: precip, Total_Ref_ET
   REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
+  REAL, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
   REAL :: start, finish
   INTEGER, DIMENSION(0:11)  :: nday
   CHARACTER(9) :: param_dummy
@@ -262,7 +262,7 @@
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_ETS_template.txt SVIHM.ets')
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_SFR_template.txt SVIHM.sfr')
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_WEL_template.txt SVIHM.wel')
-   CALL EXECUTE_COMMAND_LINE('copy UCODE_SFR_template_.txt SVIHM_SFR.jtf')
+   CALL EXECUTE_COMMAND_LINE('copy UCODE_SFR_template.txt SVIHM_SFR.jtf')
    
    open (unit=220, file='Drains_m3day.txt')
    read(220,*)param_dummy     ! Read header comment line to dummy character string 
