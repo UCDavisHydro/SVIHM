@@ -1,0 +1,2 @@
+2119  167  252  440  210  1.408
+! npolygons  total_n_wells nmonth nrows ncols RD_mult
