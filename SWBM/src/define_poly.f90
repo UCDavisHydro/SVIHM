@@ -59,8 +59,8 @@
                                                                                                     
      INTEGER i, ipoly, wellname, j                                                                  
                                                                                                     
-     open (unit=535, file="well_summary_v1.02.txt", status="old")                                 
-     open (unit=534, file="well_list_by_polygon_v1.02.txt", status="old")                                                  
+     open (unit=535, file="well_summary.txt", status="old")                                 
+     open (unit=534, file="well_list_by_polygon.txt", status="old")                                                  
                                                                                            
      allocate(single_well(total_n_wells))                                                           
                                                                  
@@ -101,8 +101,8 @@
        daily%daydef = 0
        call zero_before
 
-       open(unit=10,file="polygons_table_v1.02.txt",status="old")
-!       open(unit=10,file="polygons_table_v1.02_SW_only.txt",status="old")
+       open(unit=10,file="polygons_table.txt",status="old")
+!       open(unit=10,file="polygons_table__SW_only.txt",status="old")
        read(10,*)
        nrot = 0
 

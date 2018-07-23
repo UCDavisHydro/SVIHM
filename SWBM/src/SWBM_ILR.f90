@@ -58,12 +58,12 @@
    precip_adjusted = 0.
    Total_Ref_ET = 0.
    
-   open(unit=10, file='general_inputs_v1.02.txt', status='old')
+   open(unit=10, file='general_inputs.txt', status='old')
    read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_mult
    write(*,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
     "Root Depth Multiplier",RD_Mult
    close (10)
-   open (unit=536, file="SVIHMv3.1_WEL_template.txt", status="old")     
+   open (unit=536, file="SVIHM_WEL_template.txt", status="old")     
    read(536,*) ! Read heading line into nothing
    read(536,*)param_dummy,n_wel_param  ! read in number of well parameters (for printing later)
    close(536)
@@ -80,13 +80,13 @@
    ALLOCATE(drain_flow(nmonth))
    
    
-   open(unit=213, file='SVIHMv3.1_SFR_template.txt', status='old')
+   open(unit=213, file='SVIHM_SFR_template.txt', status='old')
    read(213,*) dummy,nsegs
    close(213)
 
-   open (unit=210,file='Recharge_Zones_SVIHMv3.1.txt',status='old')      ! Read in MODFLOW recharge zone matrix
+   open (unit=210,file='Recharge_Zones_SVIHM.txt',status='old')      ! Read in MODFLOW recharge zone matrix
    read(210,*) zone_matrix
-   open (unit=212,file='No_Flow_SVIHMv3.1.txt',status='old')       ! Read in MODFLOW no flow cell matrix
+   open (unit=212,file='No_Flow_SVIHM.txt',status='old')       ! Read in MODFLOW no flow cell matrix
    read(212,*) no_flow_matrix   
    open (unit=214,file='ET_Cells_DZ.txt',status='old')      ! Read in MODFLOW recharge zone matrix
    read(214,*) Discharge_Zone_Cells
@@ -107,11 +107,11 @@
    open(unit=532,file='5daysdeficiency.dat')
 !   open(unit=887,file='precip_m_LowBias_July2017.txt')         ! Missing data assumed to have value of zero
 !   open(unit=887,file='precip_m_Replacement_July2017.txt')     ! Missing data replaced with value at other station (CAL and FJN)  
-   open(unit=887,file='precip_v1.02.txt', status = 'old')                    ! Missing data replaced with value obtained from regression using other stations
-   open(unit=88,file='ref_et_v1.02.txt', status = 'old')
-   open(unit=79, file='kc_grain_v1.02.txt', status = 'old')
-   open(unit=80, file='kc_alfalfa_v1.02.txt', status = 'old')
-   open(unit=81, file='kc_pasture_v1.02.txt', status = 'old')
+   open(unit=887,file='precip.txt', status = 'old')                    ! Missing data replaced with value obtained from regression using other stations
+   open(unit=88,file='ref_et.txt', status = 'old')
+   open(unit=79, file='kc_grain.txt', status = 'old')
+   open(unit=80, file='kc_alfalfa.txt', status = 'old')
+   open(unit=81, file='kc_pasture.txt', status = 'old')
    
    open(unit=60, file='subwatershed_area_m2.dat')
    write(60,'(" Month Scott French Etna Patterson Kidder Moffet Mill Shackleford Tailings")')
@@ -221,7 +221,7 @@
    write(93,'("#Evapotrasp: amount of monthly evapotraspiration in each polygon")')
    open(unit=94, file='recharge_out.dat')
    write(94,'("#Recharge: amount of monthly recharge in each polygon")')
-   open(unit=84, file='SVIHMv3.1.rch')
+   open(unit=84, file='SVIHM.rch')
    open(unit=95, file='moisture_out.dat')
    write(95,'("#Moisture: amount of monthly moisture in each polygon")')
    open(unit=96, file='actualET_out.dat')
@@ -232,7 +232,7 @@
    write(98,'("#WELL: monthly FLOW pumped in each polygon")')
    open(unit=120, file='ET_Active_Days.dat')                       
    write(120,'("Number of Days ET is Active in each polyon")')    
-   open(unit=66, file='streamflow_input_v1.02.txt', status='old')
+   open(unit=66, file='streamflow_input.txt', status='old')
    read(66,*)                                                        ! Read Header into nothing
 
    open (unit=102, file='monthly_well_by_subw.dat')
@@ -257,10 +257,10 @@
    open (unit=208, file='yearly_evapo_by_luse.dat')
    open (unit=209, file='yearly_recharge_by_luse.dat')
 
-   CALL EXECUTE_COMMAND_LINE('copy SVIHMv3.1_ETS_template.txt SVIHMv3.1.ets')
-   CALL EXECUTE_COMMAND_LINE('copy SVIHMv3.1_SFR_template.txt SVIHMv3.1.sfr')
-   CALL EXECUTE_COMMAND_LINE('copy SVIHMv3.1_WEL_template.txt SVIHMv3.1.wel')
-   CALL EXECUTE_COMMAND_LINE('copy UCODE_SFR_template_v3.1.txt SVIHMv3.1_SFR.jtf')
+   CALL EXECUTE_COMMAND_LINE('copy SVIHM_ETS_template.txt SVIHM.ets')
+   CALL EXECUTE_COMMAND_LINE('copy SVIHM_SFR_template.txt SVIHM.sfr')
+   CALL EXECUTE_COMMAND_LINE('copy SVIHM_WEL_template.txt SVIHM.wel')
+   CALL EXECUTE_COMMAND_LINE('copy UCODE_SFR_template_.txt SVIHM_SFR.jtf')
    
    open (unit=220, file='Drains_m3day.txt')
    read(220,*)param_dummy     ! Read header comment line to dummy character string 
