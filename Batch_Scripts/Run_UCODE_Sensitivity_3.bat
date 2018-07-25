@@ -20,7 +20,7 @@ for /L %%i in (1,1,6) do (
   xcopy UCODE\UCODE_Instruction_Files Sensitivity_3\Runner%%i /E /I /Y  
   xcopy UCODE\UCODE_Template_Files Sensitivity_3\Runner%%i /E /I /Y
   xcopy Update_SFR_Parameters\bin Sensitivity_3\Runner%%i /E /I /Y  
-  copy UCODE\UCODE_Input_Files\SVIHM_Sensitivity_3.txt Sensitivity_3\Runner%%i\SVIHM_Sensitivity_3.txt
+  copy UCODE\UCODE_Input_Files\SVIHM_Sensitivity_3.txt Sensitivity_3\Runner%%i\SVIHM_Sensitivity.txt
   copy Batch_Scripts\Run_SVIHM_UCODE_Sensitivity_Runner.bat Sensitivity_3\Runner%%i\Run_SVIHM_UCODE_Sensitivity.bat
   copy UCODE\UCODE_Input_Files\SVIHM_sensitivity.param3 Sensitivity_3\Runner%%i\SVIHM_sensitivity.param3  
   copy UCODE\UCODE_Input_Files\SVIHM_Sensitivity_3.txt Sensitivity_3\Runner%%i\SVIHM_Sensitivity_3.txt
