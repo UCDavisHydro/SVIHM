@@ -1,0 +1,49 @@
+jtf @
+# MODFLOW-2005 PVAL file for project SVIHMv3_002_main
+45
+kx1 @kx1                   @
+kx2 @kx2                   @
+kx3 @kx3                   @
+kx4 @kx4                   @
+kx5 @kx5                   @
+kx6 @kx6                   @
+kx7 @kx7                   @
+kx8 @kx8                   @
+kx9 @kx9                   @
+kvar1 @kvar1                   @
+kvar2 @kvar2                   @
+kvar3 @kvar3                   @
+kvar4 @kvar4                   @
+kvar5 @kvar5                   @
+kvar6 @kvar6                   @
+kvar7 @kvar7                   @
+kvar8 @kvar8                   @
+kvar9 @kvar9                   @
+sy1 @sy1                   @
+sy2 @sy2                   @
+sy3 @sy3                   @
+sy4 @sy4                   @
+sy5 @sy5                   @
+sy6 @sy6                   @
+sy7 @sy7                   @
+sy8 @sy8                   @
+sy9 @sy9                   @
+ss1 @ss1                   @
+ss2 @ss2                   @
+ss3 @ss3                   @
+ss4 @ss4                   @
+ss5 @ss5                   @
+ss6 @ss6                   @
+ss7 @ss7                   @
+ss8 @ss8                   @
+ss9 @ss9                   @
+wel5 @wel5                  @
+wel6 @wel6                  @
+wel7 @wel7                  @
+wel8 @wel8                  @
+wel9 @wel9                  @
+wel10 @wel10                 @
+wel11 @wel11                 @
+wel20 @wel20                 @
+wel21 @wel21                 @
+
