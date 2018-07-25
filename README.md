@@ -21,7 +21,7 @@ UCODE_2014 is a free software suite developed by the USGS that performs automate
 R is a free software environment for statistical computing and graphics. Post-processing of model results and updating of model input files during model execution are done using R scripts. R is available at <https://www.r-project.org/>.
 
 # Required Hardware
-The SVIHM was developed on a 64-bit Windows machine using an Intel (r) Core (tm) i7-4770 CPU @ 3.40GHz with 16 GB of RAM. Sensitivity and Calibration scripts provided run in parallel using six processors at a time. Input files and batch scripts can be altered to increase or decrease the number of processors used. A single sensitivity analysis or calibration run requires approximately 20 GB of storage space during execution, but this can be reduced to about 3 GB after completion by deleting redundant files necessary for parallization. 
+The SVIHM was developed on a 64-bit Windows machine using an Intel&reg Core&trade i7-4770 CPU @ 3.40GHz with 16 GB of RAM. Sensitivity and Calibration scripts provided run in parallel using six processors at a time. Input files and batch scripts can be altered to increase or decrease the number of processors used. A single sensitivity analysis or calibration run requires approximately 20 GB of storage space during execution, but this can be reduced to about 3 GB after completion by deleting redundant files necessary for parallization. 
 
 # 
 
