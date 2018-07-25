@@ -19,7 +19,7 @@ BEGIN Reg_GN_Controls Keywords
 END Reg_GN_Controls
  
 BEGIN Model_Command_Lines Keywords
-  Command = .\Run_SVIHM_ucode_Calibration.bat
+  Command = .\Run_SVIHM_UCODE_Calibration.bat
     Purpose = Forward
     CommandID = ForwardModel
 END Model_Command_Lines
