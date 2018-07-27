@@ -641,18 +641,18 @@ MODULE irrigationmodule
     SFR_Flows = 0.            ! Reset all SFR flows to zero
     streamflow_out(:) = streamflow_in(:) - sw_irr(:)
     
-    SFR_Flows(1)  = (streamflow_out(1) * EF_SF_Ratio) * numdays     ! EF + SF Inflow  	        
-    SFR_Flows(2)  = (streamflow_out(1) * Sugar_Ratio) * numdays     ! Sugar Creek Inflow    
-    SFR_Flows(6)  = (streamflow_out(2) * 0.5)* numdays              ! French Creek Branch #1
-    SFR_Flows(7)  = (streamflow_out(2) * 0.5)* numdays              ! French Creek Branch #2
-    SFR_Flows(11) =  streamflow_out(3)  * numdays                   ! Etna Creek           
-    SFR_Flows(15) = (streamflow_out(4) * Johnson_Ratio) * numdays   ! Johnson Creek        
-    SFR_Flows(16) = (streamflow_out(4) * Crystal_Ratio) * numdays   ! Crystal Creek        
-    SFR_Flows(18) = (streamflow_out(4) * Patterson_Ratio) * numdays ! Patterson Creek      
-    SFR_Flows(21) =  streamflow_out(5) *  numdays                   ! Kidder Creek        
-    SFR_Flows(24) =  streamflow_out(6) * numdays                    ! Moffett Creek        
-    SFR_Flows(27) =  streamflow_out(7) * numdays                    ! Mill Creek           
-    SFR_Flows(28) =  streamflow_out(8) * numdays                    ! Shackleford Creek
+    SFR_Flows(1)  = (streamflow_out(1) * EF_SF_Ratio) / numdays     ! EF + SF Inflow  	        
+    SFR_Flows(2)  = (streamflow_out(1) * Sugar_Ratio) / numdays     ! Sugar Creek Inflow    
+    SFR_Flows(6)  = (streamflow_out(2) * 0.5) / numdays              ! French Creek Branch #1
+    SFR_Flows(7)  = (streamflow_out(2) * 0.5) / numdays              ! French Creek Branch #2
+    SFR_Flows(11) =  streamflow_out(3)  / numdays                   ! Etna Creek           
+    SFR_Flows(15) = (streamflow_out(4) * Johnson_Ratio) / numdays   ! Johnson Creek        
+    SFR_Flows(16) = (streamflow_out(4) * Crystal_Ratio) / numdays   ! Crystal Creek        
+    SFR_Flows(18) = (streamflow_out(4) * Patterson_Ratio) / numdays ! Patterson Creek      
+    SFR_Flows(21) =  streamflow_out(5) / numdays                   ! Kidder Creek        
+    SFR_Flows(24) =  streamflow_out(6) / numdays                    ! Moffett Creek        
+    SFR_Flows(27) =  streamflow_out(7) / numdays                    ! Mill Creek           
+    SFR_Flows(28) =  streamflow_out(8) / numdays                    ! Shackleford Creek
     if (imonth == 0 .or. imonth == 1 .or. imonth == 2 .or. imonth == 3 .or. imonth == 4 &
       .or. imonth == 5 .or. imonth == 6 .or. imonth == 11) then ! Ditches only active from April - July        
       SFR_Flows(31) = 0.
@@ -664,6 +664,7 @@ MODULE irrigationmodule
     write(992,*)streamflow_in
     write(993,*)streamflow_out
     write(994,*)sw_irr
+    write(995,*)SFR_Flows
   end subroutine SFR_streamflow
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   subroutine SFR_streamflow_w_MAR(numdays, imonth)
@@ -672,18 +673,18 @@ MODULE irrigationmodule
     SFR_Flows = 0.            ! Reset all SFR flows to zero
     streamflow_out(:) = streamflow_in(:) - sw_irr(:)
     
-    SFR_Flows(1)  = (streamflow_out(1) * EF_SF_Ratio) * numdays     ! EF + SF Inflow  	        
-    SFR_Flows(2)  = (streamflow_out(1) * Sugar_Ratio) * numdays     ! Sugar Creek Inflow    
-    SFR_Flows(6)  = (streamflow_out(2) * 0.5)* numdays              ! French Creek Branch #1
-    SFR_Flows(7)  = (streamflow_out(2) * 0.5)* numdays              ! French Creek Branch #2
-    SFR_Flows(11) =  streamflow_out(3)  * numdays                   ! Etna Creek           
-    SFR_Flows(15) = (streamflow_out(4) * Johnson_Ratio) * numdays   ! Johnson Creek        
-    SFR_Flows(16) = (streamflow_out(4) * Crystal_Ratio) * numdays   ! Crystal Creek        
-    SFR_Flows(18) = (streamflow_out(4) * Patterson_Ratio) * numdays ! Patterson Creek      
-    SFR_Flows(21) =  streamflow_out(5) *  numdays                   ! Kidder Creek        
-    SFR_Flows(24) =  streamflow_out(6) * numdays                    ! Moffett Creek        
-    SFR_Flows(27) =  streamflow_out(7) * numdays                    ! Mill Creek           
-    SFR_Flows(28) =  streamflow_out(8) * numdays                    ! Shackleford Creek    
+    SFR_Flows(1)  = (streamflow_out(1) * EF_SF_Ratio) / numdays     ! EF + SF Inflow  	        
+    SFR_Flows(2)  = (streamflow_out(1) * Sugar_Ratio) / numdays     ! Sugar Creek Inflow    
+    SFR_Flows(6)  = (streamflow_out(2) * 0.5) / numdays              ! French Creek Branch #1
+    SFR_Flows(7)  = (streamflow_out(2) * 0.5) / numdays              ! French Creek Branch #2
+    SFR_Flows(11) =  streamflow_out(3)  / numdays                   ! Etna Creek           
+    SFR_Flows(15) = (streamflow_out(4) * Johnson_Ratio) / numdays   ! Johnson Creek        
+    SFR_Flows(16) = (streamflow_out(4) * Crystal_Ratio) / numdays   ! Crystal Creek        
+    SFR_Flows(18) = (streamflow_out(4) * Patterson_Ratio) / numdays ! Patterson Creek      
+    SFR_Flows(21) =  streamflow_out(5) / numdays                   ! Kidder Creek        
+    SFR_Flows(24) =  streamflow_out(6) / numdays                    ! Moffett Creek        
+    SFR_Flows(27) =  streamflow_out(7) / numdays                    ! Mill Creek           
+    SFR_Flows(28) =  streamflow_out(8) / numdays                    ! Shackleford Creek    
     if (imonth == 0 .or. imonth == 1 .or. imonth == 2 .or. imonth == 3 .or. imonth == 11) then ! Ditches only active from April - July        
       SFR_Flows(31) = 0.
       SFR_Flows(32) = 0.
@@ -697,6 +698,7 @@ MODULE irrigationmodule
     write(992,*)streamflow_in
     write(993,*)streamflow_out
     write(994,*)sw_irr
+    write(995,*)SFR_Flows
   end subroutine SFR_streamflow_w_MAR
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
 end module
