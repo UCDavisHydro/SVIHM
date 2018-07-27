@@ -23,7 +23,6 @@ for /L %%i in (1,1,6) do (
   copy UCODE\UCODE_Input_Files\SVIHM_Sensitivity_2.txt Sensitivity_2\Runner%%i\SVIHM_Sensitivity.txt
   copy Batch_Scripts\Run_SVIHM_UCODE_Sensitivity_Runner.bat Sensitivity_2\Runner%%i\Run_SVIHM_UCODE_Sensitivity.bat
   copy UCODE\UCODE_Input_Files\SVIHM_sensitivity.param2 Sensitivity_2\Runner%%i\SVIHM_sensitivity.param2  
-  copy UCODE\UCODE_Input_Files\SVIHM_Sensitivity_2.txt Sensitivity_2\Runner%%i\SVIHM_Sensitivity_2.txt
   copy UCODE\UCODE_Input_Files\SVIHM.flowobs Sensitivity_2\Runner%%i\SVIHM.flowobs  
   copy UCODE\UCODE_Input_Files\SVIHM.headobs Sensitivity_2\Runner%%i\SVIHM.headobs  
   copy UCODE\UCODE_Input_Files\SVIHM.obsgrp Sensitivity_2\Runner%%i\SVIHM.obsgrp 
