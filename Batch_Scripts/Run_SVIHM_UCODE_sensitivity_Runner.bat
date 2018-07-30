@@ -3,6 +3,10 @@
 REM Run SWBM
 SWBM.exe
 
+REM Delay execution so counter file is not read simultaneously
+set /a num=%random% %%20+1
+timeout %num%
+
 REM Update SFR parameters
 SFR_params_r.exe
 

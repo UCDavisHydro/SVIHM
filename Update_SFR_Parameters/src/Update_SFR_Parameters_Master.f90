@@ -18,7 +18,7 @@
   
 
   open(unit = 9, file = 'Counter.dat', status = 'new')
-  write(9,'(i1)') 0
+  write(9,'(i1)') 1
   open(unit = 10, file = 'SVIHM_Sensitivity.txt')
   read(10,*)NumParams                                                                       
   
