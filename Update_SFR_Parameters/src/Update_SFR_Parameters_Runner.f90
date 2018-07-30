@@ -64,116 +64,116 @@
 
     IF (nline .ne. 1) THEN
       IF (ParamNames(UCODE_Iteration)=='bedk1') THEN                                       ! Write SFR Parameter Values (Increase Bedk1)
-        IF (StrIdxBedk1 .NE. 0) THEN                                                       ! Write SFR Parameter Values (Increase Bedk1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(2,IdxBedk1)         ! Write SFR Parameter Values (Increase Bedk1)
-        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Bedk1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)              ! Write SFR Parameter Values (Increase Bedk1)
-        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Bedk1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)              ! Write SFR Parameter Values (Increase Bedk1)
-        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Bedk1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)            ! Write SFR Parameter Values (Increase Bedk1)
-        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Bedk1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)            ! Write SFR Parameter Values (Increase Bedk1)
-        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Bedk1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)            ! Write SFR Parameter Values (Increase Bedk1)
-        ELSE                                                                               ! Write SFR Parameter Values (Increase Bedk1)
-          write(103,'(a)')SFR_Text                                                         ! Write SFR Parameter Values (Increase Bedk1)
+        IF (StrIdxBedk1 .NE. 0) THEN                                                       
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(2,IdxBedk1)            
+        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                  
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)            
+        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                  
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)            
+        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                 
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)          
+        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                 
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)          
+        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                 
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)          
+        ELSE                                                                               
+          write(103,'(a)')SFR_Text                                                         
         END IF
       ELSE IF (ParamNames(UCODE_Iteration)=='bedk2') THEN                                  ! Write SFR Parameter Values (Increase Bedk2)
-        IF (StrIdxBedk1 .NE. 0) THEN                                                       ! Write SFR Parameter Values (Increase Bedk2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)              ! Write SFR Parameter Values (Increase Bedk2)
-        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Bedk2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(2,IdxBedk2)         ! Write SFR Parameter Values (Increase Bedk2)
-        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Bedk2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)              ! Write SFR Parameter Values (Increase Bedk2)
-        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Bedk2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)            ! Write SFR Parameter Values (Increase Bedk2)
-        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Bedk2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)            ! Write SFR Parameter Values (Increase Bedk2)
-        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Bedk2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)            ! Write SFR Parameter Values (Increase Bedk2)
-        ELSE                                                                               ! Write SFR Parameter Values (Increase Bedk2)
-          write(103,'(a)')SFR_Text                                                         ! Write SFR Parameter Values (Increase Bedk2)
+        IF (StrIdxBedk1 .NE. 0) THEN                                                       
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)            
+        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                  
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(2,IdxBedk2)            
+        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                  
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)            
+        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                 
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)          
+        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                 
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)          
+        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                 
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)          
+        ELSE                                                                               
+          write(103,'(a)')SFR_Text                                                         
         END IF
       ELSE IF (ParamNames(UCODE_Iteration)=='bedk3') THEN                                  ! Write SFR Parameter Values (Increase Bedk3)
-        IF (StrIdxBedk1 .NE. 0) THEN                                                       ! Write SFR Parameter Values (Increase Bedk3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)              ! Write SFR Parameter Values (Increase Bedk3)
-        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Bedk3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)              ! Write SFR Parameter Values (Increase Bedk3)
-        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Bedk3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(2,IdxBedk3)         ! Write SFR Parameter Values (Increase Bedk3)
-        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Bedk3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)            ! Write SFR Parameter Values (Increase Bedk3)
-        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Bedk3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)            ! Write SFR Parameter Values (Increase Bedk3)
-        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Bedk3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)            ! Write SFR Parameter Values (Increase Bedk3)
-        ELSE                                                                               ! Write SFR Parameter Values (Increase Bedk3)
-          write(103,'(a)')SFR_Text                                                         ! Write SFR Parameter Values (Increase Bedk3)
+        IF (StrIdxBedk1 .NE. 0) THEN                                                    
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)         
+        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                               
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)         
+        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                               
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(2,IdxBedk3)         
+        ELSE IF (StrIdxRough1 .NE. 0) THEN                                              
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)       
+        ELSE IF (StrIdxRough2 .NE. 0) THEN                                              
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)       
+        ELSE IF (StrIdxRough3 .NE. 0) THEN                                              
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)       
+        ELSE                                                                            
+          write(103,'(a)')SFR_Text                                                      
         END IF
       ELSE IF (ParamNames(UCODE_Iteration)=='rough1') THEN                                 ! Write SFR Parameter Values (Increase Rough1)
-        IF (StrIdxBedk1 .NE. 0) THEN                                                       ! Write SFR Parameter Values (Increase Rough1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)              ! Write SFR Parameter Values (Increase Rough1)
-        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Rough1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)              ! Write SFR Parameter Values (Increase Rough1)
-        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Rough1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)              ! Write SFR Parameter Values (Increase Rough1)
-        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Rough1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(2,IdxRough1)       ! Write SFR Parameter Values (Increase Rough1)
-        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Rough1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)            ! Write SFR Parameter Values (Increase Rough1)
-        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Rough1)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)            ! Write SFR Parameter Values (Increase Rough1)
-        ELSE                                                                               ! Write SFR Parameter Values (Increase Rough1)
-          write(103,'(a)')SFR_Text                                                         ! Write SFR Parameter Values (Increase Rough1)
+        IF (StrIdxBedk1 .NE. 0) THEN                                                  
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)       
+        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                             
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)       
+        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                             
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)       
+        ELSE IF (StrIdxRough1 .NE. 0) THEN                                            
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(2,IdxRough1)     
+        ELSE IF (StrIdxRough2 .NE. 0) THEN                                            
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)     
+        ELSE IF (StrIdxRough3 .NE. 0) THEN                                            
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)     
+        ELSE                                                                          
+          write(103,'(a)')SFR_Text                                                    
         END IF
       ELSE IF (ParamNames(UCODE_Iteration)=='rough2') THEN                                 ! Write SFR Parameter Values (Increase Rough2)
-        IF (StrIdxBedk1 .NE. 0) THEN                                                       ! Write SFR Parameter Values (Increase Rough2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)              ! Write SFR Parameter Values (Increase Rough2)
-        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Rough2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)              ! Write SFR Parameter Values (Increase Rough2)
-        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Rough2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)              ! Write SFR Parameter Values (Increase Rough2)
-        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Rough2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)            ! Write SFR Parameter Values (Increase Rough2)
-        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Rough2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(2,IdxRough2)       ! Write SFR Parameter Values (Increase Rough2)
-        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Rough2)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)            ! Write SFR Parameter Values (Increase Rough2)
-        ELSE                                                                               ! Write SFR Parameter Values (Increase Rough2)
-          write(103,'(a)')SFR_Text                                                         ! Write SFR Parameter Values (Increase Rough2)
+        IF (StrIdxBedk1 .NE. 0) THEN                                                  
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)       
+        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                             
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)       
+        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                             
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)       
+        ELSE IF (StrIdxRough1 .NE. 0) THEN                                            
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)     
+        ELSE IF (StrIdxRough2 .NE. 0) THEN                                            
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(2,IdxRough2)     
+        ELSE IF (StrIdxRough3 .NE. 0) THEN                                            
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)     
+        ELSE                                                                          
+          write(103,'(a)')SFR_Text                                                    
         END IF
       ELSE IF (ParamNames(UCODE_Iteration)=='rough3') THEN                                 ! Write SFR Parameter Values (Increase Rough3)
-        IF (StrIdxBedk1 .NE. 0) THEN                                                       ! Write SFR Parameter Values (Increase Rough3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)              ! Write SFR Parameter Values (Increase Rough3)
-        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Rough3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)              ! Write SFR Parameter Values (Increase Rough3)
-        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                  ! Write SFR Parameter Values (Increase Rough3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)              ! Write SFR Parameter Values (Increase Rough3)
-        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Rough3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)            ! Write SFR Parameter Values (Increase Rough3)
-        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Rough3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)            ! Write SFR Parameter Values (Increase Rough3)
-        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                 ! Write SFR Parameter Values (Increase Rough3)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(2,IdxRough3)       ! Write SFR Parameter Values (Increase Rough3)
-        ELSE                                                                               ! Write SFR Parameter Values (Increase Rough3)
-          write(103,'(a)')SFR_Text                                                         ! Write SFR Parameter Values (Increase Rough3)
+        IF (StrIdxBedk1 .NE. 0) THEN                                                  
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)       
+        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                             
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)       
+        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                             
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)       
+        ELSE IF (StrIdxRough1 .NE. 0) THEN                                            
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)     
+        ELSE IF (StrIdxRough2 .NE. 0) THEN                                            
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)     
+        ELSE IF (StrIdxRough3 .NE. 0) THEN                                            
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(2,IdxRough3)     
+        ELSE                                                                          
+          write(103,'(a)')SFR_Text                                                    
         END IF
       ELSE                                                                                 ! Write SFR Parameter Values (No Changes)
-      	IF (StrIdxBedk1 .NE. 0) THEN                                                       ! Write SFR Parameter Values (No Changes)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)              ! Write SFR Parameter Values (No Changes)
-        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                  ! Write SFR Parameter Values (No Changes)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)              ! Write SFR Parameter Values (No Changes)
-        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                  ! Write SFR Parameter Values (No Changes)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)              ! Write SFR Parameter Values (No Changes)
-        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                 ! Write SFR Parameter Values (No Changes)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)            ! Write SFR Parameter Values (No Changes)
-        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                 ! Write SFR Parameter Values (No Changes)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)            ! Write SFR Parameter Values (No Changes)
-        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                 ! Write SFR Parameter Values (No Changes)
-          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)            ! Write SFR Parameter Values (No Changes)
-        ELSE                                                                               ! Write SFR Parameter Values (No Changes)
-          write(103,'(a)')SFR_Text                                                         ! Write SFR Parameter Values (No Changes)
+      	IF (StrIdxBedk1 .NE. 0) THEN                                                      
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk1-3),ParamVals(1,IdxBedk1)           
+        ELSE IF (StrIdxBedk2 .NE. 0) THEN                                                 
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk2-3),ParamVals(1,IdxBedk2)           
+        ELSE IF (StrIdxBedk3 .NE. 0) THEN                                                 
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxBedk3-3),ParamVals(1,IdxBedk3)           
+        ELSE IF (StrIdxRough1 .NE. 0) THEN                                                
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough1-3),ParamVals(1,IdxRough1)         
+        ELSE IF (StrIdxRough2 .NE. 0) THEN                                                
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough2-3),ParamVals(1,IdxRough2)         
+        ELSE IF (StrIdxRough3 .NE. 0) THEN                                                
+          write(103,'(a,F10.5)')SFR_Text(1:StrIdxRough3-3),ParamVals(1,IdxRough3)         
+        ELSE                                                                              
+          write(103,'(a)')SFR_Text                                                        
         END IF
       END IF
     END IF
