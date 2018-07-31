@@ -45,6 +45,4 @@ cd ..
 )  
 REM Sensitivity
 "C:\wrdapp\UCODE_2014_1.004_and_more\UCODE_2014_1.004\bin\UCODE_2014.exe"  SVIHM_Sensitivity_4.in SVIHM_Sensitivity_4_out \wait 
-REM Residual Analysis
-"C:\wrdapp\UCODE_2014_1.004_and_more\UCODE_2014_1.004\bin\residual_analysis.exe" SVIHM_Sensitivity_4_out 
 pause
