@@ -4,7 +4,6 @@ cd ..
 IF EXIST Calibration_5 (
 set INPUT=
 set /P INPUT="All data will be overwritten. Continue? (y/n):"
-echo %INPUT%
 )
 If "%INPUT%"=="n" EXIT
 If "%INPUT%"=="N" EXIT
