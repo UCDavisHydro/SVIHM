@@ -18,7 +18,7 @@ BEGIN Reg_GN_Controls Keywords
 END Reg_GN_Controls
  
 BEGIN Model_Command_Lines Keywords
-  Command = .\Run_SVIHM.bat
+  Command = .\Run_SVIHM_forward.bat
     Purpose = Forward
     CommandID = ForwardModel
 END Model_Command_Lines
