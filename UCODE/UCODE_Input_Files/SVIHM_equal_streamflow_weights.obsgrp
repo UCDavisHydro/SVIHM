@@ -1,5 +1,5 @@
 BEGIN Observation_Groups Table
-  NROW=14 NCOL=4 COLUMNLABELS
+  NROW=14 NCOL=5 COLUMNLABELS
   GroupName Statistic StatFlag PlotSymbol UseFlag
   FortJLow 0.1 CV 1 yes
   FortJMedium 0.1 CV 2 yes
