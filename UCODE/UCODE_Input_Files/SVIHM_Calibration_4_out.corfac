@@ -1,0 +1,27 @@
+BEGIN OPTIONS KEYWORDS
+  Verbose = 3
+END OPTIONS
+
+BEGIN CORRECTION_FACTOR_DATA KEYWORDS
+  ConfidenceOrPrediction = Confidence
+  RegressionUsedTrueCov = Yes
+END CORRECTION_FACTOR_DATA
+
+BEGIN PARAMETER_LIST TABLE
+  nrow=14 ncol=1 COLUMNLABELS
+  PARAMETERNAME
+  kx1         
+  kx2         
+  kx3         
+  kx4         
+  sy1         
+  sy3         
+  RD_Mult     
+  EIE_Flood   
+  EIE_WL_LU25 
+  EIE_CP_LU25 
+  EIE_WL_LU2  
+  EIE_CP_LU2  
+  kc_alfalfa_m
+  kc_pasture_m
+END PARAMETER_LIST
