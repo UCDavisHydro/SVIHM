@@ -18,56 +18,56 @@ BEGIN Reg_GN_Controls Keywords
 END Reg_GN_Controls
  
 BEGIN Model_Command_Lines Keywords
-  Command = .\Run_SVIHM_ucode_sensitivity.bat
-    Purpose = Forward
-    CommandID = ForwardModel
+  Command = Run_SVIHM_ucode_sensitivity.bat
+  Purpose = Forward
+  CommandID = ForwardModel
 END Model_Command_Lines
  
 BEGIN Parameter_Groups Files
- .\SVIHM.pargrp
+  SVIHM.pargrp
 END Parameter_Groups
  
 BEGIN Parameter_Data Files
- .\SVIHM_sensitivity.param4
+  SVIHM_sensitivity.param4
 END Parameter_Data
  
 BEGIN Observation_Groups Files
- .\SVIHM.obsgrp
+  SVIHM.obsgrp
 END Observation_Groups
  
 BEGIN Observation_Data Files
- .\SVIHM.flowobs
- .\SVIHM.headobs
+  SVIHM.flowobs
+  SVIHM.headobs
 END Observation_Data
  
 BEGIN Model_Input_Files Keywords
-  ModInFile = .\general_inputs.txt
-    TemplateFile = .\SVIHM_SWBM_General_Inputs.jtf
-  ModInFile = .\irr_eff.txt
-    TemplateFile = .\SVIHM_SWBM_Irr_Effs.jtf
-  ModInFile = .\crop_coeff_mult.txt
-    TemplateFile = .\SVIHM_SWBM_Crop_Coeff_Mults.jtf     
-  ModInFile = .\SVIHM.pvl
-    TemplateFile = .\SVIHM_PVAL.jtf
-  ModInFile = .\SVIHM.sfr
-    TemplateFile = .\SVIHM_SFR.jtf
+  ModInFile = general_inputs.txt
+    TemplateFile = SVIHM_SWBM_General_Inputs.jtf
+  ModInFile = irr_eff.txt
+    TemplateFile = SVIHM_SWBM_Irr_Effs.jtf
+  ModInFile = crop_coeff_mult.txt
+    TemplateFile = SVIHM_SWBM_Crop_Coeff_Mults.jtf     
+  ModInFile = SVIHM.pvl
+    TemplateFile = SVIHM_PVAL.jtf
+  ModInFile = SVIHM.sfr
+    TemplateFile = SVIHM_SFR.jtf
 END Model_Input_Files
  
 BEGIN Model_Output_Files Keywords
-  ModOutFile = .\Streamflow_FJ_SVIHM.txt
-    InstructionFile = .\Streamflow_FJ_SVIHM.txt.jif
+  ModOutFile = Streamflow_FJ_SVIHM.txt
+    InstructionFile = Streamflow_FJ_SVIHM.txt.jif
     Category = Obs
-  ModOutFile = .\Streamflow_BY_SVIHM.txt
-    InstructionFile = .\Streamflow_BY_SVIHM.txt.jif
+  ModOutFile = Streamflow_BY_SVIHM.txt
+    InstructionFile = Streamflow_BY_SVIHM.txt.jif
     Category = Obs
-  ModOutFile =  .\Streamflow_AS_SVIHM.txt
-    InstructionFile = .\Streamflow_AS_SVIHM.txt.jif
+  ModOutFile =  Streamflow_AS_SVIHM.txt
+    InstructionFile = Streamflow_AS_SVIHM.txt.jif
     Category = Obs
-  ModOutFile = .\Streamflow_LS_SVIHM.txt
-    InstructionFile = .\Streamflow_LS_SVIHM.txt.jif
+  ModOutFile = Streamflow_LS_SVIHM.txt
+    InstructionFile = Streamflow_LS_SVIHM.txt.jif
     Category = Obs
-  ModOutFile = .\HobData_SVIHM.txt
-    InstructionFile = .\HobData_SVIHM.txt.jif
+  ModOutFile = HobData_SVIHM.txt
+    InstructionFile = HobData_SVIHM.txt.jif
     Category = Obs
 END Model_Output_Files
  
