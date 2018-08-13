@@ -45,6 +45,7 @@
   REAL :: start, finish
   INTEGER, DIMENSION(0:11)  :: nday
   CHARACTER(9) :: param_dummy
+  CHARACTER(10)  :: SFR_Template
   INTEGER, DIMENSION(31) :: ET_Active
 ! We defined precip adjusted after discussion with Rick Snyder and after looking at the FAO 56 document
 ! Precip_adjusted = Precip, if Precip > 0.2 * ref_et
@@ -59,18 +60,22 @@
    Total_Ref_ET = 0.
    
    open(unit=10, file='general_inputs.txt', status='old')
-   read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_mult
+   read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template
+   SFR_Template = TRIM(SFR_Template)
+   write(800,*) SFR_Template
    write(*,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
-    "Root Depth Multiplier",RD_Mult
+    "Root Depth Multiplier", RD_Mult
+   write(800,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
+    "Root Depth Multiplier", RD_Mult 
    close (10)
    open (unit=536, file="SVIHM_WEL_template.txt", status="old")     
    read(536,*) ! Read heading line into nothing
    read(536,*)param_dummy,n_wel_param  ! read in number of well parameters (for printing later)
    close(536)
    
+   call READ_KC_IRREFF                        ! Read in crop coefficients and irrigation efficiencies
    call readpoly                              ! Read in field info
    call read_well                             ! Read in well info
-   call READ_KC_IRREFF                        ! Read in crop coefficients and irrigation efficiencies
    
    ALLOCATE(zone_matrix(nrows,ncols))
    ALLOCATE(no_flow_matrix(nrows,ncols))
@@ -78,7 +83,6 @@
    ALLOCATE(Discharge_Zone_Cells(nrows,ncols))
    ALLOCATE(MAR_Matrix(nrows,ncols))
    ALLOCATE(drain_flow(nmonth))
-   
    
    open(unit=213, file='SVIHM_SFR_template.txt', status='old')
    read(213,*) dummy,nsegs
@@ -101,7 +105,7 @@
    output_zone_matrix = zone_matrix * no_flow_matrix        ! Create Recharge Zone Matrix with zeros at no flow cells
 !    write(888,'(210i5)') rch_zone_matrix
 !    write(889,'(210i2)') no_flow_matrix   
-    write(890,'(210i5)') output_zone_matrix   
+!    write(890,'(210i5)') output_zone_matrix   
 
 
    open(unit=532,file='5daysdeficiency.dat')
@@ -133,7 +137,7 @@
    open(unit=608, file='Daily_out_Alfalfa-Grain_MIX_CP.dat')                 ! Daily output for selected fields
    open(unit=609, file='Daily_out_Alfalfa-Grain_SUB_DRY.dat')                ! Daily output for selected fields
    open(unit=610, file='Daily_out_Pasture_SW_Flood.dat')                     ! Daily output for selected fields
-   open(unit=612, file='Daily_out_Pasture_SW_WL.dat')                        ! Daily output for selected fields
+   open(unit=611, file='Daily_out_Pasture_SW_WL.dat')                        ! Daily output for selected fields
    open(unit=612, file='Daily_out_Pasture_SW_CP.dat')                        ! Daily output for selected fields
    open(unit=613, file='Daily_out_Pasture_GW_Flood.dat')                     ! Daily output for selected fields
    open(unit=614, file='Daily_out_Pasture_GW_WL.dat')                        ! Daily output for selected fields
@@ -250,19 +254,26 @@
    open (unit=114, file='monthly_moisture_by_subw.dat') 
    open (unit=115, file='monthly_moisture_by_luse.dat') 
    
-   open (unit=202, file='yearly_well_by_subw.dat')
-   open (unit=203, file='yearly_irrig_by_subw.dat')
-   open (unit=204, file='yearly_evapo_by_subw.dat')
-   open (unit=205, file='yearly_recharge_by_subw.dat')
-   open (unit=206, file='yearly_well_by_luse.dat')
-   open (unit=207, file='yearly_irrig_by_luse.dat')
-   open (unit=208, file='yearly_evapo_by_luse.dat')
-   open (unit=209, file='yearly_recharge_by_luse.dat')
+!   open (unit=202, file='yearly_well_by_subw.dat')
+!   open (unit=203, file='yearly_irrig_by_subw.dat')
+!   open (unit=204, file='yearly_evapo_by_subw.dat')
+!   open (unit=205, file='yearly_recharge_by_subw.dat')
+!   open (unit=206, file='yearly_well_by_luse.dat')
+!   open (unit=207, file='yearly_irrig_by_luse.dat')
+!   open (unit=208, file='yearly_evapo_by_luse.dat')
+!   open (unit=209, file='yearly_recharge_by_luse.dat')
 
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_ETS_template.txt SVIHM.ets')
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_SFR_template.txt SVIHM.sfr')
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_WEL_template.txt SVIHM.wel')
-   CALL EXECUTE_COMMAND_LINE('copy UCODE_SFR_template.txt SVIHM_SFR.jtf')
+   if (SFR_Template=='UCODE') then 
+     CALL EXECUTE_COMMAND_LINE('copy SFR_UCODE_JTF.txt SVIHM_SFR.jtf')
+   elseif (SFR_Template=='PEST') then
+   	 CALL EXECUTE_COMMAND_LINE('copy SFR_PEST_TPL.txt SVIHM_SFR.tpl')
+   else
+     	print *, 'Invalid Template File Format Variable in general_inputs.txt'
+     	CALL EXIT
+   end if
    
    open (unit=220, file='Drains_m3day.txt')
    read(220,*)param_dummy     ! Read header comment line to dummy character string 
@@ -350,7 +361,7 @@
 		   call recharge_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix)    
        call monthly_volume_out		   
        call write_MODFLOW_SFR(im, nmonth, nsegs, SFR_Flows, drain_flow)
-       call write_UCODE_SFR_JTF (im, nmonth, nsegs, SFR_Flows, drain_flow)   ! Write JTF file for UCODE 
+       call write_SFR_template (im, nmonth, nsegs, SFR_Flows, drain_flow, SFR_Template)   ! Write JTF file for UCODE 
        call write_MODFLOW_WEL(im,total_n_wells,n_wel_param)       
    enddo                  ! End of month loop
    close(84)

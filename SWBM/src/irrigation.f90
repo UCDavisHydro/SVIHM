@@ -33,7 +33,14 @@ MODULE irrigationmodule
     open(unit=11,file="crop_coeff_mult.txt",status="old")
     read(11,*)kc_alfalfa_mult, kc_grain_mult, kc_pasture_mult, kc_noirr
     close(11)
-    
+    write(*,'(A18,F4.2)') "kc_alfalfa_mult = ", kc_alfalfa_mult
+    write(*,'(A16,F4.2)') "kc_grain_mult = ", kc_grain_mult
+    write(*,'(A18,F4.2)') "kc_pasture_mult = ", kc_pasture_mult
+    write(*,'(A11,F4.2)') "kc_noirr = ", kc_noirr
+    write(800,'(A18,F4.2)') "kc_alfalfa_mult = ", kc_alfalfa_mult
+    write(800,'(A16,F4.2)') "kc_grain_mult = ", kc_grain_mult
+    write(800,'(A18,F4.2)') "kc_pasture_mult = ", kc_pasture_mult
+    write(800,'(A11,F4.2)') "kc_noirr = ", kc_noirr
     return
   end subroutine read_kc_irreff
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -661,10 +668,6 @@ MODULE irrigationmodule
       SFR_Flows(31) = 8.  * 2446.58                                 ! Farmers Ditch Diversion (~8 cfs total diversion, leakage rate is about 6 cfs, assumed 2 cfs consumptive use)
       SFR_Flows(32) = 16. * 2446.58                                 ! SVID Diversion (~16 cfs total diversion, leakage rate is about 14 cfs, assumed 2 cfs consumptive use)     	
     end if
-    write(992,*)streamflow_in
-    write(993,*)streamflow_out
-    write(994,*)sw_irr
-    write(995,*)SFR_Flows
   end subroutine SFR_streamflow
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   subroutine SFR_streamflow_w_MAR(numdays, imonth)
