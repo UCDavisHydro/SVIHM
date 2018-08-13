@@ -1092,12 +1092,13 @@ end subroutine monthly_pumping
   end subroutine  write_MODFLOW_SFR
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- subroutine write_UCODE_SFR_JTF (im, nmonth, nsegs, SFR_Flows, drain_flow)
+ subroutine write_SFR_template (im, nmonth, nsegs, SFR_Flows, drain_flow,SFR_Template)
 ! In this subroutine the input file for the SFR package is created.  
   INTEGER :: im, i, j, nmonth, dummy, nsegs,  SR_width, Trib_width
   INTEGER,dimension(32,2) :: seg
   DOUBLE PRECISION, DIMENSION (1:32) :: SFR_Flows
   CHARACTER(10) :: rough1,rough2,rough3
+  CHARACTER  ::  SFR_Template
   REAL, DIMENSION(nmonth) :: drain_flow
   
   seg(:,1) = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32/)    ! SFR Segment Number [nseg]
@@ -1108,8 +1109,13 @@ end subroutine monthly_pumping
   rough2 = '@rough2  @'  ! Scott River
   rough3 = '@rough3  @'  ! Tributaies 
 
-open(unit=214, file='SVIHM_SFR.jtf',Access = 'append', status='old')         
-    write(214,'(I4,A12)')nsegs,'  0  0  0  0'                                    
+  if (SFR_Template=='UCODE') then
+    open(unit=214, file='SVIHM_SFR.jtf',Access = 'append', status='old')         
+    write(214,'(I4,A12)')nsegs,'  0  0  0  0'
+  else 
+    open(unit=214, file='SVIHM_SFR.tpl',Access = 'append', status='old')         
+    write(214,'(I4,A12)')nsegs,'  0  0  0  0'  
+  end if                                  
                                                                                  
 !  if (im==1) then                                                               ! Keep in case the beginning of the transient data section doesn't start printing on a new line 
 !    open(unit=214, file='SVIHM_SFR.jtf',Access = 'append', status='old')    ! Keep in case the beginning of the transient data section doesn't start printing on a new line
@@ -1231,6 +1237,6 @@ open(unit=214, file='SVIHM_SFR.jtf',Access = 'append', status='old')
       write(214,*)'  2'      
     end if
   end do
-  end subroutine  write_UCODE_SFR_JTF
+  end subroutine  write_SFR_template
 
 end module outputmodule
