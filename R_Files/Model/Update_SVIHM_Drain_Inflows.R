@@ -2,7 +2,7 @@ rm(list=ls())  #Clear workspace
 nstress = 252
 StartingMonths = seq(as.Date("1990/10/1"), by = "month", length.out = 253)
 num_days = diff(as.numeric(StartingMonths))
-LST_Name = 'SVIHMv3.1.lst'
+LST_Name = 'SVIHM.lst'
 InputText = readLines(LST_Name)  #Read in text file
 
 # Extract Convergence Failures

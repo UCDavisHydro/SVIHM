@@ -34,8 +34,8 @@ for /L %%i in (1,1,6) do (
 xcopy Sensitivity_4\Runner1 Sensitivity_4 /E /I /Y 
 copy UCODE\SVIHM_Sensitivity_4.in Sensitivity_4\SVIHM_Sensitivity_4.in 
 copy Batch_Scripts\Run_SVIHM_UCODE_Sensitivity_Master.bat Sensitivity_4\Run_SVIHM_UCODE_Sensitivity.bat
-copy R_Files\Model\Update_SVIHMv3_Drain_Inflows.R Sensitivity_4\Update_SVIHMv3_Drain_Inflows.R 
-copy R_Files\Model\Update_Starting_Heads.R Sensitivity_4\Update_Starting_Heads.R
+copy R_Files\Model\Update_SVIHM_Drain_Inflows.R Sensitivity_4\Update_SVIHM_Drain_Inflows.R 
+copy R_Files\Model\Update_SVIHM_Starting_Heads.R Sensitivity_4\Update_SVIHM_Starting_Heads.R
 
 cd Sensitivity_4  
 for /L %%i in (1,1,6) do ( 
