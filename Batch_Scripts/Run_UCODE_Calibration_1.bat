@@ -31,8 +31,8 @@ for /L %%i in (1,1,6) do (
 xcopy Calibration_1\Runner1 Calibration_1 /E /I /Y 
 copy UCODE\SVIHM_Calibration_1.in Calibration_1\SVIHM_Calibration_1.in 
 copy Batch_Scripts\Run_SVIHM_UCODE_Calibration_Master.bat Calibration_1\Run_SVIHM_UCODE_Calibration.bat
-copy R_Files\Model\Update_SVIHMv3_Drain_Inflows.R Calibration_1\Update_SVIHMv3_Drain_Inflows.R 
-copy R_Files\Model\Update_Starting_Heads.R Calibration_1\Update_Starting_Heads.R
+copy R_Files\Model\Update_SVIHM_Drain_Inflows.R Calibration_1\Update_SVIHM_Drain_Inflows.R 
+copy R_Files\Model\Update_SVIHM_Starting_Heads.R Calibration_1\Update_SVIHM_Starting_Heads.R
 
 cd Calibration_1  
 for /L %%i in (1,1,6) do ( 
