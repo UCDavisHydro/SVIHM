@@ -24,4 +24,8 @@ DATA 403 Streamflow_BY_SVIHM.txt
 DATA 404 Streamflow_AS_SVIHM.txt
 DATA 405 Streamflow_LS_SVIHM.txt
 DATA 406 Streamflow_BigSlough_SVIHM.txt
+DATA 407 Streamflow_Pred_Loc_2.txt
+DATA 408 Streamflow_Pred_Loc_3.txt
+DATA 409 Streamflow_Pred_Loc_4.txt
+DATA 410 Streamflow_Pred_Loc_5.txt
 DATA 500 HobData_SVIHM.txt

@@ -1,14 +1,15 @@
-  7
-  30  29  400  4   # USGS Gage
+  11
+  30  29  400  4   # USGS Gage/Prediction Location 1
   31  1  401  4    # Farmers Ditch Diversion Point
   32  1  402  4    # SVID Ditch Diversion Point
   10  1  403  4    # Below Youngs Dam RCD Gage 
   12  153  404  4  # Above Serpa Lane RCD Gage
   29  47  405  4   # Lower Shackleford DWR Gage
   22  10  406  4   # Big Slough Flow measurement from TMDL
-#Begining/end of segments
-#  1  1  84  4
-#  1  79  84  4
+  23  10  407  4   # Prediction Location 2
+  12  39  408  4   # Prediction Location 3
+   9  10  409  4   # Prediction Location 4
+   1  72  410  4   # Prediction Location 5
 #  2  1  84  4
 #  2  9  84  4
 #  3  1  84  4
