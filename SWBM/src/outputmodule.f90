@@ -1098,7 +1098,7 @@ end subroutine monthly_pumping
   INTEGER,dimension(32,2) :: seg
   DOUBLE PRECISION, DIMENSION (1:32) :: SFR_Flows
   CHARACTER(10) :: rough1,rough2,rough3
-  CHARACTER  ::  SFR_Template
+  CHARACTER(10)  ::  SFR_Template
   REAL, DIMENSION(nmonth) :: drain_flow
   
   seg(:,1) = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32/)    ! SFR Segment Number [nseg]

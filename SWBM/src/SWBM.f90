@@ -62,7 +62,7 @@
    open(unit=10, file='general_inputs.txt', status='old')
    read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template
    SFR_Template = TRIM(SFR_Template)
-   write(800,*) SFR_Template
+   write(800,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
    write(*,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
     "Root Depth Multiplier", RD_Mult
    write(800,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
