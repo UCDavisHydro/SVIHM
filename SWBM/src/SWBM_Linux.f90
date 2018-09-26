@@ -39,9 +39,9 @@
   INTEGER  :: ip_Pasture_MIX_CP, ip_Pasture_SUB_DRY, ip_ETnoIrr_Low_WC8, ip_ETnoIrr_High_WC8, ip_noETnoIrr, ip_Water_Landuse        ! Field IDs for Daily Output
   INTEGER  :: ip_SW_Flood_DZ
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
-  DOUBLE PRECISION   :: precip, Total_Ref_ET
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:)  :: drain_flow
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
+  REAL   :: precip, Total_Ref_ET
+  REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow
+  REAL, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
   REAL :: start, finish
   INTEGER, DIMENSION(0:11)  :: nday
   CHARACTER(9) :: param_dummy
@@ -62,6 +62,8 @@
    open(unit=10, file='general_inputs.txt', status='old')
    read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template
    SFR_Template = TRIM(SFR_Template)
+   write(*,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
+   write(800,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
    write(*,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
     "Root Depth Multiplier", RD_Mult
    write(800,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
