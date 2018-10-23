@@ -62,6 +62,7 @@
    open(unit=10, file='general_inputs.txt', status='old')
    read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template
    SFR_Template = TRIM(SFR_Template)
+   write(*,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
    write(800,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
    write(*,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
     "Root Depth Multiplier", RD_Mult
@@ -151,7 +152,7 @@
    open(unit=622, file='Daily_out_noET-noIrr.dat')                           ! Daily output for selected fields
    open(unit=623, file='Daily_out_Water_Landuse.dat')                        ! Daily output for selected fields
    open(unit=624, file='Daily_out_SW_Flood_DZ.dat')                          ! Daily output for selected fields
-
+   
    write(600,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
    write(601,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
    write(602,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
@@ -178,7 +179,8 @@
    write(623,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
    write(624,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
    
-
+   open(unit=900, file='Recharge_Total.dat')   
+   write(900,'(a24)')'Total Recharge (m^3/day)'
         
    ip_AG_SW_Flood=171           ! Polygon ID for Daily output
    ip_AG_SW_WL=437              ! Polygon ID for Daily output

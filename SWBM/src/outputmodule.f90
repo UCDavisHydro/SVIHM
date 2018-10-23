@@ -693,6 +693,7 @@ end subroutine monthly_pumping
       INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), nday(0:11)
       REAL, ALLOCATABLE, DIMENSION(:,:) ::  recharge_matrix
       INTEGER :: ip
+      REAL :: ttl_rch
   
       ALLOCATE(recharge_matrix(nrows,ncols))
       recharge_matrix = 0.
@@ -711,8 +712,9 @@ end subroutine monthly_pumping
             recharge_matrix(:,:) = monthly(ip)%recharge / nday(imonth)
           end where
         end do
-      write(84,'(10e14.6)') recharge_matrix      
-	
+      write(84,'(10e14.6)') recharge_matrix   
+      ttl_rch = sum(recharge_matrix*10000)
+      write(900,*) ttl_rch
     end subroutine recharge_out_MODFLOW
     
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
@@ -724,6 +726,7 @@ end subroutine monthly_pumping
       REAL, INTENT(IN) :: MAR_Matrix(nrows,ncols)
       REAL, ALLOCATABLE, DIMENSION(:,:) ::  recharge_matrix
       INTEGER :: ip
+      REAL :: rch_sum, MAR_sum, ttl_rch
   
       ALLOCATE(recharge_matrix(nrows,ncols))
       recharge_matrix = 0.
@@ -742,11 +745,24 @@ end subroutine monthly_pumping
             recharge_matrix(:,:) = monthly(ip)%recharge / nday(imonth)
           end where
         end do
-        if (imonth == 4 .or. imonth == 5 .or. imonth == 6) then          ! If Jan-Mar add recahrge from MAR
-          recharge_matrix(:,:) = recharge_matrix(:,:) + MAR_Matrix   
+        if (imonth == 4 .or. imonth == 5 .or. imonth == 6) then          ! If Jan-Mar add recharge from MAR
+          rch_sum = sum(recharge_matrix*10000)                           ! Total of normal recharge rate in m^3/day
+          MAR_sum = sum(MAR_Matrix*10000)                                ! Total of MAR rate in m^3/day
+          ttl_rch = rch_sum + MAR_sum                                    ! Total recharge rate applied to MODFLOW
+          write(*,'(a15,f12.0,a8)')'Non-MAR rate = ',rch_sum,' m^3/day'
+          write(800,'(a15,f12.0,a8)')'Non-MAR rate = ',rch_sum,' m^3/day'
+          recharge_matrix(:,:) = recharge_matrix(:,:) + MAR_Matrix
+          write(*,'(a11,f12.0,a8)')'MAR rate = ',MAR_sum,' m^3/day'
+          write(800,'(a11,f12.0,a8)')'MAR rate = ',MAR_sum,' m^3/day'
+          write(*,'(a22,f12.0,a8)')'Total recharge rate = ',ttl_rch, ' m^3/day'
+          write(800,'(a22,f12.0,a8)')'Total recharge rate = ',ttl_rch, ' m^3/day'
+          write(*,*)''
+          write(800,*),''
+        else
+          ttl_rch = sum(recharge_matrix*10000)
         end if
       write(84,'(10e14.6)') recharge_matrix      
-	
+      write(900,*) ttl_rch
     end subroutine recharge_out_MODFLOW_w_MAR
 	
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
