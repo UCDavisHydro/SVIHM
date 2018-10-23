@@ -39,9 +39,9 @@
   INTEGER  :: ip_Pasture_MIX_CP, ip_Pasture_SUB_DRY, ip_ETnoIrr_Low_WC8, ip_ETnoIrr_High_WC8, ip_noETnoIrr, ip_Water_Landuse        ! Field IDs for Daily Output
   INTEGER  :: ip_SW_Flood_DZ
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
-  DOUBLE PRECISION   :: precip, Total_Ref_ET
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:)  :: drain_flow
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
+  REAL   :: precip, Total_Ref_ET
+  REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow
+  REAL, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
   REAL :: start, finish
   INTEGER, DIMENSION(0:11)  :: nday
   CHARACTER(9) :: param_dummy
@@ -62,6 +62,8 @@
    open(unit=10, file='general_inputs.txt', status='old')
    read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template
    SFR_Template = TRIM(SFR_Template)
+   write(*,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
+   write(800,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
    write(*,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
     "Root Depth Multiplier", RD_Mult
    write(800,'(A5,I6,A15,I5,A8,I5,A23,F6.2)') "npoly", npoly, "total_n_wells", total_n_wells, "nmonth", nmonth,&
@@ -178,7 +180,8 @@
    write(623,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
    write(624,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
    
-
+   open(unit=900, file='Recharge_Total.dat')   
+   write(900,'(a24)')'Total Recharge (m^3/day)'
         
    ip_AG_SW_Flood=171           ! Polygon ID for Daily output
    ip_AG_SW_WL=437              ! Polygon ID for Daily output
@@ -253,6 +256,7 @@
    open (unit=113, file='monthly_actualET_by_subw.dat')
    open (unit=114, file='monthly_moisture_by_subw.dat') 
    open (unit=115, file='monthly_moisture_by_luse.dat') 
+   
 !   open (unit=202, file='yearly_well_by_subw.dat')
 !   open (unit=203, file='yearly_irrig_by_subw.dat')
 !   open (unit=204, file='yearly_evapo_by_subw.dat')
@@ -356,7 +360,7 @@
 		   call ET_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells,npoly)
 		   Total_Ref_ET = 0.  ! Reset monthly Average ET
        call recharge_out (im)
-       call recharge_out_MODFLOW_w_MAR(im,imonth,nday,nrows,ncols,output_zone_matrix,MAR_Matrix)
+       call recharge_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix) 
        call monthly_volume_out		   
        call write_MODFLOW_SFR(im, nmonth, nsegs, SFR_Flows, drain_flow)
        call write_SFR_template (im, nmonth, nsegs, SFR_Flows, drain_flow, SFR_Template)   ! Write JTF file for UCODE 
@@ -568,6 +572,8 @@
   else if ( poly(ip)%landuse==25 .or. poly(ip)%landuse==3 )  then  ! if alfalfa/grain/native veg 
     rch = max(0., (before(ip)%moisture+precip_adjusted+daily(ip)%irrigation-daily(ip)%actualET)-poly(ip)%WC8 )
     daily(ip)%recharge = rch 
+  else if (poly(ip)%landuse==4) then  ! noET/NoIrr 
+    daily(ip)%recharge = precip_adjusted 
   endif
   daily(ip)%moisture=max(0.,before(ip)%moisture+precip_adjusted+daily(ip)%irrigation-daily(ip)%actualET-daily(ip)%recharge)
 
