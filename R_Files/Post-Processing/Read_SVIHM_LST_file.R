@@ -7,6 +7,7 @@
 
 ###########################################################################################
 rm(list=ls())  #Clear workspace
+options(warn=-1)   # suppress warnings (set to 0 to turn warnings on)
 library(ggplot2)
 library(reshape2)
 library(grid)
@@ -14,8 +15,9 @@ library(magrittr)
 dir.create(file.path(getwd(),'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
 out_dir = paste0(getwd(),'/Results')
 nstress = 252
+PRINT_BUDGET = FALSE       # Print monthly water budget to file (TRUE/FALSE)
 StartingMonths = seq(as.Date("1990/10/1"), by = "month", length.out = 252)
-LST_Name = 'SVIHM.lst'
+LST_Name = 'SVIHM_Basecase.lst'
 InputText = readLines(LST_Name)  #Read in text file
 
 # Extract Convergence Failures
@@ -85,322 +87,83 @@ SP = as.numeric(sapply(lapply(strsplit(InputText[Timestep_SP_Lines],' '),functio
 
 extra_rows = which(duplicated(SP))
 
+WB_Components_All = c(WB_Components,'TOTAL')   # All components of the MODFLOW water budget
 #Remove stress periods that didn't converge if there are any
-if(length(extra_rows>0)){
-  WB_Components_All = c(WB_Components,'TOTAL')
-  TS = TS[-extra_rows]
-  SP = SP[-extra_rows]
-  for (i in 1:length(WB_Components_All)){
-    eval(parse(text = paste0(WB_Components_All[i],'_cumulative_in = ',WB_Components_All[i],'_cumulative_in[-extra_rows]')))
-    eval(parse(text = paste0(WB_Components_All[i],'_cumulative_out = ',WB_Components_All[i],'_cumulative_out[-extra_rows]')))
-    eval(parse(text = paste0(WB_Components_All[i],'_TS_Flux_in = ',WB_Components_All[i],'_TS_Flux_in[-extra_rows]')))
-    eval(parse(text = paste0(WB_Components_All[i],'_TS_Flux_out = ',WB_Components_All[i],'_TS_Flux_out[-extra_rows]')))
+for (i in 1:length(WB_Components_All)){
+  if(length(extra_rows>0)){           #Remove stress periods that didn't converge if there are any
+    TS = TS[-extra_rows]
+    SP = SP[-extra_rows]
+    eval(parse(text = paste0(WB_Components_All[i],'_cumulative_in = ',WB_Components_All[i],'_cumulative_in[-extra_rows]')))                                 
+    eval(parse(text = paste0(WB_Components_All[i],'_cumulative_out = ',WB_Components_All[i],'_cumulative_out[-extra_rows]')))                               
+    eval(parse(text = paste0(WB_Components_All[i],'_TS_Flux_in = ',WB_Components_All[i],'_TS_Flux_in[-extra_rows]')))                                       
+    eval(parse(text = paste0(WB_Components_All[i],'_TS_Flux_out = ',WB_Components_All[i],'_TS_Flux_out[-extra_rows]')))                                     
   }
-}
-
-#Calculate Cumulative Net Fluxes
-STORAGE_cumulative_net = STORAGE_cumulative_in - STORAGE_cumulative_out
-CONSTANT_HEAD_cumulative_net = CONSTANT_HEAD_cumulative_in - CONSTANT_HEAD_cumulative_out
-WELLS_cumulative_net = WELLS_cumulative_in - WELLS_cumulative_out
-RECHARGE_cumulative_net = RECHARGE_cumulative_in - RECHARGE_cumulative_out
-ET_SEGMENTS_cumulative_net = ET_SEGMENTS_cumulative_in - ET_SEGMENTS_cumulative_out
-STREAM_LEAKAGE_cumulative_net = STREAM_LEAKAGE_cumulative_in - STREAM_LEAKAGE_cumulative_out
-DRAINS_cumulative_net = DRAINS_cumulative_in - DRAINS_cumulative_out
-TOTAL_cumulative_net = TOTAL_cumulative_in - TOTAL_cumulative_out
-
-#Convert cumulative volumes (m^3) for each stress period
-STORAGE_SP_Vol_in = c(STORAGE_cumulative_in[1],diff(STORAGE_cumulative_in))
-STORAGE_SP_Vol_out = c(STORAGE_cumulative_out[1],diff(STORAGE_cumulative_out))
-CONSTANT_HEAD_SP_Vol_in = c(CONSTANT_HEAD_cumulative_in[1],diff(CONSTANT_HEAD_cumulative_in))
-CONSTANT_HEAD_SP_Vol_out = c(CONSTANT_HEAD_cumulative_out[1],diff(CONSTANT_HEAD_cumulative_out))
-WELLS_SP_Vol_in = c(WELLS_cumulative_in[1],diff(WELLS_cumulative_in))
-WELLS_SP_Vol_out = c(WELLS_cumulative_out[1],diff(WELLS_cumulative_out))
-RECHARGE_SP_Vol_in = c(RECHARGE_cumulative_in[1],diff(RECHARGE_cumulative_in))
-RECHARGE_SP_Vol_out = c(RECHARGE_cumulative_out[1],diff(RECHARGE_cumulative_out))
-ET_SEGMENTS_SP_Vol_in = c(ET_SEGMENTS_cumulative_in[1],diff(ET_SEGMENTS_cumulative_in))
-ET_SEGMENTS_SP_Vol_out = c(ET_SEGMENTS_cumulative_out[1],diff(ET_SEGMENTS_cumulative_out))
-STREAM_LEAKAGE_SP_Vol_in = c(STREAM_LEAKAGE_cumulative_in[1],diff(STREAM_LEAKAGE_cumulative_in))
-STREAM_LEAKAGE_SP_Vol_out = c(STREAM_LEAKAGE_cumulative_out[1],diff(STREAM_LEAKAGE_cumulative_out))
-DRAINS_SP_Vol_in = c(DRAINS_cumulative_in[1],diff(DRAINS_cumulative_in))
-DRAINS_SP_Vol_out = c(DRAINS_cumulative_out[1],diff(DRAINS_cumulative_out))
-TOTAL_SP_Vol_in = c(TOTAL_cumulative_in[1],diff(TOTAL_cumulative_in))
-TOTAL_SP_Vol_out = c(TOTAL_cumulative_out[1],diff(TOTAL_cumulative_out))
-
-#Calcualte net volume (m^3) for each stress period
-STORAGE_SP_Vol_net = STORAGE_SP_Vol_in - STORAGE_SP_Vol_out
-CONSTANT_HEAD_SP_Vol_net = CONSTANT_HEAD_SP_Vol_in - CONSTANT_HEAD_SP_Vol_out
-WELLS_SP_Vol_net = WELLS_SP_Vol_in - WELLS_SP_Vol_out
-RECHARGE_SP_Vol_net = RECHARGE_SP_Vol_in - RECHARGE_SP_Vol_out
-ET_SEGMENTS_SP_Vol_net = ET_SEGMENTS_SP_Vol_in - ET_SEGMENTS_SP_Vol_out
-STREAM_LEAKAGE_SP_Vol_net = STREAM_LEAKAGE_SP_Vol_in - STREAM_LEAKAGE_SP_Vol_out
-DRAINS_SP_Vol_net = DRAINS_SP_Vol_in - DRAINS_SP_Vol_out
-TOTAL_SP_Vol_net = TOTAL_SP_Vol_in - TOTAL_SP_Vol_out
-
-#Calcualte net volume (TAF) for each stress period
-STORAGE_SP_Vol_net_TAF = STORAGE_SP_Vol_net * 0.000000810714
-CONSTANT_HEAD_SP_Vol_net_TAF  = CONSTANT_HEAD_SP_Vol_net * 0.000000810714
-WELLS_SP_Vol_net_TAF  = WELLS_SP_Vol_net * 0.000000810714
-RECHARGE_SP_Vol_net_TAF  = RECHARGE_SP_Vol_net * 0.000000810714
-ET_SEGMENTS_SP_Vol_net_TAF  = ET_SEGMENTS_SP_Vol_net * 0.000000810714
-STREAM_LEAKAGE_SP_Vol_net_TAF = STREAM_LEAKAGE_SP_Vol_net * 0.000000810714
-DRAINS_SP_Vol_net_TAF = DRAINS_SP_Vol_net * 0.000000810714
-TOTAL_SP_Vol_net_TAF  = TOTAL_SP_Vol_net * 0.000000810714
-
-#Calculate net flux rate for timestep at end of stress period
-STORAGE_TS_Flux_net = STORAGE_TS_Flux_in - STORAGE_TS_Flux_out
-CONSTANT_HEAD_TS_Flux_net = CONSTANT_HEAD_TS_Flux_in - CONSTANT_HEAD_TS_Flux_out
-WELLS_TS_Flux_net = WELLS_TS_Flux_in - WELLS_TS_Flux_out
-RECHARGE_TS_Flux_net = RECHARGE_TS_Flux_in - RECHARGE_TS_Flux_out
-ET_SEGMENTS_TS_Flux_net = ET_SEGMENTS_TS_Flux_in - ET_SEGMENTS_TS_Flux_out
-STREAM_LEAKAGE_TS_Flux_net = STREAM_LEAKAGE_TS_Flux_in - STREAM_LEAKAGE_TS_Flux_out
-DRAINS_TS_Flux_net = DRAINS_TS_Flux_in - DRAINS_TS_Flux_out
-TOTAL_TS_Flux_net = TOTAL_TS_Flux_in - TOTAL_TS_Flux_out
-
-#CALCULAUTE AVERAGE MONTHLY FLUXES (m^3/day)
-STORAGE_Flux_in_monthly_avg = STORAGE_SP_Vol_in / TS
-STORAGE_Flux_out_monthly_avg = STORAGE_SP_Vol_out / TS
-STORAGE_Flux_net_monthly_avg = STORAGE_SP_Vol_net / TS
-
-CONSTANT_HEAD_Flux_in_monthly_avg = CONSTANT_HEAD_SP_Vol_in / TS
-CONSTANT_HEAD_Flux_out_monthly_avg = CONSTANT_HEAD_SP_Vol_out / TS
-CONSTANT_HEAD_Flux_net_monthly_avg = CONSTANT_HEAD_SP_Vol_net / TS
-
-WELLS_Flux_in_monthly_avg = WELLS_SP_Vol_in / TS
-WELLS_Flux_out_monthly_avg = WELLS_SP_Vol_out / TS
-WELLS_Flux_net_monthly_avg = WELLS_SP_Vol_net / TS
-
-RECHARGE_Flux_in_monthly_avg = RECHARGE_SP_Vol_in / TS
-RECHARGE_Flux_out_monthly_avg = RECHARGE_SP_Vol_out / TS
-RECHARGE_Flux_net_monthly_avg = RECHARGE_SP_Vol_net / TS
-
-ET_SEGMENTS_Flux_in_monthly_avg = ET_SEGMENTS_SP_Vol_in / TS
-ET_SEGMENTS_Flux_out_monthly_avg = ET_SEGMENTS_SP_Vol_out / TS
-ET_SEGMENTS_Flux_net_monthly_avg = ET_SEGMENTS_SP_Vol_net / TS
-
-STREAM_LEAKAGE_Flux_in_monthly_avg = STREAM_LEAKAGE_SP_Vol_in / TS
-STREAM_LEAKAGE_Flux_out_monthly_avg = STREAM_LEAKAGE_SP_Vol_out / TS
-STREAM_LEAKAGE_Flux_net_monthly_avg = STREAM_LEAKAGE_SP_Vol_net / TS
-
-DRAINS_Flux_in_monthly_avg = DRAINS_SP_Vol_in / TS
-DRAINS_Flux_out_monthly_avg = DRAINS_SP_Vol_out / TS
-DRAINS_Flux_net_monthly_avg = DRAINS_SP_Vol_net / TS
-
-TOTAL_Flux_in_monthly_avg = TOTAL_SP_Vol_in / TS
-TOTAL_Flux_out_monthly_avg = TOTAL_SP_Vol_out / TS
-TOTAL_Flux_net_monthly_avg = TOTAL_SP_Vol_net / TS
+  #Net Cumulative Fluxes
+  eval(parse(text = paste0(WB_Components_All[i],'_cumulative_net = ',WB_Components_All[i],'_cumulative_in - ',WB_Components_All[i],'_cumulative_out')))
+  # Total Inflow Volume for each Stress Period
+  eval(parse(text = paste0(WB_Components_All[i],'_SP_Vol_in = c(',WB_Components_All[i],'_cumulative_in[1],diff(',WB_Components_All[i],'_cumulative_in))')))
+  # Total Outflow Volume for each Stress Period
+  eval(parse(text = paste0(WB_Components_All[i],'_SP_Vol_out = c(',WB_Components_All[i],'_cumulative_out[1],diff(',WB_Components_All[i],'_cumulative_out))')))
+  # Net Volume for each Stress Period
+  eval(parse(text = paste0(WB_Components_All[i],'_SP_Vol_net = ',WB_Components_All[i],'_SP_Vol_in - ',WB_Components_All[i],'_SP_Vol_out')))
+  # Net flux rate at the end of each time step
+  eval(parse(text = paste0(WB_Components_All[i],'_TS_Flux_net = ',WB_Components_All[i],'_TS_Flux_in - ',WB_Components_All[i],'_TS_Flux_out')))
+  }
 
 #Calculate Mass Balance
 Cumulative_Mass_Balance_percent_diff = ((TOTAL_cumulative_in - TOTAL_cumulative_out)/((TOTAL_cumulative_in + TOTAL_cumulative_out)/2))*100
 SP_Mass_Balance_percent_diff = ((TOTAL_SP_Vol_in - TOTAL_SP_Vol_out)/((TOTAL_SP_Vol_in + TOTAL_SP_Vol_out)/2))*100
 TS_Mass_Balance_percent_diff = ((TOTAL_TS_Flux_in - TOTAL_TS_Flux_out)/((TOTAL_TS_Flux_in + TOTAL_TS_Flux_out)/2))*100
 
-###########################################################################################################################################
-#Print Values for Each Stress Period (uncomment as needed to print values to file)
-# write.table(STORAGE_SP_Vol_in, file = paste0(out_dir,'/STORAGE_SP_Vol_in.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(STORAGE_SP_Vol_out, file = paste0(out_dir,'/STORAGE_SP_Vol_out.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)') 
-# write.table(STORAGE_SP_Vol_net, file = paste0(out_dir,'/STORAGE_SP_Vol_net.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(CONSTANT_HEAD_SP_Vol_in, file = paste0(out_dir,'/CONSTANT_HEAD_SP_Vol_in.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(CONSTANT_HEAD_SP_Vol_out, file = paste0(out_dir,'/CONSTANT_HEAD_SP_Vol_out.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(CONSTANT_HEAD_SP_Vol_net, file ='CONSTANT_HEAD_SP_Vol_net.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(WELLS_SP_Vol_in, file = paste0(out_dir,'/WELLS_SP_Vol_in.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(WELLS_SP_Vol_out, file = paste0(out_dir,'/WELLS_SP_Vol_out.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(WELLS_SP_Vol_net, file = paste0(out_dir,'/WELLS_SP_Vol_net.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(RECHARGE_SP_Vol_in, file = paste0(out_dir,'/RECHARGE_SP_Vol_in.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(RECHARGE_SP_Vol_out, file = paste0(out_dir,'/RECHARGE_SP_Vol_out.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(RECHARGE_SP_Vol_net, file = paste0(out_dir,'/RECHARGE_SP_Vol_net.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(ET_SEGMENTS_SP_Vol_in, file = paste0(out_dir,'/ET_SEGMENTS_SP_Vol_in.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(ET_SEGMENTS_SP_Vol_out, file = paste0(out_dir,'/ET_SEGMENTS_SP_Vol_out.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(ET_SEGMENTS_SP_Vol_net, file = paste0(out_dir,'/ET_SEGMENTS_SP_Vol_net.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(STREAM_LEAKAGE_SP_Vol_in, file = paste0(out_dir,'/STREAM_LEAKAGE_SP_Vol_in.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(STREAM_LEAKAGE_SP_Vol_out, file = paste0(out_dir,'/STREAM_LEAKAGE_SP_Vol_out.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(STREAM_LEAKAGE_SP_Vol_net, file = paste0(out_dir,'/STREAM_LEAKAGE_SP_Vol_net.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(DRAINS_SP_Vol_in, file = paste0(out_dir,'/DRAINS_SP_Vol_in.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(DRAINS_SP_Vol_out, file = paste0(out_dir,'/DRAINS_SP_Vol_out.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(DRAINS_SP_Vol_net, file = paste0(out_dir,'/DRAINS_SP_Vol_net.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(TOTAL_SP_Vol_in, file = paste0(out_dir,'/TOTAL_SP_Vol_in.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(TOTAL_SP_Vol_out, file = paste0(out_dir,'/TOTAL_SP_Vol_out.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-# write.table(TOTAL_SP_Vol_net, file = paste0(out_dir,'/TOTAL_SP_Vol_net.dat'), row.names = F, quote = F, col.names = 'Volume (m^3)')
-
-Model_Error = data.frame(Date = as.character(StartingMonths), Cumulative = Cumulative_Mass_Balance_percent_diff, LastTimestep = TS_Mass_Balance_percent_diff, StressPeriod = SP_Mass_Balance_percent_diff ) 
-Model_Error[-1,-1] = round(Model_Error[-1,-1],3)
-write.table(Model_Error, file = paste0(out_dir,'/Model_Error.dat'), row.names = F, quote = F, col.names = c('Date','Cumulative(%)', 'LastTimeStep(%)', 'StressPeriod(%)'))
-
+Volumetric_Flux = data.frame(Month = format(seq(as.Date('1990/10/1'), as.Date('2011/9/30'), by = 'month'),'%b-%Y'),
+                             STORAGE_in_m3 = STORAGE_SP_Vol_in,
+                             STORAGE_out_m3 = STORAGE_SP_Vol_out,
+                             STORAGE_net_m3 = STORAGE_SP_Vol_net,
+                             CONSTANT_HEAD_in_m3 = CONSTANT_HEAD_SP_Vol_in,
+                             CONSTANT_HEAD_out_m3 = CONSTANT_HEAD_SP_Vol_out,
+                             CONSTANT_HEAD_net_m3 = CONSTANT_HEAD_SP_Vol_net,
+                             WELLS_in_m3 = WELLS_SP_Vol_in,
+                             WELLS_out_m3 = WELLS_SP_Vol_out,
+                             WELLS_net_m3 = WELLS_SP_Vol_net,
+                             RECHARGE_in_m3 = RECHARGE_SP_Vol_in,
+                             RECHARGE_out_m3 = RECHARGE_SP_Vol_out,
+                             RECHARGE_net_m3 = RECHARGE_SP_Vol_net,
+                             ET_SEGMENTS_in_m3 = ET_SEGMENTS_SP_Vol_in,
+                             ET_SEGMENTS_out_m3 = ET_SEGMENTS_SP_Vol_out,
+                             ET_SEGMENTS_net_m3 = ET_SEGMENTS_SP_Vol_net,
+                             STREAM_LEAKAGE_in_m3 = STREAM_LEAKAGE_SP_Vol_in,
+                             STREAM_LEAKAGE_out_m3 = STREAM_LEAKAGE_SP_Vol_out,
+                             STREAM_LEAKAGE_net_m3 = STREAM_LEAKAGE_SP_Vol_net,
+                             DRAINS_in_m3 = DRAINS_SP_Vol_in,
+                             DRAINS_out_m3 = DRAINS_SP_Vol_out,
+                             DRAINS_net_m3 = DRAINS_SP_Vol_net,
+                             TOTAL_in_m3 = TOTAL_SP_Vol_in,
+                             TOTAL_out_m3 = TOTAL_SP_Vol_out,
+                             TOTAL_net_m3 = TOTAL_SP_Vol_net,
+                             Error_Cumulative_percent = Cumulative_Mass_Balance_percent_diff,
+                             Error_Stress_Period_percent = SP_Mass_Balance_percent_diff,
+                             Error_Timestep_percent = TS_Mass_Balance_percent_diff
+                             )
+if (PRINT_BUDGET==TRUE){
+write.table(Volumetric_Flux, file = paste0(out_dir,'/MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
+}
 ##############################################################################################
 ##############             CREATE MONTHLY WATER BUDGETS           ############################
 ##############################################################################################
-October_netWB_m3 = data.frame(Date = StartingMonths[seq(1,nstress,by=12)],
-                               Storage = STORAGE_SP_Vol_net[seq(1,nstress,by=12)],
-                               Wells =  WELLS_SP_Vol_net[seq(1,nstress,by=12)],
-                               Recharge = RECHARGE_SP_Vol_net[seq(1,nstress,by=12)],
-                               ET = ET_SEGMENTS_SP_Vol_net[seq(1,nstress,by=12)],
-                               Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(1,nstress,by=12)],
-                               Drains = DRAINS_SP_Vol_net[seq(1,nstress,by=12)])
-November_netWB_m3 = data.frame(Date = StartingMonths[seq(2,nstress,by=12)],
-                                Storage = STORAGE_SP_Vol_net[seq(2,nstress,by=12)],
-                                Wells =  WELLS_SP_Vol_net[seq(2,nstress,by=12)],
-                                Recharge = RECHARGE_SP_Vol_net[seq(2,nstress,by=12)],
-                                ET = ET_SEGMENTS_SP_Vol_net[seq(2,nstress,by=12)],
-                                Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(2,nstress,by=12)],
-                                Drains = DRAINS_SP_Vol_net[seq(2,nstress,by=12)])
-December_netWB_m3 = data.frame(Date = StartingMonths[seq(3,nstress,by=12)],
-                                Storage = STORAGE_SP_Vol_net[seq(3,nstress,by=12)],
-                                Wells =  WELLS_SP_Vol_net[seq(3,nstress,by=12)],
-                                Recharge = RECHARGE_SP_Vol_net[seq(3,nstress,by=12)],
-                                ET = ET_SEGMENTS_SP_Vol_net[seq(3,nstress,by=12)],
-                                Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(3,nstress,by=12)],
-                                Drains = DRAINS_SP_Vol_net[seq(3,nstress,by=12)])
-January_netWB_m3 = data.frame(Date = StartingMonths[seq(4,nstress,by=12)],
-                               Storage = STORAGE_SP_Vol_net[seq(4,nstress,by=12)],
-                               Wells =  WELLS_SP_Vol_net[seq(4,nstress,by=12)],
-                               Recharge = RECHARGE_SP_Vol_net[seq(4,nstress,by=12)],
-                               ET = ET_SEGMENTS_SP_Vol_net[seq(4,nstress,by=12)],
-                               Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(4,nstress,by=12)],
-                               Drains = DRAINS_SP_Vol_net[seq(4,nstress,by=12)])
-February_netWB_m3 = data.frame(Date = StartingMonths[seq(5,nstress,by=12)],
-                                Storage = STORAGE_SP_Vol_net[seq(5,nstress,by=12)],
-                                Wells =  WELLS_SP_Vol_net[seq(5,nstress,by=12)],
-                                Recharge = RECHARGE_SP_Vol_net[seq(5,nstress,by=12)],
-                                ET = ET_SEGMENTS_SP_Vol_net[seq(5,nstress,by=12)],
-                                Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(5,nstress,by=12)],
-                                Drains = DRAINS_SP_Vol_net[seq(5,nstress,by=12)])
-March_netWB_m3 = data.frame(Date = StartingMonths[seq(6,nstress,by=12)],
-                             Storage = STORAGE_SP_Vol_net[seq(6,nstress,by=12)],
-                             Wells =  WELLS_SP_Vol_net[seq(6,nstress,by=12)],
-                             Recharge = RECHARGE_SP_Vol_net[seq(6,nstress,by=12)],
-                             ET = ET_SEGMENTS_SP_Vol_net[seq(6,nstress,by=12)],
-                             Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(6,nstress,by=12)],
-                             Drains = DRAINS_SP_Vol_net[seq(6,nstress,by=12)])
-April_netWB_m3 = data.frame(Date = StartingMonths[seq(7,nstress,by=12)],
-                             Storage = STORAGE_SP_Vol_net[seq(7,nstress,by=12)],
-                             Wells =  WELLS_SP_Vol_net[seq(7,nstress,by=12)],
-                             Recharge = RECHARGE_SP_Vol_net[seq(7,nstress,by=12)],
-                             ET = ET_SEGMENTS_SP_Vol_net[seq(7,nstress,by=12)],
-                             Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(7,nstress,by=12)],
-                             Drains = DRAINS_SP_Vol_net[seq(7,nstress,by=12)])
-May_netWB_m3 = data.frame(Date = StartingMonths[seq(8,nstress,by=12)],
-                           Storage = STORAGE_SP_Vol_net[seq(8,nstress,by=12)],
-                           Wells =  WELLS_SP_Vol_net[seq(8,nstress,by=12)],
-                           Recharge = RECHARGE_SP_Vol_net[seq(8,nstress,by=12)],
-                           ET = ET_SEGMENTS_SP_Vol_net[seq(8,nstress,by=12)],
-                           Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(8,nstress,by=12)],
-                           Drains = DRAINS_SP_Vol_net[seq(8,nstress,by=12)])
-June_netWB_m3 = data.frame(Date = StartingMonths[seq(9,nstress,by=12)],
-                            Storage = STORAGE_SP_Vol_net[seq(9,nstress,by=12)],
-                            Wells =  WELLS_SP_Vol_net[seq(9,nstress,by=12)],
-                            Recharge = RECHARGE_SP_Vol_net[seq(9,nstress,by=12)],
-                            ET = ET_SEGMENTS_SP_Vol_net[seq(9,nstress,by=12)],
-                            Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(9,nstress,by=12)],
-                            Drains = DRAINS_SP_Vol_net[seq(9,nstress,by=12)])
-July_netWB_m3 = data.frame(Date = StartingMonths[seq(10,nstress,by=12)],
-                            Storage = STORAGE_SP_Vol_net[seq(10,nstress,by=12)],
-                            Wells =  WELLS_SP_Vol_net[seq(10,nstress,by=12)],
-                            Recharge = RECHARGE_SP_Vol_net[seq(10,nstress,by=12)],
-                            ET = ET_SEGMENTS_SP_Vol_net[seq(10,nstress,by=12)],
-                            Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(10,nstress,by=12)],
-                            Drains = DRAINS_SP_Vol_net[seq(10,nstress,by=12)])
-August_netWB_m3 = data.frame(Date = StartingMonths[seq(11,nstress,by=12)],
-                              Storage = STORAGE_SP_Vol_net[seq(11,nstress,by=12)],
-                              Wells =  WELLS_SP_Vol_net[seq(11,nstress,by=12)],
-                              Recharge = RECHARGE_SP_Vol_net[seq(11,nstress,by=12)],
-                              ET = ET_SEGMENTS_SP_Vol_net[seq(11,nstress,by=12)],
-                              Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(11,nstress,by=12)],
-                             Drains = DRAINS_SP_Vol_net[seq(11,nstress,by=12)])
-September_netWB_m3 = data.frame(Date = StartingMonths[seq(12,nstress,by=12)],
-                                 Storage = STORAGE_SP_Vol_net[seq(12,nstress,by=12)],
-                                 Wells =  WELLS_SP_Vol_net[seq(12,nstress,by=12)],
-                                 Recharge = RECHARGE_SP_Vol_net[seq(12,nstress,by=12)],
-                                 ET = ET_SEGMENTS_SP_Vol_net[seq(12,nstress,by=12)],
-                                 Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(12,nstress,by=12)],
-                                 Drains = DRAINS_SP_Vol_net[seq(12,nstress,by=12)])
-####################################################################################################################
-October_netWB_TAF = data.frame(Date = StartingMonths[seq(1,nstress,by=12)],
-                               Storage = STORAGE_SP_Vol_net[seq(1,nstress,by=12)],
-                               Wells =  WELLS_SP_Vol_net[seq(1,nstress,by=12)],
-                               Recharge = RECHARGE_SP_Vol_net[seq(1,nstress,by=12)],
-                               ET = ET_SEGMENTS_SP_Vol_net[seq(1,nstress,by=12)],
-                               Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(1,nstress,by=12)],
-                               Drains = DRAINS_SP_Vol_net[seq(1,nstress,by=12)])
-November_netWB_TAF = data.frame(Date = StartingMonths[seq(2,nstress,by=12)],
-                                Storage = STORAGE_SP_Vol_net[seq(2,nstress,by=12)],
-                                Wells =  WELLS_SP_Vol_net[seq(2,nstress,by=12)],
-                                Recharge = RECHARGE_SP_Vol_net[seq(2,nstress,by=12)],
-                                ET = ET_SEGMENTS_SP_Vol_net[seq(2,nstress,by=12)],
-                                Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(2,nstress,by=12)],
-                                Drains = DRAINS_SP_Vol_net[seq(2,nstress,by=12)])
-December_netWB_TAF = data.frame(Date = StartingMonths[seq(3,nstress,by=12)],
-                                Storage = STORAGE_SP_Vol_net[seq(3,nstress,by=12)],
-                                Wells =  WELLS_SP_Vol_net[seq(3,nstress,by=12)],
-                                Recharge = RECHARGE_SP_Vol_net[seq(3,nstress,by=12)],
-                                ET = ET_SEGMENTS_SP_Vol_net[seq(3,nstress,by=12)],
-                                Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(3,nstress,by=12)],
-                                Drains = DRAINS_SP_Vol_net[seq(3,nstress,by=12)])
-January_netWB_TAF = data.frame(Date = StartingMonths[seq(4,nstress,by=12)],
-                               Storage = STORAGE_SP_Vol_net[seq(4,nstress,by=12)],
-                               Wells =  WELLS_SP_Vol_net[seq(4,nstress,by=12)],
-                               Recharge = RECHARGE_SP_Vol_net[seq(4,nstress,by=12)],
-                               ET = ET_SEGMENTS_SP_Vol_net[seq(4,nstress,by=12)],
-                               Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(4,nstress,by=12)],
-                               Drains = DRAINS_SP_Vol_net[seq(4,nstress,by=12)])
-February_netWB_TAF = data.frame(Date = StartingMonths[seq(5,nstress,by=12)],
-                                Storage = STORAGE_SP_Vol_net[seq(5,nstress,by=12)],
-                                Wells =  WELLS_SP_Vol_net[seq(5,nstress,by=12)],
-                                Recharge = RECHARGE_SP_Vol_net[seq(5,nstress,by=12)],
-                                ET = ET_SEGMENTS_SP_Vol_net[seq(5,nstress,by=12)],
-                                Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(5,nstress,by=12)],
-                                Drains = DRAINS_SP_Vol_net[seq(5,nstress,by=12)])
-March_netWB_TAF = data.frame(Date = StartingMonths[seq(6,nstress,by=12)],
-                             Storage = STORAGE_SP_Vol_net[seq(6,nstress,by=12)],
-                             Wells =  WELLS_SP_Vol_net[seq(6,nstress,by=12)],
-                             Recharge = RECHARGE_SP_Vol_net[seq(6,nstress,by=12)],
-                             ET = ET_SEGMENTS_SP_Vol_net[seq(6,nstress,by=12)],
-                             Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(6,nstress,by=12)],
-                             Drains = DRAINS_SP_Vol_net[seq(6,nstress,by=12)])
-April_netWB_TAF = data.frame(Date = StartingMonths[seq(7,nstress,by=12)],
-                             Storage = STORAGE_SP_Vol_net[seq(7,nstress,by=12)],
-                             Wells =  WELLS_SP_Vol_net[seq(7,nstress,by=12)],
-                             Recharge = RECHARGE_SP_Vol_net[seq(7,nstress,by=12)],
-                             ET = ET_SEGMENTS_SP_Vol_net[seq(7,nstress,by=12)],
-                             Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(7,nstress,by=12)],
-                             Drains = DRAINS_SP_Vol_net[seq(7,nstress,by=12)])
-May_netWB_TAF = data.frame(Date = StartingMonths[seq(8,nstress,by=12)],
-                           Storage = STORAGE_SP_Vol_net[seq(8,nstress,by=12)],
-                           Wells =  WELLS_SP_Vol_net[seq(8,nstress,by=12)],
-                           Recharge = RECHARGE_SP_Vol_net[seq(8,nstress,by=12)],
-                           ET = ET_SEGMENTS_SP_Vol_net[seq(8,nstress,by=12)],
-                           Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(8,nstress,by=12)],
-                           Drains = DRAINS_SP_Vol_net[seq(8,nstress,by=12)])
-June_netWB_TAF = data.frame(Date = StartingMonths[seq(9,nstress,by=12)],
-                            Storage = STORAGE_SP_Vol_net[seq(9,nstress,by=12)],
-                            Wells =  WELLS_SP_Vol_net[seq(9,nstress,by=12)],
-                            Recharge = RECHARGE_SP_Vol_net[seq(9,nstress,by=12)],
-                            ET = ET_SEGMENTS_SP_Vol_net[seq(9,nstress,by=12)],
-                            Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(9,nstress,by=12)],
-                            Drains = DRAINS_SP_Vol_net[seq(9,nstress,by=12)])
-July_netWB_TAF = data.frame(Date = StartingMonths[seq(10,nstress,by=12)],
-                            Storage = STORAGE_SP_Vol_net[seq(10,nstress,by=12)],
-                            Wells =  WELLS_SP_Vol_net[seq(10,nstress,by=12)],
-                            Recharge = RECHARGE_SP_Vol_net[seq(10,nstress,by=12)],
-                            ET = ET_SEGMENTS_SP_Vol_net[seq(10,nstress,by=12)],
-                            Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(10,nstress,by=12)],
-                            Drains = DRAINS_SP_Vol_net[seq(10,nstress,by=12)])
-August_netWB_TAF = data.frame(Date = StartingMonths[seq(11,nstress,by=12)],
-                              Storage = STORAGE_SP_Vol_net[seq(11,nstress,by=12)],
-                              Wells =  WELLS_SP_Vol_net[seq(11,nstress,by=12)],
-                              Recharge = RECHARGE_SP_Vol_net[seq(11,nstress,by=12)],
-                              ET = ET_SEGMENTS_SP_Vol_net[seq(11,nstress,by=12)],
-                              Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(11,nstress,by=12)],
-                              Drains = DRAINS_SP_Vol_net[seq(11,nstress,by=12)])
-September_netWB_TAF = data.frame(Date = StartingMonths[seq(12,nstress,by=12)],
-                                 Storage = STORAGE_SP_Vol_net[seq(12,nstress,by=12)],
-                                 Wells =  WELLS_SP_Vol_net[seq(12,nstress,by=12)],
-                                 Recharge = RECHARGE_SP_Vol_net[seq(12,nstress,by=12)],
-                                 ET = ET_SEGMENTS_SP_Vol_net[seq(12,nstress,by=12)],
-                                 Stream_Leakage = STREAM_LEAKAGE_SP_Vol_net[seq(12,nstress,by=12)],
-                                 Drains = DRAINS_SP_Vol_net[seq(12,nstress,by=12)])
-
+month_abbv = format(seq(as.Date('1990/10/1'), as.Date('1991/9/30'), by = 'month'),'%b')
+Water_Budget_By_Month = Volumetric_Flux
+Water_Budget_By_Month$Month = strtrim(Water_Budget_By_Month$Month,3)
+for (i in 1:12){
+  eval(parse(text = paste0("Water_Budget_",month_abbv[i]," = subset(Water_Budget_By_Month, select = paste0(WB_Components,'_net_m3'), Month == '",month_abbv[i],"')")))
+  eval(parse(text = paste0('Water_Budget_',month_abbv[i],'$WY = seq(1991,2011)')))
+}
 ##############################################################################################
 ##############             CREATE Annual WATER BUDGETS            ############################
 ##############################################################################################
+Water_Budget_By_Year = subset(Volumetric_Flux, select = paste0(WB_Components,'_net_m3'))
+Water_Budget_By_Year$WY = rep(seq(1991,2011),each = 12)
+Water_Budget_By_Year = aggregate(.~WY, Water_Budget_By_Year, FUN = sum)
+
 Net_Flux_Volume_m3 = data.frame(Storage = STORAGE_SP_Vol_net,
                                 Wells =  WELLS_SP_Vol_net,
                                 Recharge = RECHARGE_SP_Vol_net,
