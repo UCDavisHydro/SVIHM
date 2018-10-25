@@ -74,26 +74,32 @@
     monthly%actualET           = monthly%actualET           + daily%actualET          ! Add daily actualET length to monthly total
     monthly%deficiency         = monthly%deficiency         + daily%deficiency        ! Add daily deficiency length to monthly total
     monthly%ET_active          = monthly%ET_active          + daily%ET_active         ! Add daily ET length to monthly total    
+    monthly%effprecip          = monthly%effprecip          + daily%effprecip         ! Add daily effective precip length to monthly total    
+    monthly%change_in_storage  = monthly%change_in_storage  + daily%change_in_storage ! Add daily change in storage length to monthly total    
     
     end subroutine monthly_SUM
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     subroutine annual_SUM
 
-    yearly%irrigation         = yearly%irrigation         + daily%irrigation         ! Add daily irrigation length to yearly total
-    yearly%well               = yearly%well               + daily%well               ! Add daily pumping length to yearly total   
-    yearly%recharge           = yearly%recharge           + daily%recharge           ! Add daily recharge length to yearly total  
-    yearly%moisture           = yearly%moisture           + daily%moisture           ! Add daily moisture length to yearly total  
-    yearly%evapotrasp         = yearly%evapotrasp         + daily%evapotrasp         ! Add daily ET length to yearly total        
-    yearly%actualET           = yearly%actualET           + daily%actualET           ! Add daily actualET length to yearly total  
-    yearly%deficiency         = yearly%deficiency         + daily%deficiency         ! Add daily deficiency length to yearly total
+    yearly%irrigation          = yearly%irrigation          + daily%irrigation         ! Add daily irrigation length to yearly total
+    yearly%well                = yearly%well                + daily%well               ! Add daily pumping length to yearly total   
+    yearly%recharge            = yearly%recharge            + daily%recharge           ! Add daily recharge length to yearly total  
+    yearly%moisture            = yearly%moisture            + daily%moisture           ! Add daily moisture length to yearly total  
+    yearly%evapotrasp          = yearly%evapotrasp          + daily%evapotrasp         ! Add daily ET length to yearly total        
+    yearly%actualET            = yearly%actualET            + daily%actualET           ! Add daily actualET length to yearly total  
+    yearly%deficiency          = yearly%deficiency          + daily%deficiency         ! Add daily deficiency length to yearly total
+    yearly%ET_active           = yearly%ET_active           + daily%ET_active          ! Add daily ET length to yearly total    
+    yearly%effprecip           = yearly%effprecip           + daily%effprecip          ! Add daily effective precip length to yearly total    
+    yearly%change_in_storage   = yearly%change_in_storage   + daily%change_in_storage  ! Add daily change in storage length to yearly total    
+    
     end subroutine annual_SUM
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     subroutine monthly_volume_out
 
-    integer :: ip, ilanduse
+    integer       :: ip, ilanduse
     integer, save :: imonth = 0
-
+    
     imonth = imonth+1
     subwnwell = 0.       
     subwnirrig = 0.
@@ -101,7 +107,8 @@
     subwnactualET = 0.
     subwnrecharge = 0.
     subwndeficiency = 0.
-    subwnmoisture = 0.                            
+    subwnmoisture = 0.      
+    subwnstorage = 0.                      
                               
     landusewell = 0.
     landuseirrig = 0.
@@ -110,6 +117,7 @@
     landusedeficiency = 0.
     landuseactualET = 0.
     landusemoisture = 0.
+    landusestorage  = 0.
     
     call convert_length_to_volume      
     
@@ -159,13 +167,16 @@
     write(110,'(i3,9F20.8)') imonth, subwndeficiency(:)
     write(114,'(i3,9F20.8)') imonth, subwnmoisture(:)
      
-    write(106,'(i8,5F20.8)') imonth, landusewell(:)    
-    write(107,'(i8,5F20.8)') imonth, landuseirrig(:)   
-    write(108,'(i8,5F20.8)') imonth, landuseevapo(:) 
-    write(109,'(i8,5F20.8)') imonth, landuserecharge(:)
-    write(111,'(i8,5F20.8)') imonth, landusedeficiency(:)
-    write(112,'(i8,5F20.8)') imonth, landuseactualET(:)
-    write(115,'(i3,9F20.8)') imonth, landusemoisture(:)
+    write(106,'(i3,5F20.8)') imonth, landusewell(:)    
+    write(107,'(i3,5F20.8)') imonth, landuseirrig(:)   
+    write(108,'(i3,5F20.8)') imonth, landuseevapo(:) 
+    write(109,'(i3,5F20.8)') imonth, landuserecharge(:)
+    write(111,'(i3,5F20.8)') imonth, landusedeficiency(:)
+    write(112,'(i3,5F20.8)') imonth, landuseactualET(:)
+    write(115,'(i3,5F20.8)') imonth, landusemoisture(:)
+    
+    write(116,'(i4,6F20.0)')imonth, sum(monthly%effprecip_vol), (sum(monthly%irrigation_vol)-sum(monthly%well_vol)), &
+    sum(monthly%well_vol), -sum(monthly%actualET_vol), -sum(monthly%recharge_vol), -sum(monthly%change_in_storage_vol)
     
     end subroutine monthly_volume_out
     
@@ -805,22 +816,26 @@ end subroutine monthly_pumping
 	
     subroutine convert_length_to_volume
 
-    monthly%irrigation_vol  = monthly%irrigation *poly%area
-    monthly%evapotrasp_vol  = monthly%evapotrasp *poly%area
-    monthly%moisture_vol    = monthly%moisture   *poly%area
-    monthly%actualET_vol    = monthly%actualET   *poly%area
-    monthly%recharge_vol    = monthly%recharge   *poly%area
-    monthly%well_vol        = monthly%well       *poly%area
-    monthly%deficiency_vol  = monthly%deficiency *poly%area
+    monthly%irrigation_vol         = monthly%irrigation        *poly%area
+    monthly%evapotrasp_vol         = monthly%evapotrasp        *poly%area
+    monthly%moisture_vol           = monthly%moisture          *poly%area
+    monthly%actualET_vol           = monthly%actualET          *poly%area
+    monthly%recharge_vol           = monthly%recharge          *poly%area
+    monthly%well_vol               = monthly%well              *poly%area
+    monthly%deficiency_vol         = monthly%deficiency        *poly%area      
+    monthly%effprecip_vol          = monthly%effprecip         *poly%area      
+    monthly%change_in_storage_vol  = monthly%change_in_storage *poly%area
+
+    yearly%irrigation_vol          = yearly%irrigation         *poly%area
+    yearly%evapotrasp_vol          = yearly%evapotrasp         *poly%area
+    yearly%moisture_vol            = yearly%moisture           *poly%area
+    yearly%actualET_vol            = yearly%actualET           *poly%area
+    yearly%recharge_vol            = yearly%recharge           *poly%area
+    yearly%well_vol                = yearly%well               *poly%area
+    yearly%deficiency_vol          = yearly%deficiency         *poly%area
+    yearly%effprecip_vol           = yearly%effprecip          *poly%area      
+    yearly%change_in_storage_vol   = yearly%change_in_storage  *poly%area
     
-
-    yearly%irrigation_vol   = yearly%irrigation  *poly%area
-    yearly%evapotrasp_vol   = yearly%evapotrasp  *poly%area
-    yearly%moisture_vol     = yearly%moisture    *poly%area
-    yearly%actualET_vol     = yearly%actualET    *poly%area
-    yearly%recharge_vol     = yearly%recharge    *poly%area
-    yearly%well_vol         = yearly%well        *poly%area
-
    end subroutine convert_length_to_volume
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
