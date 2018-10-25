@@ -1,48 +1,49 @@
     MODULE define_poly
 
     type polygon
-        INTEGER           :: subwn
-        INTEGER           :: landuse
-        INTEGER           :: irr_type
-        REAL  :: area
-        INTEGER           :: id_well
-        INTEGER           :: water_source
-        REAL  :: WC8
-        INTEGER           :: rotation
-        REAL  :: av_recharge
-        INTEGER           :: irr_flag
-        INTEGER           :: WL2CP_year
-        INTEGER           :: ILR_Flag
-        LOGICAL           :: ILR_Active
+      INTEGER   :: subwn
+      INTEGER   :: landuse
+      INTEGER   :: irr_type
+      REAL      :: area
+      INTEGER   :: id_well
+      INTEGER   :: water_source
+      REAL      :: WC8
+      INTEGER   :: rotation
+      REAL      :: av_recharge
+      INTEGER   :: irr_flag
+      INTEGER   :: WL2CP_year
+      INTEGER   :: ILR_Flag
+      LOGICAL   :: ILR_Active
     end type
     
     type accumulator
-    	REAL :: irrigation
-    	REAL :: recharge
-    	REAL :: well
-    	REAL :: moisture
-    	REAL :: evapotrasp
-      REAL :: actualET
-      REAL :: deficiency
-      REAL :: change_in_storage
-      REAL :: effprecip
-      REAL :: budget
-      INTEGER          :: daydef
-      INTEGER          :: ET_active
-      REAL :: irrigation_vol
-    	REAL :: recharge_vol
-    	REAL :: well_vol
-    	REAL :: moisture_vol
-    	REAL :: evapotrasp_vol
-      REAL :: actualET_vol
-      REAL :: deficiency_vol
-      REAL :: change_in_storage_vol
+    	REAL      :: irrigation
+    	REAL      :: recharge
+    	REAL      :: well
+    	REAL      :: moisture
+    	REAL      :: evapotrasp
+      REAL      :: actualET
+      REAL      :: deficiency
+      REAL      :: change_in_storage
+      REAL      :: effprecip
+      REAL      :: budget
+      INTEGER   :: daydef
+      INTEGER   :: ET_active
+      REAL      :: irrigation_vol
+    	REAL      :: recharge_vol
+    	REAL      :: well_vol
+    	REAL      :: moisture_vol
+    	REAL      :: evapotrasp_vol
+      REAL      :: actualET_vol
+      REAL      :: deficiency_vol
+      REAL      :: change_in_storage_vol
+      REAL      :: effprecip_vol
     end type
 
     type well
         INTEGER :: well_name, poly_id, layer, well_row, well_col 
-        REAL :: coordx, coordy, monthly_vol, monthly_rate
-        REAL :: daily_well_vol, monthly_well_vol, monthly_well_rate
+        REAL    :: coordx, coordy, monthly_vol, monthly_rate
+        REAL    :: daily_well_vol, monthly_well_vol, monthly_well_rate
     end type
     
   INTEGER :: npoly, nrot, total_n_wells
@@ -145,37 +146,43 @@
 
      subroutine zero_month
      
-         monthly%irrigation = 0.
-         monthly%recharge   = 0.
-         monthly%well       = 0.
-         monthly%moisture   = 0.
-         monthly%evapotrasp = 0.
-         monthly%actualET   = 0.
-         monthly%deficiency = 0.
+         monthly%irrigation        = 0.
+         monthly%recharge          = 0.
+         monthly%well              = 0.
+         monthly%moisture          = 0.
+         monthly%evapotrasp        = 0.
+         monthly%actualET          = 0.
+         monthly%deficiency        = 0.
+         monthly%effprecip         = 0.
+         monthly%change_in_storage = 0.
      
      end subroutine zero_month
 
  subroutine zero_year
      
-         yearly%irrigation = 0.
-         yearly%recharge   = 0.
-         yearly%well       = 0.
-         yearly%moisture   = 0.
-         yearly%evapotrasp = 0.
-         yearly%actualET   = 0.
-         yearly%deficiency = 0.
+         yearly%irrigation        = 0.
+         yearly%recharge          = 0.
+         yearly%well              = 0.
+         yearly%moisture          = 0.
+         yearly%evapotrasp        = 0.
+         yearly%actualET          = 0.
+         yearly%deficiency        = 0. 
+         yearly%effprecip         = 0. 
+         yearly%change_in_storage = 0.
      
      end subroutine zero_year
     
      subroutine zero_before
      
-         before%irrigation = 0.
-         before%recharge   = 0.
-         before%well       = 0.
-         before%moisture   = 0.
-         before%evapotrasp = 0.
-         before%actualET   = 0.
-         before%deficiency = 0.
+         before%irrigation        = 0.
+         before%recharge          = 0.
+         before%well              = 0.
+         before%moisture          = 0.
+         before%evapotrasp        = 0.
+         before%actualET          = 0.
+         before%deficiency        = 0.
+         before%effprecip         = 0.
+         before%change_in_storage = 0.
          
      end subroutine zero_before
      

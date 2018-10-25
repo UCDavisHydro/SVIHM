@@ -256,6 +256,9 @@
    open (unit=114, file='monthly_moisture_by_subw.dat') 
    open (unit=115, file='monthly_moisture_by_luse.dat') 
    
+   open (unit=116, file='monthly_water_budget.dat')
+   write(116,*)'Stress_Period Precip SW_Irr GW_Irr ET Recharge Storage'
+   
 !   open (unit=202, file='yearly_well_by_subw.dat')
 !   open (unit=203, file='yearly_irrig_by_subw.dat')
 !   open (unit=204, file='yearly_evapo_by_subw.dat')
@@ -320,7 +323,7 @@
        endif
 		   
 		   do ip=1, npoly    
-        
+                  
 	       if (imonth==3 .and. jday==31 .and. ip==2119) then ! If last day of the year, set irrigation flags and logical to zero
 			     poly%irr_flag = 0         
 			     irrigating = .false.           
@@ -350,11 +353,10 @@
        call pumping(ip, jday, total_n_wells, npoly)   ! Stream depletion subroutine
 		   call monthly_SUM      ! add daily value to monthly total (e.g., monthly%irrigation = monthly%irrigation + daily%irrigation)
        call annual_SUM       ! add daily value to yearly total (e.g., yearly%irrigation = yearly%irrigation + daily%irrigation)
+       ! if (jday==numdays) call SFR_streamflow(numdays, imonth)   ! Convert remaining surface water to SFR inflows at end of the month
        if (jday==numdays) call SFR_streamflow(numdays, imonth)   ! Convert remaining surface water to SFR inflows at end of the month
-       
        enddo             ! End of day loop
        jday = jday -1 ! reset jday to number of days in month (incremented to ndays +1 in do loop above)
-       
        call monthly_out_length(im)
        call monthly_pumping(im, jday, total_n_wells)
 		   call ET_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells,npoly)
@@ -573,7 +575,7 @@
     rch = max(0., (before(ip)%moisture+precip_adjusted+daily(ip)%irrigation-daily(ip)%actualET)-poly(ip)%WC8 )
     daily(ip)%recharge = rch 
   else if (poly(ip)%landuse==4) then  ! noET/NoIrr 
-    daily(ip)%recharge = precip_adjusted	
+    daily(ip)%recharge = daily(ip)%effprecip
   endif
   daily(ip)%moisture=max(0.,before(ip)%moisture+precip_adjusted+daily(ip)%irrigation-daily(ip)%actualET-daily(ip)%recharge)
 
@@ -583,11 +585,9 @@
 !  else
 !      daily(ip)%deficiency = 0.
 !  endif
-
-        call waterbudget(ip, precip_adjusted)
-
+  CALL waterbudget(ip, precip_adjusted)
+  daily(ip)%change_in_storage = daily(ip)%moisture - before(ip)%moisture
   before(ip)%moisture = daily(ip)%moisture
-  daily(ip)%change_in_storage = precip_adjusted+daily(ip)%irrigation-daily(ip)%actualET- daily(ip)%recharge 
   END SUBROUTINE RECHARGE
 
 !****************************************************************************
@@ -602,6 +602,7 @@
   DOUBLE PRECISION    :: precip_adjusted
 !  DOUBLE PRECISION:: PRECIP, RCH
 
+  
   daily(ip)%budget = daily(ip)%moisture-before(ip)%moisture+daily(ip)%actualET+daily(ip)%recharge- &
                      precip_adjusted-daily(ip)%irrigation       
 

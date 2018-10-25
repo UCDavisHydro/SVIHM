@@ -7,16 +7,15 @@ MODULE irrigationmodule
   DOUBLE PRECISION:: kc_pasture, kc_pasture_mult
   DOUBLE PRECISION:: irreff_flood, irreff_wl_LU25, irreff_cp_LU25, irreff_wl_LU2, irreff_cp_LU2
   DOUBLE PRECISION :: AV_REF_ET_1a, AV_REF_ET_1b, AV_REF_ET_2, REF_ET
-  DOUBLE PRECISION :: precip_adjusted
+  DOUBLE PRECISION :: precip_adjusted, monthly_precip_vol
   DOUBLE PRECISION :: EF_SF_Ratio, Sugar_Ratio, Johnson_Ratio, Crystal_Ratio, Patterson_Ratio
   INTEGER, parameter:: nsubwn = 9
   INTEGER, parameter:: nlanduse = 5
-  
   LOGICAL :: irrigating 
-  DOUBLE PRECISION, DIMENSION(nsubwn) :: streamflow_in, streamflow_out, sw_irr, subwnwell, subwnactualET
-  DOUBLE PRECISION, DIMENSION(nsubwn) :: subwnirrig, subwnevapo, subwnrecharge, subwndeficiency, subwnmoisture
+  DOUBLE PRECISION, DIMENSION(nsubwn) :: streamflow_in, streamflow_out, sw_irr, subwnwell, subwnactualET 
+  DOUBLE PRECISION, DIMENSION(nsubwn) :: subwnirrig, subwnevapo, subwnrecharge, subwndeficiency, subwnmoisture, subwnstorage
   DOUBLE PRECISION, DIMENSION(nlanduse) :: landuseirrig, landuseevapo, landusedeficiency
-  DOUBLE PRECISION, DIMENSION(nlanduse) :: landusewell, landuserecharge,landuseactualET, landusemoisture
+  DOUBLE PRECISION, DIMENSION(nlanduse) :: landusewell, landuserecharge,landuseactualET, landusemoisture, landusestorage
   DOUBLE PRECISION, DIMENSION (1:32) :: SFR_Flows
   
   contains
@@ -54,15 +53,20 @@ MODULE irrigationmodule
    
   if (sum(poly%irr_flag).ge.250) irrigating = .true.      ! If 20% of the fields are irrigating (by number, not area; 1251 irrigated fields), set logical to true
 
-  daily(ip)%irrigation= 0.                                ! Reset daily irrigation value to zero
-  daily(ip)%well=0.                                       ! Reset daily pumping value to zero
-
+  daily(ip)%irrigation = 0.                                ! Reset daily irrigation value to zero
+  daily(ip)%well       = 0.                                ! Reset daily pumping value to zero
+  daily(ip)%effprecip  = 0.                                ! Reset daily effective precip value to zero
+  daily(ip)%evapotrasp = 0.                                ! Reset daily ET value to zero
+  daily(ip)%recharge   = 0.                                ! Reset daily recharge value to zero 
+  daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
+  
   select case (poly(ip)%landuse)
     case (25)   ! alfalfa / grain
       if(poly(ip)%rotation == 11) then
         daily(ip)%evapotrasp=REF_ET*Kc_alfalfa*kc_alfalfa_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
         irreff_cp = irreff_cp_LU25
+        daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
         if ((imonth==6 .and. jday.ge.25 ) .or. (imonth>6)) then  ! If  March 25 - August 31
           if ((daily(ip)%moisture.LT.(0.625*poly(ip)%WC8)) .or. (imonth==8 .and. jday.ge.15) .or. (imonth>8) .or. irrigating) then  ! If soil moisture is < 37.5% total soil moisture storage, or after May 15th, or 20% of fields have started irrigating  
             call IRRIGATION_RULESET(imonth, jday, ip, irreff_wl, irreff_cp)
@@ -72,6 +76,7 @@ MODULE irrigationmodule
         daily(ip)%evapotrasp=REF_ET*Kc_grain*kc_grain_mult  !Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
         irreff_cp = irreff_cp_LU25
+        daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
         if ((imonth==6 .and. jday.ge.16 ) .or. (imonth.ge.7 .and. imonth.le.9 ) .or. (imonth==10 .and. jday.le.10)) then  ! If  March 16 - July 10
           if ((daily(ip)%moisture.LT.(0.625*0.5*poly(ip)%WC8)) &
           .or. (imonth==8 .and. jday.ge.15) .or. (imonth>8) .or. irrigating) then  ! If soil moisture is < 18.75% of total soil moisture storage, or after May 15th, or 20% of fields have started irrigating	
@@ -83,6 +88,7 @@ MODULE irrigationmodule
         daily(ip)%evapotrasp=REF_ET*Kc_pasture*kc_pasture_mult  !Set ET to current value for the day
         irreff_wl = irreff_wl_LU2
         irreff_cp = irreff_cp_LU2
+        daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
         if ((imonth==7 .and. jday.ge.15 ) .or. (imonth.ge.8) .or. (imonth==0) .or. (imonth ==1 .and. jday.le.15)) then  ! If  April 15 - October 15
           if ((daily(ip)%moisture.LT.(0.45*0.5*poly(ip)%WC8)) &
            .or. (imonth==8 .and. jday.ge.15) .or. (imonth>8) .or. irrigating) then  ! If soil moisture is < 77.5% total moisture storage, or after May 15th, or 20% of fields have started irrigating
@@ -90,9 +96,11 @@ MODULE irrigationmodule
           end if
         end if
     case (3)    ! ET_noIRR
-        call ET_noIRR(imonth, jday, ip)
+    	daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
+      call ET_noIRR(imonth, jday, ip)
     case (4)    ! noET_noIRR
-        call noET_noIRR (imonth, jday, ip)
+      daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
+      call noET_noIRR (imonth, jday, ip)
     case (6)    ! water landuse type
   	  ! do nothing
   end select
@@ -104,8 +112,7 @@ MODULE irrigationmodule
  SUBROUTINE IRRIGATION_RULESET(imonth, jday, ip, irreff_wl, irreff_cp)
    integer :: imonth, jday, ip
    REAL, intent(in)    :: irreff_wl, irreff_cp
-   
-   
+        
    poly(ip)%irr_flag = 1  ! Field has started irrigating
    if (poly(ip)%irr_type==1) then ! Flood irrigation
      daily(ip)%irrigation=max (0.,(1/irreff_flood )*(daily(ip)%evapotrasp-precip_adjusted))   
@@ -261,6 +268,7 @@ MODULE irrigationmodule
         daily(ip)%evapotrasp=REF_ET*Kc_alfalfa*kc_alfalfa_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
         irreff_cp = irreff_cp_LU25
+        daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
         if ((imonth==6 .and. jday.ge.25 ) .or. (imonth>6)) then  ! If  March 25 - August 31
           if ((daily(ip)%moisture.LT.(0.625*poly(ip)%WC8)) .or. (imonth==8 .and. jday.ge.15) .or. (imonth>8) .or. irrigating) then  ! If soil moisture is < 37.5% total soil moisture storage, or after May 15th, or 20% of fields have started irrigating  
             call IRRIGATION_RULESET_ILR(imonth, jday, ip, irreff_wl, irreff_cp)
@@ -270,6 +278,7 @@ MODULE irrigationmodule
         daily(ip)%evapotrasp=REF_ET*Kc_grain*kc_grain_mult  !Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
         irreff_cp = irreff_cp_LU25
+        daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
         if ((imonth==6 .and. jday.ge.16 ) .or. (imonth.ge.7 .and. imonth.le.9 ) .or. (imonth==10 .and. jday.le.10)) then  ! If  March 16 - July 10
           if ((daily(ip)%moisture.LT.(0.625*0.5*poly(ip)%WC8)) &
           .or. (imonth==8 .and. jday.ge.15) .or. (imonth>8) .or. irrigating) then  ! If soil moisture is < 18.75% of total soil moisture storage, or after May 15th, or 20% of fields have started irrigating	
@@ -281,6 +290,7 @@ MODULE irrigationmodule
         daily(ip)%evapotrasp=REF_ET*Kc_pasture*kc_pasture_mult  !Set ET to current value for the day
         irreff_wl = irreff_wl_LU2
         irreff_cp = irreff_cp_LU2
+        daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
         if ((imonth==7 .and. jday.ge.15 ) .or. (imonth.ge.8) .or. (imonth==0) .or. (imonth ==1 .and. jday.le.15)) then  ! If  April 15 - October 15
           if ((daily(ip)%moisture.LT.(0.45*0.5*poly(ip)%WC8)) &
            .or. (imonth==8 .and. jday.ge.15) .or. (imonth>8) .or. irrigating) then  ! If soil moisture is < 77.5% total moisture storage, or after May 15th, or 20% of fields have started irrigating
@@ -288,9 +298,11 @@ MODULE irrigationmodule
           end if
         end if
     case (3)    ! ET_noIRR
-        call ET_noIRR(imonth, jday, ip)
+      daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
+      call ET_noIRR(imonth, jday, ip)
     case (4)    ! noET_noIRR
-        call noET_noIRR (imonth, jday, ip)
+    	daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
+      call noET_noIRR (imonth, jday, ip)
     case (6)    ! water landuse type
   	  ! do nothing
   end select
@@ -564,14 +576,18 @@ MODULE irrigationmodule
 !*************************************************************************************************************************************
 
   SUBROUTINE noET_noIRR(imonth, jday, ip)
-  
+  ! Since the tailings are a much larger percentage of this category than the urban areas (e.g., Etna), any 
+  ! precipitation is assumed to go to groundwater recharge since there is limited storage due to the coarse material.
+  ! There should be little to no recharge in the impermeable urban areas, but they are a much smaller proportion 
+  ! compared with the tailings so we have neglected them for now. In the future it may be advisable to split the
+  ! noET_noIrr category to urban and tailings.
     integer :: imonth, jday, ip
        
     daily(ip)%irrigation=0.
     daily(ip)%well=0.      
     daily(ip)%moisture=0.  
     daily(ip)%evapotrasp=0.
-                                       
+                                      
   return
   end SUBROUTINE noET_noIRR
 
