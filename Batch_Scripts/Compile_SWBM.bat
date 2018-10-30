@@ -12,7 +12,7 @@ del /S *.o
 del /S *.mod0
 del /S *.mod
 
-Echo SWBM successfully compiled
+if exist ..\bin\SWBM.exe Echo SWBM successfully compiled
 pause
 
 
