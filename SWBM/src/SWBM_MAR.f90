@@ -54,7 +54,7 @@
 ! Precip_adjusted will be used instead than effprecip
    call cpu_time(start)
    DATA nday / 30,31,30,31,31,28,31,30,31,30,31,31 /            ! The months are shifted by one because the first index location is zero due to use of MOD function
-   open (unit=800, file='SWBM_log.rec')                         ! Open record file for screen output
+   open (unit=800, file='SWBM_log_MAR.rec')                         ! Open record file for screen output
  !  nmonth = 12*21
    precip_adjusted = 0.
    Total_Ref_ET = 0.
@@ -110,7 +110,7 @@
 !    write(890,'(210i5)') output_zone_matrix   
 
 
-   open(unit=532,file='5daysdeficiency.dat')
+   open(unit=532,file='5daysdeficiency_MAR.dat')
 !   open(unit=887,file='precip_m_LowBias_July2017.txt')         ! Missing data assumed to have value of zero
 !   open(unit=887,file='precip_m_Replacement_July2017.txt')     ! Missing data replaced with value at other station (CAL and FJN)  
    open(unit=887,file='precip.txt', status = 'old')                    ! Missing data replaced with value obtained from regression using other stations
@@ -119,40 +119,40 @@
    open(unit=80, file='kc_alfalfa.txt', status = 'old')
    open(unit=81, file='kc_pasture.txt', status = 'old')
    
-   open(unit=60, file='subwatershed_area_m2.dat')
+   open(unit=60, file='subwatershed_area_m2_MAR.dat')
    write(60,'(" Month Scott French Etna Patterson Kidder Moffet Mill Shackleford Tailings")')
-   open(unit=61, file='landuse_area_m2.dat')
+   open(unit=61, file='landuse_area_m2_MAR.dat')
    write(61,'(" Month Alfalfa Grain Pasture Et/noIrr noET/noIrr Water")')
-   open(unit=62, file='landuse_area_m2_detailed.dat')
+   open(unit=62, file='landuse_area_m2_detailed_MAR.dat')
    write(62,'(" SP A_Irr A_n* A_SUB A_DRY G_Irr G_n* G_SUB G_DRY P_Irr P_n* P_SUB P_DRY ET/noIrr noET/noIrr Water Total")')
-   open(unit=63, file='landuse_area_acres_detailed.dat')
+   open(unit=63, file='landuse_area_acres_detailed_MAR.dat')
    write(63,'(" SP A_Irr A_n* A_SUB A_DRY G_Irr G_n* G_SUB G_DRY P_Irr P_n* P_SUB P_DRY ET/noIrr noET/noIrr Water Total")')
    
-   open(unit=600, file='Daily_out_Alfalfa-Grain_SW_Flood.dat')               ! Daily output for selected fields
-   open(unit=601, file='Daily_out_Alfalfa-Grain_SW_WL.dat')                  ! Daily output for selected fields
-   open(unit=602, file='Daily_out_Alfalfa-Grain_SW_CP.dat')                  ! Daily output for selected fields
-   open(unit=603, file='Daily_out_Alfalfa-Grain_GW_Flood.dat')               ! Daily output for selected fields
-   open(unit=604, file='Daily_out_Alfalfa-Grain_GW_WL.dat')                  ! Daily output for selected fields
-   open(unit=605, file='Daily_out_Alfalfa-Grain_GW_CP.dat')                  ! Daily output for selected fields
-   open(unit=606, file='Daily_out_Alfalfa-Grain_MIX_Flood.dat')              ! Daily output for selected fields
-   open(unit=607, file='Daily_out_Alfalfa-Grain_MIX_WL.dat')                 ! Daily output for selected fields
-   open(unit=608, file='Daily_out_Alfalfa-Grain_MIX_CP.dat')                 ! Daily output for selected fields
-   open(unit=609, file='Daily_out_Alfalfa-Grain_SUB_DRY.dat')                ! Daily output for selected fields
-   open(unit=610, file='Daily_out_Pasture_SW_Flood.dat')                     ! Daily output for selected fields
-   open(unit=611, file='Daily_out_Pasture_SW_WL.dat')                        ! Daily output for selected fields
-   open(unit=612, file='Daily_out_Pasture_SW_CP.dat')                        ! Daily output for selected fields
-   open(unit=613, file='Daily_out_Pasture_GW_Flood.dat')                     ! Daily output for selected fields
-   open(unit=614, file='Daily_out_Pasture_GW_WL.dat')                        ! Daily output for selected fields
-   open(unit=615, file='Daily_out_Pasture_GW_CP.dat')                        ! Daily output for selected fields
-   open(unit=616, file='Daily_out_Pasture_MIX_Flood.dat')                    ! Daily output for selected fields
-   open(unit=617, file='Daily_out_Pasture_MIX_WL.dat')                       ! Daily output for selected fields
-   open(unit=618, file='Daily_out_Pasture_MIX_CP.dat')                       ! Daily output for selected fields
-   open(unit=619, file='Daily_out_Pasture_SUB_DRY.dat')                      ! Daily output for selected fields
-   open(unit=620, file='Daily_out_ET-noIrr_Low_WC8.dat')                     ! Daily output for selected fields
-   open(unit=621, file='Daily_out_ET-noIrr_High_WC8.dat')                    ! Daily output for selected fields
-   open(unit=622, file='Daily_out_noET-noIrr.dat')                           ! Daily output for selected fields
-   open(unit=623, file='Daily_out_Water_Landuse.dat')                        ! Daily output for selected fields
-   open(unit=624, file='Daily_out_SW_Flood_DZ.dat')                          ! Daily output for selected fields
+   open(unit=600, file='Daily_out_Alfalfa-Grain_SW_Flood_MAR.dat')               ! Daily output for selected fields
+   open(unit=601, file='Daily_out_Alfalfa-Grain_SW_WL_MAR.dat')                  ! Daily output for selected fields
+   open(unit=602, file='Daily_out_Alfalfa-Grain_SW_CP_MAR.dat')                  ! Daily output for selected fields
+   open(unit=603, file='Daily_out_Alfalfa-Grain_GW_Flood_MAR.dat')               ! Daily output for selected fields
+   open(unit=604, file='Daily_out_Alfalfa-Grain_GW_WL_MAR.dat')                  ! Daily output for selected fields
+   open(unit=605, file='Daily_out_Alfalfa-Grain_GW_CP_MAR.dat')                  ! Daily output for selected fields
+   open(unit=606, file='Daily_out_Alfalfa-Grain_MIX_Flood_MAR.dat')              ! Daily output for selected fields
+   open(unit=607, file='Daily_out_Alfalfa-Grain_MIX_WL_MAR.dat')                 ! Daily output for selected fields
+   open(unit=608, file='Daily_out_Alfalfa-Grain_MIX_CP_MAR.dat')                 ! Daily output for selected fields
+   open(unit=609, file='Daily_out_Alfalfa-Grain_SUB_DRY_MAR.dat')                ! Daily output for selected fields
+   open(unit=610, file='Daily_out_Pasture_SW_Flood_MAR.dat')                     ! Daily output for selected fields
+   open(unit=611, file='Daily_out_Pasture_SW_WL_MAR.dat')                        ! Daily output for selected fields
+   open(unit=612, file='Daily_out_Pasture_SW_CP_MAR.dat')                        ! Daily output for selected fields
+   open(unit=613, file='Daily_out_Pasture_GW_Flood_MAR.dat')                     ! Daily output for selected fields
+   open(unit=614, file='Daily_out_Pasture_GW_WL_MAR.dat')                        ! Daily output for selected fields
+   open(unit=615, file='Daily_out_Pasture_GW_CP_MAR.dat')                        ! Daily output for selected fields
+   open(unit=616, file='Daily_out_Pasture_MIX_Flood_MAR.dat')                    ! Daily output for selected fields
+   open(unit=617, file='Daily_out_Pasture_MIX_WL_MAR.dat')                       ! Daily output for selected fields
+   open(unit=618, file='Daily_out_Pasture_MIX_CP_MAR.dat')                       ! Daily output for selected fields
+   open(unit=619, file='Daily_out_Pasture_SUB_DRY_MAR.dat')                      ! Daily output for selected fields
+   open(unit=620, file='Daily_out_ET-noIrr_Low_WC8_MAR.dat')                     ! Daily output for selected fields
+   open(unit=621, file='Daily_out_ET-noIrr_High_WC8_MAR.dat')                    ! Daily output for selected fields
+   open(unit=622, file='Daily_out_noET-noIrr_MAR.dat')                           ! Daily output for selected fields
+   open(unit=623, file='Daily_out_Water_Landuse_MAR.dat')                        ! Daily output for selected fields
+   open(unit=624, file='Daily_out_SW_Flood_DZ_MAR.dat')                          ! Daily output for selected fields
 
    write(600,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
    write(601,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
@@ -180,7 +180,7 @@
    write(623,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
    write(624,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
    
-   open(unit=900, file='Recharge_Total.dat')   
+   open(unit=900, file='Recharge_Total_MAR.dat')   
    write(900,'(a24)')'Total Recharge (m^3/day)'
    
    ip_AG_SW_Flood=171           ! Polygon ID for Daily output
@@ -209,62 +209,62 @@
    ip_Water_Landuse=2100        ! Polygon ID for Daily output
    ip_SW_Flood_DZ = 1627        ! Polygon ID for Daily output                                
                                                        
-   open(unit=91, file='well_out.dat')              
+   open(unit=91, file='well_out_MAR.dat')              
    write(91,'("#WELL: amount of monthly water pumped in each polygon")')
-   open(unit=530, file='Monthly_Pumping_Volume_By_Well.dat')
+   open(unit=530, file='Monthly_Pumping_Volume_By_Well_MAR.dat')
    write(530,*)'Monthly Pumping Volume (m^3) by well'
    write(530,'(172i12)')single_well(:)%well_name
-   open(unit=531, file='Monthly_Pumping_Rate_By_Well.dat')
+   open(unit=531, file='Monthly_Pumping_Rate_By_Well_MAR.dat')
    write(531,*)'Monthly Pumping Rate (m^3/day) by well'
    write(531,'(172i12)')single_well(:)%well_name
-   open(unit=537, file='daily_pumping.dat')
+   open(unit=537, file='daily_pumping_MAR.dat')
    write(537, *)"Daily pumping volume (m^3) for each well"
    write(537,'(200i12)')single_well(:)%well_name
-   open(unit=538, file='daily_average_RCH.dat')
+   open(unit=538, file='daily_average_RCH_MAR.dat')
    write(538, *)"Daily weighted averaged recharge caluclated in each well, to be averaged and used in stream depletion"
-   open(unit=92, file='irrig_out.dat')
+   open(unit=92, file='irrig_out_MAR.dat')
    write(92,'("#IRRIGATION: amount of monthly irrigation in each polygon")')   
-   open(unit=93, file='evapotrasp_out.dat')
+   open(unit=93, file='evapotrasp_out_MAR.dat')
    write(93,'("#Evapotrasp: amount of monthly evapotraspiration in each polygon")')
-   open(unit=94, file='recharge_out.dat')
+   open(unit=94, file='recharge_out_MAR.dat')
    write(94,'("#Recharge: amount of monthly recharge in each polygon")')
-   open(unit=84, file='SVIHM.rch')
-   open(unit=95, file='moisture_out.dat')
+   open(unit=84, file='SVIHM_MAR.rch')
+   open(unit=95, file='moisture_out_MAR.dat')
    write(95,'("#Moisture: amount of monthly moisture in each polygon")')
-   open(unit=96, file='actualET_out.dat')
+   open(unit=96, file='actualET_out_MAR.dat')
    write(96,'("#ActualET: amount of monthly actualET in each polygon")')
-   open(unit=97, file='deficiency_out.dat')
+   open(unit=97, file='deficiency_out_MAR.dat')
    write(97,'("#Deficiency: amount of monthly deficiency (ET-actualET) in each polygon")')
-   open(unit=98, file='well_out_flow.dat')
+   open(unit=98, file='well_out_flow_MAR.dat')
    write(98,'("#WELL: monthly FLOW pumped in each polygon")')
-   open(unit=120, file='ET_Active_Days.dat')                       
+   open(unit=120, file='ET_Active_Days_MAR.dat')                       
    write(120,'("Number of Days ET is Active in each polyon")')    
    open(unit=66, file='streamflow_input.txt', status='old')
    read(66,*)                                                        ! Read Header into nothing
 
-   open (unit=102, file='monthly_well_by_subw.dat')
-   open (unit=103, file='monthly_irrig_by_subw.dat')
-   open (unit=104, file='monthly_evapo_by_subw.dat')
-   open (unit=105, file='monthly_recharge_by_subw.dat')
-   open (unit=106, file='monthly_well_by_luse.dat')
-   open (unit=107, file='monthly_irrig_by_luse.dat')
-   open (unit=108, file='monthly_evapo_by_luse.dat')
-   open (unit=109, file='monthly_recharge_by_luse.dat')
-   open (unit=110, file='monthly_deficiency_by_subw.dat')
-   open (unit=111, file='monthly_deficiency_by_luse.dat')
-   open (unit=112, file='monthly_actualET_by_luse.dat')
-   open (unit=113, file='monthly_actualET_by_subw.dat')
-   open (unit=114, file='monthly_moisture_by_subw.dat') 
-   open (unit=115, file='monthly_moisture_by_luse.dat')
+   open (unit=102, file='monthly_well_by_subw_MAR.dat')
+   open (unit=103, file='monthly_irrig_by_subw_MAR.dat')
+   open (unit=104, file='monthly_evapo_by_subw_MAR.dat')
+   open (unit=105, file='monthly_recharge_by_subw_MAR.dat')
+   open (unit=106, file='monthly_well_by_luse_MAR.dat')
+   open (unit=107, file='monthly_irrig_by_luse_MAR.dat')
+   open (unit=108, file='monthly_evapo_by_luse_MAR.dat')
+   open (unit=109, file='monthly_recharge_by_luse_MAR.dat')
+   open (unit=110, file='monthly_deficiency_by_subw_MAR.dat')
+   open (unit=111, file='monthly_deficiency_by_luse_MAR.dat')
+   open (unit=112, file='monthly_actualET_by_luse_MAR.dat')
+   open (unit=113, file='monthly_actualET_by_subw_MAR.dat')
+   open (unit=114, file='monthly_moisture_by_subw_MAR.dat') 
+   open (unit=115, file='monthly_moisture_by_luse_MAR.dat')
    
-!   open (unit=202, file='yearly_well_by_subw.dat')
-!   open (unit=203, file='yearly_irrig_by_subw.dat')
-!   open (unit=204, file='yearly_evapo_by_subw.dat')
-!   open (unit=205, file='yearly_recharge_by_subw.dat')
-!   open (unit=206, file='yearly_well_by_luse.dat')
-!   open (unit=207, file='yearly_irrig_by_luse.dat')
-!   open (unit=208, file='yearly_evapo_by_luse.dat')
-!   open (unit=209, file='yearly_recharge_by_luse.dat')
+!   open (unit=202, file='yearly_well_by_subw_MAR.dat')
+!   open (unit=203, file='yearly_irrig_by_subw_MAR.dat')
+!   open (unit=204, file='yearly_evapo_by_subw_MAR.dat')
+!   open (unit=205, file='yearly_recharge_by_subw_MAR.dat')
+!   open (unit=206, file='yearly_well_by_luse_MAR.dat')
+!   open (unit=207, file='yearly_irrig_by_luse_MAR.dat')
+!   open (unit=208, file='yearly_evapo_by_luse_MAR.dat')
+!   open (unit=209, file='yearly_recharge_by_luse_MAR.dat')
 
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_ETS_template.txt SVIHM.ets')
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_SFR_template.txt SVIHM.sfr')
@@ -390,14 +390,14 @@
 
    integer id, ifile
    DOUBLE PRECISION, allocatable, dimension(:) :: dat, average, averagewell
-   open(unit=91, file='well_out.dat')
-   open(unit=92, file='irrig_out.dat')
-   open(unit=93, file='evapotrasp_out.dat')
-   open(unit=94, file='recharge_out.dat')
-   open(unit=95, file='moisture_out.dat')
-   open(unit=96, file='actualET_out.dat')
-   open(unit=97, file='deficiency_out.dat')
-   open(unit=98, file='well_out_flow.dat')
+   open(unit=91, file='well_out_MAR.dat')
+   open(unit=92, file='irrig_out_MAR.dat')
+   open(unit=93, file='evapotrasp_out_MAR.dat')
+   open(unit=94, file='recharge_out_MAR.dat')
+   open(unit=95, file='moisture_out_MAR.dat')
+   open(unit=96, file='actualET_out_MAR.dat')
+   open(unit=97, file='deficiency_out_MAR.dat')
+   open(unit=98, file='well_out_flow_MAR.dat')
 
    allocate( average(npoly), dat(npoly) )
    allocate( averagewell(total_n_wells) )
@@ -454,7 +454,7 @@
    AV_REF_ET_1b = 0.
    AV_REF_ET_2  = 0.
    open(unit=88,file="ref_et_new.txt", status = "old")
-!   open(unit=79, file='Kc_grain.dat')
+!   open(unit=79, file='Kc_grain_MAR.dat')
    do im=1, nmonth
       imonth=MOD(im,12)
       do jday=1, nday(imonth)
