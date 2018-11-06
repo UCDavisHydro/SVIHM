@@ -12,7 +12,7 @@ MODULE irrigationmodule
   INTEGER, parameter:: nsubwn = 9
   INTEGER, parameter:: nlanduse = 5
   LOGICAL :: irrigating 
-  DOUBLE PRECISION, DIMENSION(nsubwn) :: streamflow_in, streamflow_out, sw_irr, subwnwell, subwnactualET 
+  DOUBLE PRECISION, DIMENSION(nsubwn) :: streamflow_in, streamflow_out, sw_irr, subwnwell, subwnactualET
   DOUBLE PRECISION, DIMENSION(nsubwn) :: subwnirrig, subwnevapo, subwnrecharge, subwndeficiency, subwnmoisture, subwnstorage
   DOUBLE PRECISION, DIMENSION(nlanduse) :: landuseirrig, landuseevapo, landusedeficiency
   DOUBLE PRECISION, DIMENSION(nlanduse) :: landusewell, landuserecharge,landuseactualET, landusemoisture, landusestorage
@@ -42,7 +42,7 @@ MODULE irrigationmodule
     write(800,'(A11,F4.2)') "kc_noirr = ", kc_noirr
     return
   end subroutine read_kc_irreff
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   SUBROUTINE IRRIGATION(ip, imonth, jday, precip_adjusted)
 
@@ -58,11 +58,11 @@ MODULE irrigationmodule
   daily(ip)%effprecip  = 0.                                ! Reset daily effective precip value to zero
   daily(ip)%evapotrasp = 0.                                ! Reset daily ET value to zero
   daily(ip)%recharge   = 0.                                ! Reset daily recharge value to zero 
-  daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
+  daily(ip)%effprecip  = precip_adjusted                   ! Set effective precip 
   
   select case (poly(ip)%landuse)
     case (25)   ! alfalfa / grain
-      if(poly(ip)%rotation == 11) then
+      if(poly(ip)%rotation == 11) then                          ! Field is Alfalfa
         daily(ip)%evapotrasp=REF_ET*Kc_alfalfa*kc_alfalfa_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
         irreff_cp = irreff_cp_LU25
@@ -72,8 +72,8 @@ MODULE irrigationmodule
             call IRRIGATION_RULESET(imonth, jday, ip, irreff_wl, irreff_cp)
           end if
         end if
-      else if (poly(ip)%rotation == 12) then
-        daily(ip)%evapotrasp=REF_ET*Kc_grain*kc_grain_mult  !Set ET to current value for the day
+      else if (poly(ip)%rotation == 12) then                ! Field is Grain
+        daily(ip)%evapotrasp=REF_ET*Kc_grain*kc_grain_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
         irreff_cp = irreff_cp_LU25
         daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
@@ -85,7 +85,7 @@ MODULE irrigationmodule
       	end if
       end if
     case (2)    ! pasture
-        daily(ip)%evapotrasp=REF_ET*Kc_pasture*kc_pasture_mult  !Set ET to current value for the day
+        daily(ip)%evapotrasp=REF_ET*Kc_pasture*kc_pasture_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU2
         irreff_cp = irreff_cp_LU2
         daily(ip)%effprecip = precip_adjusted                    ! Set effective precip 
@@ -171,9 +171,9 @@ MODULE irrigationmodule
          end if              
          daily(ip)%irrigation = 0  ! Irrigation set to zero when surface-water supplies are exceeded
        end if 
-     else if (poly(ip)%water_source==2) then  ! Groundwater
+    else if (poly(ip)%water_source==2) then  ! Groundwater
        daily(ip)%well = daily(ip)%irrigation  ! All irrigation assigned to groundwater well     
-     else if (poly(ip)%water_source==3) then  ! Mixed water source
+    else if (poly(ip)%water_source==3) then  ! Mixed water source
        if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
          sw_irr(1) = sw_irr(1) + daily(ip)%irrigation * poly(ip)%area         ! Add daily irrigation to sw_irr counter
          sw_irr(9) = sw_irr(9) + daily(ip)%irrigation * poly(ip)%area         ! Add daily irrigation to sw_irr counter
@@ -236,6 +236,61 @@ MODULE irrigationmodule
    end if          
    return
  END SUBROUTINE IRRIGATION_RULESET
+ 
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  SUBROUTINE MAR(imonth,num_MAR_fields, MAR_fields, max_MAR_field_rate, max_MAR_total_vol, precip_adjusted, jday, moisture_save)
+  
+  integer, intent(in) :: num_MAR_fields, jday, imonth
+  integer             :: iMAR
+  integer, dimension(num_MAR_fields), intent(in) :: MAR_fields
+  real, dimension(num_MAR_fields), intent(in) :: max_MAR_field_rate
+  real, intent(in) :: max_MAR_total_vol
+  real, dimension(npoly), intent(in) :: moisture_save
+  DOUBLE PRECISION :: precip_adjusted, rch
+  
+  daily%MAR            = 0.                                ! Reset daily MAR array (linear)
+  daily%MAR_vol        = 0.                                ! Reset daily MAR array (volumetric)
+  
+  if (imonth==4 .or. imonth==5 .or. imonth==6) then
+    do iMAR=1, num_MAR_fields
+      daily(MAR_fields(iMAR))%MAR = max_MAR_field_rate(iMAR)
+      daily(MAR_fields(iMAR))%MAR_vol = daily(MAR_fields(iMAR))%MAR * poly(MAR_fields(iMAR))%area
+      if (sum(daily%MAR_vol)>max_MAR_total_vol) then                                                  ! Don't exceed 42cfs maximum per day
+        daily(MAR_fields(iMAR))%MAR_vol = 0.                                                          ! Reset MAR volume for field
+        daily(MAR_fields(iMAR))%MAR_vol = min(max_MAR_total_vol-sum(daily%MAR_vol),&
+                                              max_MAR_field_rate(iMAR)*poly(MAR_fields(iMAR))%area)   ! Minimum between available voume and max infiltration rate
+        daily(MAR_fields(iMAR))%MAR = daily(MAR_fields(iMAR))%MAR_vol / poly(MAR_fields(iMAR))%area   ! Convert volume to length      
+      end if
+      daily(MAR_fields(iMAR))%irrigation = daily(MAR_fields(iMAR))%irrigation &                       ! Add MAR to existing irrigation value (irrigation only overlaps for 5 days in March so it should be relatively small)
+                                         + daily(MAR_fields(iMAR))%MAR      
+      daily(MAR_fields(iMAR))%actualET=min(daily(MAR_fields(iMAR))%evapotrasp,&
+                                           moisture_save(MAR_fields(iMAR))+precip_adjusted+&
+                                           daily(MAR_fields(iMAR))%irrigation) 
+      daily(MAR_fields(iMAR))%deficiency=daily(MAR_fields(iMAR))%evapotrasp-daily(MAR_fields(iMAR))%actualET
+      if (daily(MAR_fields(iMAR))%actualET > 0) daily(MAR_fields(iMAR))%ET_active =  1   ! Set ET flag to 1 if ET is active that day
+      if (poly(MAR_fields(iMAR))%landuse==2) then                                    ! if pasture  
+        rch = max(0., (moisture_save(MAR_fields(iMAR))+precip_adjusted+daily(MAR_fields(iMAR))%irrigation &
+                      -daily(MAR_fields(iMAR))%actualET)-0.5*poly(MAR_fields(iMAR))%WC8 )
+        daily(MAR_fields(iMAR))%recharge = rch  
+      else if ( poly(MAR_fields(iMAR))%landuse==25 .or. poly(MAR_fields(iMAR))%landuse==3 )  then  ! if alfalfa/grain/native veg 
+        rch = max(0., (moisture_save(MAR_fields(iMAR))+precip_adjusted+daily(MAR_fields(iMAR))%irrigation &
+                      -daily(MAR_fields(iMAR))%actualET)-poly(MAR_fields(iMAR))%WC8 )
+        daily(MAR_fields(iMAR))%recharge = rch 
+      else if (poly(MAR_fields(iMAR))%landuse==4) then  ! noET/NoIrr 
+        daily(MAR_fields(iMAR))%recharge = precip_adjusted
+      endif
+      daily(MAR_fields(iMAR))%moisture=max(0.,moisture_save(MAR_fields(iMAR))+precip_adjusted+daily(MAR_fields(iMAR))%irrigation &
+                                             -daily(MAR_fields(iMAR))%actualET-daily(MAR_fields(iMAR))%recharge)
+      
+      daily(MAR_fields(iMAR))%budget = daily(MAR_fields(iMAR))%moisture-moisture_save(MAR_fields(iMAR)) &
+                                      +daily(MAR_fields(iMAR))%actualET+daily(MAR_fields(iMAR))%recharge &
+                                      -precip_adjusted-daily(MAR_fields(iMAR))%irrigation 
+      before(MAR_fields(iMAR))%moisture = daily(MAR_fields(iMAR))%moisture
+      daily(MAR_fields(iMAR))%change_in_storage = precip_adjusted+daily(MAR_fields(iMAR))%irrigation &
+                                                 -daily(MAR_fields(iMAR))%actualET-daily(MAR_fields(iMAR))%recharge    
+    end do
+  end if
+  END SUBROUTINE MAR
 
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   SUBROUTINE IRRIGATION_ILR(ip, imonth, jday, precip_adjusted)
@@ -605,8 +660,10 @@ MODULE irrigationmodule
     ipr = 0
     print*, ''
     write(*,'(a5,i2,a26,2i4)')"Year:", year,"   Grain Polygon ID Range:", rotcycle*ngrain+1, (rotcycle+1)*ngrain
+    write(*,*)'-------------------------------------------------------------'
     write(800,*) ''
     write(800,'(a5,i2,a26,2i4)')"Year:", year,"   Grain Polygon ID Range:", rotcycle*ngrain+1, (rotcycle+1)*ngrain
+    write(800,*)'-------------------------------------------------------------'
     do i = 1, npoly
       if (poly(i)%landuse == 25) then    
         ipr = ipr + 1
@@ -708,8 +765,8 @@ MODULE irrigationmodule
       SFR_Flows(31) = 0.
       SFR_Flows(32) = 0.
     else if (imonth == 4 .or. imonth == 5 .or. imonth == 6) then
-      SFR_Flows(31) = 0.                                           ! No MAR Diversion from Farmer's Ditch
-      SFR_Flows(32) = 42. * 2446.58                                 ! 42 cfs diversion from SVID
+      SFR_Flows(31) = 0.                                            ! No MAR Diversion from Farmer's Ditch
+      SFR_Flows(32) = sum(daily%MAR_vol)                            ! 42 cfs diversion from SVID
     else
       SFR_Flows(31) = 8.  * 2446.58                                 ! Farmers Ditch Diversion (~8 cfs total diversion, leakage rate is about 6 cfs, assumed 2 cfs consumptive use)
       SFR_Flows(32) = 16. * 2446.58                                 ! SVID Diversion (~16 cfs total diversion, leakage rate is about 14 cfs, assumed 2 cfs consumptive use)     	

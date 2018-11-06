@@ -76,6 +76,7 @@
     monthly%ET_active          = monthly%ET_active          + daily%ET_active         ! Add daily ET length to monthly total    
     monthly%effprecip          = monthly%effprecip          + daily%effprecip         ! Add daily effective precip length to monthly total    
     monthly%change_in_storage  = monthly%change_in_storage  + daily%change_in_storage ! Add daily change in storage length to monthly total    
+    monthly%MAR_vol            = monthly%MAR_vol            + daily%MAR_vol           ! Add daily MAR volume to monthly total
     
     end subroutine monthly_SUM
 
@@ -92,6 +93,7 @@
     yearly%ET_active           = yearly%ET_active           + daily%ET_active          ! Add daily ET length to yearly total    
     yearly%effprecip           = yearly%effprecip           + daily%effprecip          ! Add daily effective precip length to yearly total    
     yearly%change_in_storage   = yearly%change_in_storage   + daily%change_in_storage  ! Add daily change in storage length to yearly total    
+    yearly%MAR_vol             = yearly%MAR_vol         + daily%MAR_vol                ! Add daily MAR to annual total
     
     end subroutine annual_SUM
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -398,195 +400,24 @@ end subroutine monthly_pumping
 !     close(99)
 !     end subroutine yearly_out
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine daily_out(ip_AG_SW_Flood, ip_AG_SW_WL, ip_AG_SW_CP, ip_AG_GW_Flood, ip_AG_GW_WL, ip_AG_GW_CP, &
-                         ip_AG_MIX_Flood, ip_AG_MIX_WL, ip_AG_MIX_CP, ip_AG_SUB_DRY, ip_Pasture_SW_Flood, &
-                         ip_Pasture_SW_WL, ip_Pasture_SW_CP, ip_Pasture_GW_Flood, ip_Pasture_GW_WL, &
-                         ip_Pasture_GW_CP, ip_Pasture_MIX_Flood, ip_Pasture_MIX_WL, ip_Pasture_MIX_CP, &
-                         ip_Pasture_SUB_DRY, ip_ETnoIrr_Low_WC8, ip_ETnoIrr_High_WC8, ip_noETnoIrr, ip_Water_Landuse, &
-                         ip_SW_Flood_DZ)        
-
-   INTEGER:: ip_AG_SW_Flood, ip_AG_SW_WL, ip_AG_SW_CP, ip_AG_GW_Flood, ip_AG_GW_WL, ip_AG_GW_CP                                    ! Field IDs for Daily Output
-   INTEGER:: ip_AG_MIX_Flood, ip_AG_MIX_WL, ip_AG_MIX_CP, ip_AG_SUB_DRY, ip_Pasture_SW_Flood, ip_Pasture_SW_WL                     ! Field IDs for Daily Output
-   INTEGER:: ip_Pasture_SW_CP, ip_Pasture_GW_Flood, ip_Pasture_GW_WL, ip_Pasture_GW_CP, ip_Pasture_MIX_Flood, ip_Pasture_MIX_WL    ! Field IDs for Daily Output
-   INTEGER:: ip_Pasture_MIX_CP, ip_Pasture_SUB_DRY, ip_ETnoIrr_Low_WC8, ip_ETnoIrr_High_WC8, ip_noETnoIrr, ip_Water_Landuse        ! Field IDs for Daily Output
-   INTEGER:: ip_SW_Flood_DZ                                                                                                        ! Field IDs for Daily Output
-    write(600,'(i5,11F20.8,3i4)') ip_AG_SW_Flood, precip_adjusted, streamflow_in(poly(ip_AG_SW_Flood)%subwn),      &
-                                daily(ip_AG_SW_Flood)%irrigation, daily(ip_AG_SW_Flood)%well,          &
-                                daily(ip_AG_SW_Flood)%recharge, daily(ip_AG_SW_Flood)%moisture,        & 
-                                daily(ip_AG_SW_Flood)%evapotrasp,  daily(ip_AG_SW_Flood)%actualET,     &  
-                                daily(ip_AG_SW_Flood)%deficiency,daily(ip_AG_SW_Flood)%budget,         &
-                                poly(ip_AG_SW_Flood)%WC8,poly(ip_AG_SW_Flood)%subwn,                   &
-                                poly(ip_AG_SW_Flood)%landuse, poly(ip_AG_SW_Flood)%rotation
-    write(601,'(i5,11F20.8,3i4)') ip_AG_SW_WL, precip_adjusted, streamflow_in(poly(ip_AG_SW_WL)%subwn),    &
-                                daily(ip_AG_SW_WL)%irrigation, daily(ip_AG_SW_WL)%well,        &
-                                daily(ip_AG_SW_WL)%recharge, daily(ip_AG_SW_WL)%moisture,      &
-                                daily(ip_AG_SW_WL)%evapotrasp,  daily(ip_AG_SW_WL)%actualET,   &
-                                daily(ip_AG_SW_WL)%deficiency,daily(ip_AG_SW_WL)%budget,       &
-                                poly(ip_AG_SW_WL)%WC8, poly(ip_AG_SW_WL)%subwn,                &
-                                poly(ip_AG_SW_WL)%landuse, poly(ip_AG_SW_WL)%rotation
-    write(602,'(i5,11F20.8,3i4)')  ip_AG_SW_CP, precip_adjusted, streamflow_in(poly(ip_AG_SW_CP)%subwn),     &
-                                daily(ip_AG_SW_CP)%irrigation, daily(ip_AG_SW_CP)%well,          &
-                                daily(ip_AG_SW_CP)%recharge, daily(ip_AG_SW_CP)%moisture,        &
-                                daily(ip_AG_SW_CP)%evapotrasp,  daily(ip_AG_SW_CP)%actualET,     &
-                                daily(ip_AG_SW_CP)%deficiency,daily(ip_AG_SW_CP)%budget,         &
-                                poly(ip_AG_SW_CP)%WC8, poly(ip_AG_SW_CP)%subwn,                  &
-                                poly(ip_AG_SW_CP)%landuse, poly(ip_AG_SW_CP)%rotation                                         
-    write(603,'(i5,11F20.8,3i4)')  ip_AG_GW_Flood, precip_adjusted, streamflow_in(poly(ip_AG_GW_Flood)%subwn),   &
-                                daily(ip_AG_GW_Flood)%irrigation, daily(ip_AG_GW_Flood)%well,        &
-                                daily(ip_AG_GW_Flood)%recharge, daily(ip_AG_GW_Flood)%moisture,      &
-                                daily(ip_AG_GW_Flood)%evapotrasp,  daily(ip_AG_GW_Flood)%actualET,   &
-                                daily(ip_AG_GW_Flood)%deficiency,daily(ip_AG_GW_Flood)%budget,       &
-                                poly(ip_AG_GW_Flood)%WC8, poly(ip_AG_GW_Flood)%subwn,                &
-                                poly(ip_AG_GW_Flood)%landuse, poly(ip_AG_GW_Flood)%rotation
-    write(604,'(i5,11F20.8,3i4)') ip_AG_GW_WL, precip_adjusted, streamflow_in(poly(ip_AG_GW_WL)%subwn),    &
-                                daily(ip_AG_GW_WL)%irrigation, daily(ip_AG_GW_WL)%well,        &
-                                daily(ip_AG_GW_WL)%recharge, daily(ip_AG_GW_WL)%moisture,      &
-                                daily(ip_AG_GW_WL)%evapotrasp,  daily(ip_AG_GW_WL)%actualET,   &
-                                daily(ip_AG_GW_WL)%deficiency,daily(ip_AG_GW_WL)%budget,       &
-                                poly(ip_AG_GW_WL)%WC8, poly(ip_AG_GW_WL)%subwn,                &
-                                poly(ip_AG_GW_WL)%landuse, poly(ip_AG_GW_WL)%rotation
-    write(605,'(i5,11F20.8,3i4)') ip_AG_GW_CP, precip_adjusted, streamflow_in(poly(ip_AG_GW_CP)%subwn),   &
-                                daily(ip_AG_GW_CP)%irrigation, daily(ip_AG_GW_CP)%well,       &
-                                daily(ip_AG_GW_CP)%recharge, daily(ip_AG_GW_CP)%moisture,     &  
-                                daily(ip_AG_GW_CP)%evapotrasp,  daily(ip_AG_GW_CP)%actualET,  &   
-                                daily(ip_AG_GW_CP)%deficiency,daily(ip_AG_GW_CP)%budget,      &
-                                poly(ip_AG_GW_CP)%WC8,poly(ip_AG_GW_CP)%subwn,                &
-                                poly(ip_AG_GW_CP)%landuse, poly(ip_AG_GW_CP)%rotation
-    write(606,'(i5,11F20.8,3i4)')  ip_AG_MIX_Flood, precip_adjusted, streamflow_in(poly(ip_AG_MIX_Flood)%subwn),  &
-                                daily(ip_AG_MIX_Flood)%irrigation, daily(ip_AG_MIX_Flood)%well,       &
-                                daily(ip_AG_MIX_Flood)%recharge, daily(ip_AG_MIX_Flood)%moisture,     &
-                                daily(ip_AG_MIX_Flood)%evapotrasp,  daily(ip_AG_MIX_Flood)%actualET,  &
-                                daily(ip_AG_MIX_Flood)%deficiency,daily(ip_AG_MIX_Flood)%budget,      &
-                                poly(ip_AG_MIX_Flood)%WC8, poly(ip_AG_MIX_Flood)%subwn,               &
-                                poly(ip_AG_MIX_Flood)%landuse, poly(ip_AG_MIX_Flood)%rotation
-    write(607,'(i5,11F20.8,3i4)') ip_noETnoIrr, precip_adjusted, streamflow_in(poly(ip_noETnoIrr)%subwn),     &
-                                daily(ip_noETnoIrr)%irrigation, daily(ip_noETnoIrr)%well,         &
-                                daily(ip_noETnoIrr)%recharge, daily(ip_noETnoIrr)%moisture,       &
-                                daily(ip_noETnoIrr)%evapotrasp,  daily(ip_noETnoIrr)%actualET,    &
-                                daily(ip_noETnoIrr)%deficiency,daily(ip_noETnoIrr)%budget,        &       
-                                poly(ip_noETnoIrr)%WC8, poly(ip_noETnoIrr)%subwn,                 &
-                                poly(ip_noETnoIrr)%landuse, poly(ip_noETnoIrr)%rotation
-    write(608,'(i5,11F20.8,3i4)') ip_AG_MIX_CP, precip_adjusted, streamflow_in(poly(ip_AG_MIX_CP)%subwn),     &
-                                daily(ip_AG_MIX_CP)%irrigation, daily(ip_AG_MIX_CP)%well,         &
-                                daily(ip_AG_MIX_CP)%recharge, daily(ip_AG_MIX_CP)%moisture,       &
-                                daily(ip_AG_MIX_CP)%evapotrasp,  daily(ip_AG_MIX_CP)%actualET,    &
-                                daily(ip_AG_MIX_CP)%deficiency,daily(ip_AG_MIX_CP)%budget,        &       
-                                poly(ip_AG_MIX_CP)%WC8, poly(ip_AG_MIX_CP)%subwn,                 &
-                                poly(ip_AG_MIX_CP)%landuse, poly(ip_AG_MIX_CP)%rotation
-    write(609,'(i5,11F20.8,3i4)') ip_AG_SUB_DRY, precip_adjusted, streamflow_in(poly(ip_AG_SUB_DRY)%subwn),     &
-                                daily(ip_AG_SUB_DRY)%irrigation, daily(ip_AG_SUB_DRY)%well,         &
-                                daily(ip_AG_SUB_DRY)%recharge, daily(ip_AG_SUB_DRY)%moisture,       &
-                                daily(ip_AG_SUB_DRY)%evapotrasp,  daily(ip_AG_SUB_DRY)%actualET,    &
-                                daily(ip_AG_SUB_DRY)%deficiency,daily(ip_AG_SUB_DRY)%budget,        &       
-                                poly(ip_AG_SUB_DRY)%WC8, poly(ip_AG_SUB_DRY)%subwn,                 &
-                                poly(ip_AG_SUB_DRY)%landuse, poly(ip_AG_SUB_DRY)%rotation                            
-    write(610,'(i5,11F20.8,3i4)') ip_Pasture_SW_Flood, precip_adjusted, streamflow_in(poly(ip_Pasture_SW_Flood)%subwn),     &
-                                daily(ip_Pasture_SW_Flood)%irrigation, daily(ip_Pasture_SW_Flood)%well,         &
-                                daily(ip_Pasture_SW_Flood)%recharge, daily(ip_Pasture_SW_Flood)%moisture,       &
-                                daily(ip_Pasture_SW_Flood)%evapotrasp,  daily(ip_Pasture_SW_Flood)%actualET,    &
-                                daily(ip_Pasture_SW_Flood)%deficiency,daily(ip_Pasture_SW_Flood)%budget,        &       
-                                poly(ip_Pasture_SW_Flood)%WC8, poly(ip_Pasture_SW_Flood)%subwn,                 &
-                                poly(ip_Pasture_SW_Flood)%landuse, poly(ip_Pasture_SW_Flood)%rotation
-    write(611,'(i5,11F20.8,3i4)') ip_Pasture_SW_WL, precip_adjusted, streamflow_in(poly(ip_Pasture_SW_WL)%subwn),     &
-                                daily(ip_Pasture_SW_WL)%irrigation, daily(ip_Pasture_SW_WL)%well,         &
-                                daily(ip_Pasture_SW_WL)%recharge, daily(ip_Pasture_SW_WL)%moisture,       &
-                                daily(ip_Pasture_SW_WL)%evapotrasp,  daily(ip_Pasture_SW_WL)%actualET,    &
-                                daily(ip_Pasture_SW_WL)%deficiency,daily(ip_Pasture_SW_WL)%budget,        &       
-                                poly(ip_Pasture_SW_WL)%WC8, poly(ip_Pasture_SW_WL)%subwn,                 &
-                                poly(ip_Pasture_SW_WL)%landuse, poly(ip_Pasture_SW_WL)%rotation
-    write(612,'(i5,11F20.8,3i4)') ip_Pasture_SW_CP, precip_adjusted, streamflow_in(poly(ip_Pasture_SW_CP)%subwn),     &
-                                daily(ip_Pasture_SW_CP)%irrigation, daily(ip_Pasture_SW_CP)%well,         &
-                                daily(ip_Pasture_SW_CP)%recharge, daily(ip_Pasture_SW_CP)%moisture,       &
-                                daily(ip_Pasture_SW_CP)%evapotrasp,  daily(ip_Pasture_SW_CP)%actualET,    &
-                                daily(ip_Pasture_SW_CP)%deficiency,daily(ip_Pasture_SW_CP)%budget,        &       
-                                poly(ip_Pasture_SW_CP)%WC8, poly(ip_Pasture_SW_CP)%subwn,                 &
-                                poly(ip_Pasture_SW_CP)%landuse, poly(ip_Pasture_SW_CP)%rotation
-    write(613,'(i5,11F20.8,3i4)') ip_Pasture_GW_Flood, precip_adjusted, streamflow_in(poly(ip_Pasture_GW_Flood)%subwn),     &
-                                daily(ip_Pasture_GW_Flood)%irrigation, daily(ip_Pasture_GW_Flood)%well,         &
-                                daily(ip_Pasture_GW_Flood)%recharge, daily(ip_Pasture_GW_Flood)%moisture,       &
-                                daily(ip_Pasture_GW_Flood)%evapotrasp,  daily(ip_Pasture_GW_Flood)%actualET,    &
-                                daily(ip_Pasture_GW_Flood)%deficiency,daily(ip_Pasture_GW_Flood)%budget,        &       
-                                poly(ip_Pasture_GW_Flood)%WC8, poly(ip_Pasture_GW_Flood)%subwn,                 &
-                                poly(ip_Pasture_GW_Flood)%landuse, poly(ip_Pasture_GW_Flood)%rotation
-    write(614,'(i5,11F20.8,3i4)') ip_Pasture_GW_WL, precip_adjusted, streamflow_in(poly(ip_Pasture_GW_WL)%subwn),     &
-                                daily(ip_Pasture_GW_WL)%irrigation, daily(ip_Pasture_GW_WL)%well,         &
-                                daily(ip_Pasture_GW_WL)%recharge, daily(ip_Pasture_GW_WL)%moisture,       &
-                                daily(ip_Pasture_GW_WL)%evapotrasp,  daily(ip_Pasture_GW_WL)%actualET,    &
-                                daily(ip_Pasture_GW_WL)%deficiency,daily(ip_Pasture_GW_WL)%budget,        &       
-                                poly(ip_Pasture_GW_WL)%WC8, poly(ip_Pasture_GW_WL)%subwn,                 &
-                                poly(ip_Pasture_GW_WL)%landuse, poly(ip_Pasture_GW_WL)%rotation
-    write(615,'(i5,11F20.8,3i4)') ip_Pasture_GW_CP, precip_adjusted, streamflow_in(poly(ip_Pasture_GW_CP)%subwn),     &
-                                daily(ip_Pasture_GW_CP)%irrigation, daily(ip_Pasture_GW_CP)%well,         &
-                                daily(ip_Pasture_GW_CP)%recharge, daily(ip_Pasture_GW_CP)%moisture,       &
-                                daily(ip_Pasture_GW_CP)%evapotrasp,  daily(ip_Pasture_GW_CP)%actualET,    &
-                                daily(ip_Pasture_GW_CP)%deficiency,daily(ip_Pasture_GW_CP)%budget,        &       
-                                poly(ip_Pasture_GW_CP)%WC8, poly(ip_Pasture_GW_CP)%subwn,                 &
-                                poly(ip_Pasture_GW_CP)%landuse, poly(ip_Pasture_GW_CP)%rotation
-    write(616,'(i5,11F20.8,3i4)') ip_Pasture_MIX_Flood, precip_adjusted, streamflow_in(poly(ip_Pasture_MIX_Flood)%subwn),     &
-                                daily(ip_Pasture_MIX_Flood)%irrigation, daily(ip_Pasture_MIX_Flood)%well,         &
-                                daily(ip_Pasture_MIX_Flood)%recharge, daily(ip_Pasture_MIX_Flood)%moisture,       &
-                                daily(ip_Pasture_MIX_Flood)%evapotrasp,  daily(ip_Pasture_MIX_Flood)%actualET,    &
-                                daily(ip_Pasture_MIX_Flood)%deficiency,daily(ip_Pasture_MIX_Flood)%budget,        &       
-                                poly(ip_Pasture_MIX_Flood)%WC8, poly(ip_Pasture_MIX_Flood)%subwn,                 &
-                                poly(ip_Pasture_MIX_Flood)%landuse, poly(ip_Pasture_MIX_Flood)%rotation
-    write(617,'(i5,11F20.8,3i4)') ip_Pasture_MIX_WL, precip_adjusted, streamflow_in(poly(ip_Pasture_MIX_WL)%subwn),     &
-                                daily(ip_Pasture_MIX_WL)%irrigation, daily(ip_Pasture_MIX_WL)%well,         &
-                                daily(ip_Pasture_MIX_WL)%recharge, daily(ip_Pasture_MIX_WL)%moisture,       &
-                                daily(ip_Pasture_MIX_WL)%evapotrasp,  daily(ip_Pasture_MIX_WL)%actualET,    &
-                                daily(ip_Pasture_MIX_WL)%deficiency,daily(ip_Pasture_MIX_WL)%budget,        &       
-                                poly(ip_Pasture_MIX_WL)%WC8, poly(ip_Pasture_MIX_WL)%subwn,                 &
-                                poly(ip_Pasture_MIX_WL)%landuse, poly(ip_Pasture_MIX_WL)%rotation
-    write(618,'(i5,11F20.8,3i4)') ip_Pasture_MIX_CP, precip_adjusted, streamflow_in(poly(ip_Pasture_MIX_CP)%subwn),     &
-                                daily(ip_Pasture_MIX_CP)%irrigation, daily(ip_Pasture_MIX_CP)%well,         &
-                                daily(ip_Pasture_MIX_CP)%recharge, daily(ip_Pasture_MIX_CP)%moisture,       &
-                                daily(ip_Pasture_MIX_CP)%evapotrasp,  daily(ip_Pasture_MIX_CP)%actualET,    &
-                                daily(ip_Pasture_MIX_CP)%deficiency,daily(ip_Pasture_MIX_CP)%budget,        &       
-                                poly(ip_Pasture_MIX_CP)%WC8, poly(ip_Pasture_MIX_CP)%subwn,                 &
-                                poly(ip_Pasture_MIX_CP)%landuse, poly(ip_Pasture_MIX_CP)%rotation
-    write(619,'(i5,11F20.8,3i4)') ip_Pasture_SUB_DRY, precip_adjusted, streamflow_in(poly(ip_Pasture_SUB_DRY)%subwn),     &
-                                daily(ip_Pasture_SUB_DRY)%irrigation, daily(ip_Pasture_SUB_DRY)%well,         &
-                                daily(ip_Pasture_SUB_DRY)%recharge, daily(ip_Pasture_SUB_DRY)%moisture,       &
-                                daily(ip_Pasture_SUB_DRY)%evapotrasp,  daily(ip_Pasture_SUB_DRY)%actualET,    &
-                                daily(ip_Pasture_SUB_DRY)%deficiency,daily(ip_Pasture_SUB_DRY)%budget,        &       
-                                poly(ip_Pasture_SUB_DRY)%WC8, poly(ip_Pasture_SUB_DRY)%subwn,                 &
-                                poly(ip_Pasture_SUB_DRY)%landuse, poly(ip_Pasture_SUB_DRY)%rotation
-    write(620,'(i5,11F20.8,3i4)') ip_ETnoIrr_Low_WC8, precip_adjusted, streamflow_in(poly(ip_ETnoIrr_Low_WC8)%subwn),     &
-                                daily(ip_ETnoIrr_Low_WC8)%irrigation, daily(ip_ETnoIrr_Low_WC8)%well,         &
-                                daily(ip_ETnoIrr_Low_WC8)%recharge, daily(ip_ETnoIrr_Low_WC8)%moisture,       &
-                                daily(ip_ETnoIrr_Low_WC8)%evapotrasp,  daily(ip_ETnoIrr_Low_WC8)%actualET,    &
-                                daily(ip_ETnoIrr_Low_WC8)%deficiency,daily(ip_ETnoIrr_Low_WC8)%budget,        &       
-                                poly(ip_ETnoIrr_Low_WC8)%WC8, poly(ip_ETnoIrr_Low_WC8)%subwn,                 &
-                                poly(ip_ETnoIrr_Low_WC8)%landuse, poly(ip_ETnoIrr_Low_WC8)%rotation
-    write(621,'(i5,11F20.8,3i4)') ip_ETnoIrr_High_WC8, precip_adjusted, streamflow_in(poly(ip_ETnoIrr_High_WC8)%subwn),     &
-                                daily(ip_ETnoIrr_High_WC8)%irrigation, daily(ip_ETnoIrr_High_WC8)%well,         &
-                                daily(ip_ETnoIrr_High_WC8)%recharge, daily(ip_ETnoIrr_High_WC8)%moisture,       &
-                                daily(ip_ETnoIrr_High_WC8)%evapotrasp,  daily(ip_ETnoIrr_High_WC8)%actualET,    &
-                                daily(ip_ETnoIrr_High_WC8)%deficiency,daily(ip_ETnoIrr_High_WC8)%budget,        &       
-                                poly(ip_ETnoIrr_High_WC8)%WC8, poly(ip_ETnoIrr_High_WC8)%subwn,                 &
-                                poly(ip_ETnoIrr_High_WC8)%landuse, poly(ip_ETnoIrr_High_WC8)%rotation
-    write(622,'(i5,11F20.8,3i4)') ip_noETnoIrr, precip_adjusted, streamflow_in(poly(ip_noETnoIrr)%subwn),     &
-                                daily(ip_noETnoIrr)%irrigation, daily(ip_noETnoIrr)%well,         &
-                                daily(ip_noETnoIrr)%recharge, daily(ip_noETnoIrr)%moisture,       &
-                                daily(ip_noETnoIrr)%evapotrasp,  daily(ip_noETnoIrr)%actualET,    &
-                                daily(ip_noETnoIrr)%deficiency,daily(ip_noETnoIrr)%budget,        &       
-                                poly(ip_noETnoIrr)%WC8, poly(ip_noETnoIrr)%subwn,                 &
-                                poly(ip_noETnoIrr)%landuse, poly(ip_noETnoIrr)%rotation
-    write(623,'(i5,11F20.8,3i4)') ip_Water_Landuse, precip_adjusted, streamflow_in(poly(ip_Water_Landuse)%subwn),     &
-                                daily(ip_Water_Landuse)%irrigation, daily(ip_Water_Landuse)%well,         &
-                                daily(ip_Water_Landuse)%recharge, daily(ip_Water_Landuse)%moisture,       &
-                                daily(ip_Water_Landuse)%evapotrasp,  daily(ip_Water_Landuse)%actualET,    &
-                                daily(ip_Water_Landuse)%deficiency,daily(ip_Water_Landuse)%budget,        &       
-                                poly(ip_Water_Landuse)%WC8, poly(ip_Water_Landuse)%subwn,                 &
-                                poly(ip_Water_Landuse)%landuse, poly(ip_Water_Landuse)%rotation
-    write(624,'(i5,11F20.8,3i4)') ip_SW_Flood_DZ, precip_adjusted, streamflow_in(poly(ip_SW_Flood_DZ)%subwn),     &
-                                daily(ip_SW_Flood_DZ)%irrigation, daily(ip_SW_Flood_DZ)%well,         &
-                                daily(ip_SW_Flood_DZ)%recharge, daily(ip_SW_Flood_DZ)%moisture,       &
-                                daily(ip_SW_Flood_DZ)%evapotrasp,  daily(ip_SW_Flood_DZ)%actualET,    &
-                                daily(ip_SW_Flood_DZ)%deficiency,daily(ip_SW_Flood_DZ)%budget,        &       
-                                poly(ip_SW_Flood_DZ)%WC8, poly(ip_SW_Flood_DZ)%subwn,                 &
-                                poly(ip_SW_Flood_DZ)%landuse, poly(ip_SW_Flood_DZ)%rotation
-    end subroutine daily_out
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~       
+   subroutine daily_out(num_daily_out,ip_daily_out)
+   
+   INTEGER, INTENT(in) ::  num_daily_out
+   INTEGER, DIMENSION(num_daily_out), INTENT(in) :: ip_daily_out
+   INTEGER  :: unit_num, i
+   
+   do i=1,num_daily_out
+     unit_num = 599+i
+     write(unit_num,'(i5,11F20.8,3i4)') ip_daily_out(i), precip_adjusted, streamflow_in(poly(ip_daily_out(i))%subwn),      &
+                                        daily(ip_daily_out(i))%irrigation, daily(ip_daily_out(i))%well,          &
+                                        daily(ip_daily_out(i))%recharge, daily(ip_daily_out(i))%moisture,        & 
+                                        daily(ip_daily_out(i))%evapotrasp,  daily(ip_daily_out(i))%actualET,     &  
+                                        daily(ip_daily_out(i))%deficiency,daily(ip_daily_out(i))%budget,         &
+                                        poly(ip_daily_out(i))%WC8,poly(ip_daily_out(i))%subwn,                   &
+                                        poly(ip_daily_out(i))%landuse, poly(ip_daily_out(i))%rotation
+   end do                                                                                                   ! Field IDs for Daily Output
+   end subroutine daily_out
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! The following version of the daily out subroutine saves daily values for each polygon
@@ -728,53 +559,53 @@ end subroutine monthly_pumping
       write(900,*) ttl_rch
     end subroutine recharge_out_MODFLOW
     
-! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
-    subroutine recharge_out_MODFLOW_w_MAR(im,imonth,nday,nrows,ncols,output_zone_matrix,MAR_Matrix)  ! Recharge file  with MAR added during Jan Feb and Mar          
-
-      
-      INTEGER, INTENT(IN) :: im,imonth,nrows,ncols
-      INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), nday(0:11)
-      REAL, INTENT(IN) :: MAR_Matrix(nrows,ncols)
-      REAL, ALLOCATABLE, DIMENSION(:,:) ::  recharge_matrix
-      INTEGER :: ip
-      REAL :: rch_sum, MAR_sum, ttl_rch
-  
-      ALLOCATE(recharge_matrix(nrows,ncols))
-      recharge_matrix = 0.
-      
-      if (im == 1) then
-      write(84,'(a31)')'# Recharge File written by SWBM'
-      write(84,*)'PARAMETER  0'
-      write(84,*)'3  50'
-      end if
-      
-      write(84,*)'1  0'
-      write(84,'(a63)')'        18   1.00000(10e14.6)                   -1     RECHARGE'
-       
-        do ip = 1, npoly
-          where (output_zone_matrix(:,:) == ip) 
-            recharge_matrix(:,:) = monthly(ip)%recharge / nday(imonth)
-          end where
-        end do
-        if (imonth == 4 .or. imonth == 5 .or. imonth == 6) then          ! If Jan-Mar add recharge from MAR
-          rch_sum = sum(recharge_matrix*10000)                           ! Total of normal recharge rate in m^3/day
-          MAR_sum = sum(MAR_Matrix*10000)                                ! Total of MAR rate in m^3/day
-          ttl_rch = rch_sum + MAR_sum                                    ! Total recharge rate applied to MODFLOW
-          write(*,'(a15,f12.0,a8)')'Non-MAR rate = ',rch_sum,' m^3/day'
-          write(800,'(a15,f12.0,a8)')'Non-MAR rate = ',rch_sum,' m^3/day'
-          recharge_matrix(:,:) = recharge_matrix(:,:) + MAR_Matrix
-          write(*,'(a11,f12.0,a8)')'MAR rate = ',MAR_sum,' m^3/day'
-          write(800,'(a11,f12.0,a8)')'MAR rate = ',MAR_sum,' m^3/day'
-          write(*,'(a22,f12.0,a8)')'Total recharge rate = ',ttl_rch, ' m^3/day'
-          write(800,'(a22,f12.0,a8)')'Total recharge rate = ',ttl_rch, ' m^3/day'
-          write(*,*)''
-          write(800,*),''
-        else
-          ttl_rch = sum(recharge_matrix*10000)
-        end if
-      write(84,'(10e14.6)') recharge_matrix      
-      write(900,*) ttl_rch
-    end subroutine recharge_out_MODFLOW_w_MAR
+! ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
+!     subroutine recharge_out_MODFLOW_w_MAR(im,imonth,nday,nrows,ncols,output_zone_matrix,MAR_Matrix)  ! Recharge file  with MAR added during Jan Feb and Mar          
+! 
+!       
+!       INTEGER, INTENT(IN) :: im,imonth,nrows,ncols
+!       INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), nday(0:11)
+!       REAL, INTENT(IN) :: MAR_Matrix(nrows,ncols)
+!       REAL, ALLOCATABLE, DIMENSION(:,:) ::  recharge_matrix
+!       INTEGER :: ip
+!       REAL :: rch_sum, MAR_sum, ttl_rch
+!   
+!       ALLOCATE(recharge_matrix(nrows,ncols))
+!       recharge_matrix = 0.
+!       
+!       if (im == 1) then
+!       write(84,'(a31)')'# Recharge File written by SWBM'
+!       write(84,*)'PARAMETER  0'
+!       write(84,*)'3  50'
+!       end if
+!       
+!       write(84,*)'1  0'
+!       write(84,'(a63)')'        18   1.00000(10e14.6)                   -1     RECHARGE'
+!        
+!         do ip = 1, npoly
+!           where (output_zone_matrix(:,:) == ip) 
+!             recharge_matrix(:,:) = monthly(ip)%recharge / nday(imonth)
+!           end where
+!         end do
+!         if (imonth == 4 .or. imonth == 5 .or. imonth == 6) then          ! If Jan-Mar add recharge from MAR
+!           rch_sum = sum(recharge_matrix*10000)                           ! Total of normal recharge rate in m^3/day
+!           MAR_sum = sum(MAR_Matrix*10000)                                ! Total of MAR rate in m^3/day
+!           ttl_rch = rch_sum + MAR_sum                                    ! Total recharge rate applied to MODFLOW
+!           write(*,'(a15,f12.0,a8)')'Non-MAR rate = ',rch_sum,' m^3/day'
+!           write(800,'(a15,f12.0,a8)')'Non-MAR rate = ',rch_sum,' m^3/day'
+!           recharge_matrix(:,:) = recharge_matrix(:,:) + MAR_Matrix
+!           write(*,'(a11,f12.0,a8)')'MAR rate = ',MAR_sum,' m^3/day'
+!           write(800,'(a11,f12.0,a8)')'MAR rate = ',MAR_sum,' m^3/day'
+!           write(*,'(a22,f12.0,a8)')'Total recharge rate = ',ttl_rch, ' m^3/day'
+!           write(800,'(a22,f12.0,a8)')'Total recharge rate = ',ttl_rch, ' m^3/day'
+!           write(*,*)''
+!           write(800,*),''
+!         else
+!           ttl_rch = sum(recharge_matrix*10000)
+!         end if
+!       write(84,'(10e14.6)') recharge_matrix      
+!       write(900,*) ttl_rch
+!     end subroutine recharge_out_MODFLOW_w_MAR
 	
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

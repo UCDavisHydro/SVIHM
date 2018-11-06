@@ -26,6 +26,7 @@
       REAL      :: deficiency
       REAL      :: change_in_storage
       REAL      :: effprecip
+      REAL      :: MAR
       REAL      :: budget
       INTEGER   :: daydef
       INTEGER   :: ET_active
@@ -38,6 +39,7 @@
       REAL      :: deficiency_vol
       REAL      :: change_in_storage_vol
       REAL      :: effprecip_vol
+      REAL      :: MAR_vol
     end type
 
     type well
@@ -155,7 +157,9 @@
          monthly%deficiency        = 0.
          monthly%effprecip         = 0.
          monthly%change_in_storage = 0.
-     
+         monthly%MAR               = 0.
+         monthly%MAR_vol           = 0.
+      
      end subroutine zero_month
 
  subroutine zero_year
@@ -169,6 +173,8 @@
          yearly%deficiency        = 0. 
          yearly%effprecip         = 0. 
          yearly%change_in_storage = 0.
+         yearly%MAR               = 0.
+         yearly%MAR_vol           = 0.
      
      end subroutine zero_year
     
