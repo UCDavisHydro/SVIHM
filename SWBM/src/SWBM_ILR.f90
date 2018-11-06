@@ -111,7 +111,7 @@
 !    write(889,'(210i2)') no_flow_matrix   
 !    write(890,'(210i5)') output_zone_matrix   
 
-   open(unit=532,file='5daysdeficiency.dat')
+   open(unit=532,file='5daysdeficiency_ILR.dat')
 !   open(unit=887,file='precip_m_LowBias_July2017.txt')         ! Missing data assumed to have value of zero
 !   open(unit=887,file='precip_m_Replacement_July2017.txt')     ! Missing data replaced with value at other station (CAL and FJN)  
    open(unit=887,file='precip.txt', status = 'old')                    ! Missing data replaced with value obtained from regression using other stations
@@ -120,13 +120,13 @@
    open(unit=80, file='kc_alfalfa.txt', status = 'old')
    open(unit=81, file='kc_pasture.txt', status = 'old')
    
-   open(unit=60, file='subwatershed_area_m2.dat')
+   open(unit=60, file='subwatershed_area_m2_ILR.dat')
    write(60,'(" Month Scott French Etna Patterson Kidder Moffet Mill Shackleford Tailings")')
-   open(unit=61, file='landuse_area_m2.dat')
+   open(unit=61, file='landuse_area_m2_ILR.dat')
    write(61,'(" Month Alfalfa Grain Pasture Et/noIrr noET/noIrr Water")')
-   open(unit=62, file='landuse_area_m2_detailed.dat')
+   open(unit=62, file='landuse_area_m2_detailed_ILR.dat')
    write(62,'(" SP A_Irr A_n* A_SUB A_DRY G_Irr G_n* G_SUB G_DRY P_Irr P_n* P_SUB P_DRY ET/noIrr noET/noIrr Water Total")')
-   open(unit=63, file='landuse_area_acres_detailed.dat')
+   open(unit=63, file='landuse_area_acres_detailed_ILR.dat')
    write(63,'(" SP A_Irr A_n* A_SUB A_DRY G_Irr G_n* G_SUB G_DRY P_Irr P_n* P_SUB P_DRY ET/noIrr noET/noIrr Water Total")')
    
    open(unit=599, file = 'daily_out.txt', status = 'old')
@@ -137,72 +137,75 @@
    	 do i=1, num_daily_out
    	 	 unit_num =  599 + i 
    	   read(599,*)ip_daily_out(i),daily_out_name(i)
-   	   daily_out_name(i) = trim(daily_out_name(i)) // '_daily_out_MAR.dat'
+   	   daily_out_name(i) = trim(daily_out_name(i)) // '_daily_out__ILR.dat'
    	   open(unit=unit_num, file=daily_out_name(i))
    	   write(unit_num,*)'field_id  precip_adj streamflow irrig  well rch moisture  ET',&
    	                    '  actualET  deficiency budget WC8 subwn landuse rotation'    
      end do
    end if
    
-   open(unit=900, file='Recharge_Total.dat')   
+   open(unit=900, file='Recharge_Total_ILR.dat')   
    write(900,'(a24)')'Total Recharge (m^3/day)'                        
                                                        
-   open(unit=91, file='well_out.dat')              
+   open(unit=91, file='well_out_ILR.dat')              
    write(91,'("#WELL: amount of monthly water pumped in each polygon")')
-   open(unit=530, file='Monthly_Pumping_Volume_By_Well.dat')
+   open(unit=530, file='Monthly_Pumping_Volume_By_Well_ILR.dat')
    write(530,*)'Monthly Pumping Volume (m^3) by well'
    write(530,'(172i12)')single_well(:)%well_name
-   open(unit=531, file='Monthly_Pumping_Rate_By_Well.dat')
+   open(unit=531, file='Monthly_Pumping_Rate_By_Well_ILR.dat')
    write(531,*)'Monthly Pumping Rate (m^3/day) by well'
    write(531,'(172i12)')single_well(:)%well_name
-   open(unit=537, file='daily_pumping.dat')
+   open(unit=537, file='daily_pumping_ILR.dat')
    write(537, *)"Daily pumping volume (m^3) for each well"
    write(537,'(200i12)')single_well(:)%well_name
-   open(unit=538, file='daily_average_RCH.dat')
+   open(unit=538, file='daily_average_RCH_ILR.dat')
    write(538, *)"Daily weighted averaged recharge caluclated in each well, to be averaged and used in stream depletion"
-   open(unit=92, file='irrig_out.dat')
+   open(unit=92, file='irrig_out_ILR.dat')
    write(92,'("#IRRIGATION: amount of monthly irrigation in each polygon")')   
-   open(unit=93, file='evapotrasp_out.dat')
+   open(unit=93, file='evapotrasp_out_ILR.dat')
    write(93,'("#Evapotrasp: amount of monthly evapotraspiration in each polygon")')
-   open(unit=94, file='recharge_out.dat')
+   open(unit=94, file='recharge_out_ILR.dat')
    write(94,'("#Recharge: amount of monthly recharge in each polygon")')
    open(unit=84, file='SVIHM.rch')
-   open(unit=95, file='moisture_out.dat')
+   open(unit=95, file='moisture_out_ILR.dat')
    write(95,'("#Moisture: amount of monthly moisture in each polygon")')
-   open(unit=96, file='actualET_out.dat')
+   open(unit=96, file='actualET_out_ILR.dat')
    write(96,'("#ActualET: amount of monthly actualET in each polygon")')
-   open(unit=97, file='deficiency_out.dat')
+   open(unit=97, file='deficiency_out_ILR.dat')
    write(97,'("#Deficiency: amount of monthly deficiency (ET-actualET) in each polygon")')
-   open(unit=98, file='well_out_flow.dat')
+   open(unit=98, file='well_out_flow_ILR.dat')
    write(98,'("#WELL: monthly FLOW pumped in each polygon")')
-   open(unit=120, file='ET_Active_Days.dat')                       
+   open(unit=120, file='ET_Active_Days_ILR.dat')                       
    write(120,'("Number of Days ET is Active in each polyon")')    
    open(unit=66, file='streamflow_input.txt', status='old')
    read(66,*)                                                        ! Read Header into nothing
 
-   open (unit=102, file='monthly_well_by_subw.dat')
-   open (unit=103, file='monthly_irrig_by_subw.dat')
-   open (unit=104, file='monthly_evapo_by_subw.dat')
-   open (unit=105, file='monthly_recharge_by_subw.dat')
-   open (unit=106, file='monthly_well_by_luse.dat')
-   open (unit=107, file='monthly_irrig_by_luse.dat')
-   open (unit=108, file='monthly_evapo_by_luse.dat')
-   open (unit=109, file='monthly_recharge_by_luse.dat')
-   open (unit=110, file='monthly_deficiency_by_subw.dat')
-   open (unit=111, file='monthly_deficiency_by_luse.dat')
-   open (unit=112, file='monthly_actualET_by_luse.dat')
-   open (unit=113, file='monthly_actualET_by_subw.dat')
-   open (unit=114, file='monthly_moisture_by_subw.dat') 
-   open (unit=115, file='monthly_moisture_by_luse.dat') 
+   open (unit=102, file='monthly_well_by_subw_ILR.dat')
+   open (unit=103, file='monthly_irrig_by_subw_ILR.dat')
+   open (unit=104, file='monthly_evapo_by_subw_ILR.dat')
+   open (unit=105, file='monthly_recharge_by_subw_ILR.dat')
+   open (unit=106, file='monthly_well_by_luse_ILR.dat')
+   open (unit=107, file='monthly_irrig_by_luse_ILR.dat')
+   open (unit=108, file='monthly_evapo_by_luse_ILR.dat')
+   open (unit=109, file='monthly_recharge_by_luse_ILR.dat')
+   open (unit=110, file='monthly_deficiency_by_subw_ILR.dat')
+   open (unit=111, file='monthly_deficiency_by_luse_ILR.dat')
+   open (unit=112, file='monthly_actualET_by_luse_ILR.dat')
+   open (unit=113, file='monthly_actualET_by_subw_ILR.dat')
+   open (unit=114, file='monthly_moisture_by_subw_ILR.dat') 
+   open (unit=115, file='monthly_moisture_by_luse_ILR.dat') 
    
-!   open (unit=202, file='yearly_well_by_subw.dat')
-!   open (unit=203, file='yearly_irrig_by_subw.dat')
-!   open (unit=204, file='yearly_evapo_by_subw.dat')
-!   open (unit=205, file='yearly_recharge_by_subw.dat')
-!   open (unit=206, file='yearly_well_by_luse.dat')
-!   open (unit=207, file='yearly_irrig_by_luse.dat')
-!   open (unit=208, file='yearly_evapo_by_luse.dat')
-!   open (unit=209, file='yearly_recharge_by_luse.dat')
+   open (unit=116, file='monthly_water_budget_MAR.dat')
+   write(116,*)'Stress_Period Precip SW_Irr GW_Irr ET Recharge Storage'
+   
+!   open (unit=202, file='yearly_well_by_subw_ILR.dat')
+!   open (unit=203, file='yearly_irrig_by_subw_ILR.dat')
+!   open (unit=204, file='yearly_evapo_by_subw_ILR.dat')
+!   open (unit=205, file='yearly_recharge_by_subw_ILR.dat')
+!   open (unit=206, file='yearly_well_by_luse_ILR.dat')
+!   open (unit=207, file='yearly_irrig_by_luse_ILR.dat')
+!   open (unit=208, file='yearly_evapo_by_luse_ILR.dat')
+!   open (unit=209, file='yearly_recharge_by_luse_ILR.dat')
 
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_ETS_template.txt SVIHM.ets')
    CALL EXECUTE_COMMAND_LINE('copy SVIHM_SFR_template.txt SVIHM.sfr')
@@ -320,14 +323,14 @@
 
    integer id, ifile
    DOUBLE PRECISION, allocatable, dimension(:) :: dat, average, averagewell
-   open(unit=91, file='well_out.dat')
-   open(unit=92, file='irrig_out.dat')
-   open(unit=93, file='evapotrasp_out.dat')
-   open(unit=94, file='recharge_out.dat')
-   open(unit=95, file='moisture_out.dat')
-   open(unit=96, file='actualET_out.dat')
-   open(unit=97, file='deficiency_out.dat')
-   open(unit=98, file='well_out_flow.dat')
+   open(unit=91, file='well_out_ILR.dat')
+   open(unit=92, file='irrig_out_ILR.dat')
+   open(unit=93, file='evapotrasp_out_ILR.dat')
+   open(unit=94, file='recharge_out_ILR.dat')
+   open(unit=95, file='moisture_out_ILR.dat')
+   open(unit=96, file='actualET_out_ILR.dat')
+   open(unit=97, file='deficiency_out_ILR.dat')
+   open(unit=98, file='well_out_flow_ILR.dat')
 
    allocate( average(npoly), dat(npoly) )
    allocate( averagewell(total_n_wells) )
@@ -384,7 +387,7 @@
    AV_REF_ET_1b = 0.
    AV_REF_ET_2  = 0.
    open(unit=88,file="ref_et_new.txt", status = "old")
-!   open(unit=79, file='Kc_grain.dat')
+!   open(unit=79, file='Kc_grain_ILR.dat')
    do im=1, nmonth
       imonth=MOD(im,12)
       do jday=1, nday(imonth)
