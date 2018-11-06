@@ -9,14 +9,14 @@ library(magrittr)
 ############################             IMPORT DATA             ############################
 #############################################################################################
 FJ_Basecase_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                         # Import Basecase flow data
-                           Flow_m3day = read.table('Streamflow_FJ_SVIHM_Basecase.txt', skip = 2)[,3],
-                           Flow_cfs = read.table('Streamflow_FJ_SVIHM_Basecase.txt', skip = 2)[,3]*0.000408734569)
+                           Flow_m3day = read.table('Streamflow_FJ_SVIHM_Basecase.dat', skip = 2)[,3],
+                           Flow_cfs = read.table('Streamflow_FJ_SVIHM_Basecase.dat', skip = 2)[,3]*0.000408734569)
 FJ_MAR_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                              # Import MAR flow data
-                           Flow_m3day = read.table('Streamflow_FJ_SVIHM_MAR.txt', skip = 2)[,3],
-                           Flow_cfs = read.table('Streamflow_FJ_SVIHM_MAR.txt', skip = 2)[,3]*0.000408734569)
+                           Flow_m3day = read.table('Streamflow_FJ_SVIHM_MAR.dat', skip = 2)[,3],
+                           Flow_cfs = read.table('Streamflow_FJ_SVIHM_MAR.dat', skip = 2)[,3]*0.000408734569)
 FJ_ILR_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                              # Import ILR flow data
-                           Flow_m3day = read.table('Streamflow_FJ_SVIHM_ILR.txt', skip = 2)[,3],
-                           Flow_cfs = read.table('Streamflow_FJ_SVIHM_ILR.txt', skip = 2)[,3]*0.000408734569)
+                           Flow_m3day = read.table('Streamflow_FJ_SVIHM_ILR.dat', skip = 2)[,3],
+                           Flow_cfs = read.table('Streamflow_FJ_SVIHM_ILR.dat', skip = 2)[,3]*0.000408734569)
 
 #############################################################################################
 ##########################             DATA PROCESSING             ##########################
