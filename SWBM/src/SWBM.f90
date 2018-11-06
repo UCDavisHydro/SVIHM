@@ -1,4 +1,4 @@
- PROGRAM SWRM
+ PROGRAM SWBM
   
 ! Scott valley soil water budget model (SWBM)
 ! 
@@ -25,20 +25,20 @@
 ! Irrigation type unknown (999)-> Wheel Line
 ! Water source dry or sub or n* (555) with any irrig type -> et/noIRR
 
-
   USE define_poly
   USE irrigationmodule
   USE outputmodule
   
   IMPLICIT NONE
 
-  INTEGER  :: nmonth, numdays, imonth,jday,i,im,ip, nrows, ncols, dummy, nsegs, n_wel_param
-  INTEGER  :: ip_AG_SW_Flood, ip_AG_SW_WL, ip_AG_SW_CP, ip_AG_GW_Flood, ip_AG_GW_WL, ip_AG_GW_CP                                    ! Field IDs for Daily Output
-  INTEGER  :: ip_AG_MIX_Flood, ip_AG_MIX_WL, ip_AG_MIX_CP, ip_AG_SUB_DRY, ip_Pasture_SW_Flood, ip_Pasture_SW_WL                     ! Field IDs for Daily Output
-  INTEGER  :: ip_Pasture_SW_CP, ip_Pasture_GW_Flood, ip_Pasture_GW_WL, ip_Pasture_GW_CP, ip_Pasture_MIX_Flood, ip_Pasture_MIX_WL    ! Field IDs for Daily Output
-  INTEGER  :: ip_Pasture_MIX_CP, ip_Pasture_SUB_DRY, ip_ETnoIrr_Low_WC8, ip_ETnoIrr_High_WC8, ip_noETnoIrr, ip_Water_Landuse        ! Field IDs for Daily Output
-  INTEGER  :: ip_SW_Flood_DZ
+  INTEGER  :: nmonth, numdays, imonth,jday,i,im,ip, nrows, ncols, dummy, nsegs, n_wel_param, num_daily_out, unit_num
+  ! INTEGER  :: ip_AG_SW_Flood, ip_AG_SW_WL, ip_AG_SW_CP, ip_AG_GW_Flood, ip_AG_GW_WL, ip_AG_GW_CP                                    ! Field IDs for Daily Output
+  ! INTEGER  :: ip_AG_MIX_Flood, ip_AG_MIX_WL, ip_AG_MIX_CP, ip_AG_SUB_DRY, ip_Pasture_SW_Flood, ip_Pasture_SW_WL                     ! Field IDs for Daily Output
+  ! INTEGER  :: ip_Pasture_SW_CP, ip_Pasture_GW_Flood, ip_Pasture_GW_WL, ip_Pasture_GW_CP, ip_Pasture_MIX_Flood, ip_Pasture_MIX_WL    ! Field IDs for Daily Output
+  ! INTEGER  :: ip_Pasture_MIX_CP, ip_Pasture_SUB_DRY, ip_ETnoIrr_Low_WC8, ip_ETnoIrr_High_WC8, ip_noETnoIrr, ip_Water_Landuse        ! Field IDs for Daily Output
+  ! INTEGER  :: ip_SW_Flood_DZ
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
+  INTEGER, ALLOCATABLE, DIMENSION(:)   :: ip_daily_out
   REAL   :: precip, Total_Ref_ET
   REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow
   REAL, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
@@ -46,7 +46,9 @@
   INTEGER, DIMENSION(0:11)  :: nday
   CHARACTER(9) :: param_dummy
   CHARACTER(10)  :: SFR_Template
+  CHARACTER(50), ALLOCATABLE, DIMENSION(:) :: daily_out_name
   INTEGER, DIMENSION(31) :: ET_Active
+  LOGICAL :: daily_out_flag
 ! We defined precip adjusted after discussion with Rick Snyder and after looking at the FAO 56 document
 ! Precip_adjusted = Precip, if Precip > 0.2 * ref_et
 ! Precip_adjusted = 0, if Precip <= 0.2 * ref_et
@@ -95,19 +97,18 @@
    read(212,*) no_flow_matrix   
    open (unit=214,file='ET_Cells_DZ.txt',status='old')      ! Read in MODFLOW recharge zone matrix
    read(214,*) Discharge_Zone_Cells
-   open(unit=215,file='MAR_Array.txt',status='old')      ! Read in MAR recharge matrix
-   read(215,*) MAR_Matrix
+   ! open(unit=215,file='MAR_Array.txt',status='old')      ! Read in MAR recharge matrix
+   ! read(215,*) MAR_Matrix
    
    close(210)
    close(212)
    close(214)
-   close(215)
+   ! close(215)
    
    output_zone_matrix = zone_matrix * no_flow_matrix        ! Create Recharge Zone Matrix with zeros at no flow cells
 !    write(888,'(210i5)') rch_zone_matrix
 !    write(889,'(210i2)') no_flow_matrix   
 !    write(890,'(210i5)') output_zone_matrix   
-
 
    open(unit=532,file='5daysdeficiency.dat')
 !   open(unit=887,file='precip_m_LowBias_July2017.txt')         ! Missing data assumed to have value of zero
@@ -127,86 +128,23 @@
    open(unit=63, file='landuse_area_acres_detailed.dat')
    write(63,'(" SP A_Irr A_n* A_SUB A_DRY G_Irr G_n* G_SUB G_DRY P_Irr P_n* P_SUB P_DRY ET/noIrr noET/noIrr Water Total")')
    
-   open(unit=600, file='Daily_out_Alfalfa-Grain_SW_Flood.dat')               ! Daily output for selected fields
-   open(unit=601, file='Daily_out_Alfalfa-Grain_SW_WL.dat')                  ! Daily output for selected fields
-   open(unit=602, file='Daily_out_Alfalfa-Grain_SW_CP.dat')                  ! Daily output for selected fields
-   open(unit=603, file='Daily_out_Alfalfa-Grain_GW_Flood.dat')               ! Daily output for selected fields
-   open(unit=604, file='Daily_out_Alfalfa-Grain_GW_WL.dat')                  ! Daily output for selected fields
-   open(unit=605, file='Daily_out_Alfalfa-Grain_GW_CP.dat')                  ! Daily output for selected fields
-   open(unit=606, file='Daily_out_Alfalfa-Grain_MIX_Flood.dat')              ! Daily output for selected fields
-   open(unit=607, file='Daily_out_Alfalfa-Grain_MIX_WL.dat')                 ! Daily output for selected fields
-   open(unit=608, file='Daily_out_Alfalfa-Grain_MIX_CP.dat')                 ! Daily output for selected fields
-   open(unit=609, file='Daily_out_Alfalfa-Grain_SUB_DRY.dat')                ! Daily output for selected fields
-   open(unit=610, file='Daily_out_Pasture_SW_Flood.dat')                     ! Daily output for selected fields
-   open(unit=611, file='Daily_out_Pasture_SW_WL.dat')                        ! Daily output for selected fields
-   open(unit=612, file='Daily_out_Pasture_SW_CP.dat')                        ! Daily output for selected fields
-   open(unit=613, file='Daily_out_Pasture_GW_Flood.dat')                     ! Daily output for selected fields
-   open(unit=614, file='Daily_out_Pasture_GW_WL.dat')                        ! Daily output for selected fields
-   open(unit=615, file='Daily_out_Pasture_GW_CP.dat')                        ! Daily output for selected fields
-   open(unit=616, file='Daily_out_Pasture_MIX_Flood.dat')                    ! Daily output for selected fields
-   open(unit=617, file='Daily_out_Pasture_MIX_WL.dat')                       ! Daily output for selected fields
-   open(unit=618, file='Daily_out_Pasture_MIX_CP.dat')                       ! Daily output for selected fields
-   open(unit=619, file='Daily_out_Pasture_SUB_DRY.dat')                      ! Daily output for selected fields
-   open(unit=620, file='Daily_out_ET-noIrr_Low_WC8.dat')                     ! Daily output for selected fields
-   open(unit=621, file='Daily_out_ET-noIrr_High_WC8.dat')                    ! Daily output for selected fields
-   open(unit=622, file='Daily_out_noET-noIrr.dat')                           ! Daily output for selected fields
-   open(unit=623, file='Daily_out_Water_Landuse.dat')                        ! Daily output for selected fields
-   open(unit=624, file='Daily_out_SW_Flood_DZ.dat')                          ! Daily output for selected fields
-   
-   write(600,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(601,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(602,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(603,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(604,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(605,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(606,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(607,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(608,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(609,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(610,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(611,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(612,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(613,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(614,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(615,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(616,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(617,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(618,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(619,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(620,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(621,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(622,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(623,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
-   write(624,'(" #id  precip_adj streamflow irrig  well rch moisture  ET  actualET  deficiency budget WC8 subwn landuse rotation")')
+   open(unit=599, file = 'daily_out.txt', status = 'old')
+   read(599,*)num_daily_out, daily_out_flag
+   ALLOCATE(ip_daily_out(num_daily_out))
+   ALLOCATE(daily_out_name(num_daily_out))
+   if (daily_out_flag) then
+   	 do i=1, num_daily_out
+   	 	 unit_num =  599 + i 
+   	   read(599,*)ip_daily_out(i),daily_out_name(i)
+   	   daily_out_name(i) = trim(daily_out_name(i)) // '_daily_out.dat'
+   	   open(unit=unit_num, file=daily_out_name(i))
+   	   write(unit_num,*)'field_id  precip_adj streamflow irrig  well rch moisture  ET',&
+   	                    '  actualET  deficiency budget WC8 subwn landuse rotation'    
+     end do
+   end if
    
    open(unit=900, file='Recharge_Total.dat')   
-   write(900,'(a24)')'Total Recharge (m^3/day)'
-        
-   ip_AG_SW_Flood=171           ! Polygon ID for Daily output
-   ip_AG_SW_WL=437              ! Polygon ID for Daily output
-   ip_AG_SW_CP=600              ! Polygon ID for Daily output
-   ip_AG_GW_Flood=538           ! Polygon ID for Daily output
-   ip_AG_GW_WL=456              ! Polygon ID for Daily output
-   ip_AG_GW_CP=553              ! Polygon ID for Daily output
-   ip_AG_MIX_Flood=136          ! Polygon ID for Daily output
-   ip_AG_MIX_WL=392             ! Polygon ID for Daily output
-   ip_AG_MIX_CP=387             ! Polygon ID for Daily output
-   ip_AG_SUB_DRY=700            ! Polygon ID for Daily output
-   ip_Pasture_SW_Flood=1914     ! Polygon ID for Daily output
-   ip_Pasture_SW_WL=1936        ! Polygon ID for Daily output
-   ip_Pasture_SW_CP=1913        ! Polygon ID for Daily output
-   ip_Pasture_GW_Flood=1941     ! Polygon ID for Daily output
-   ip_Pasture_GW_WL=1741        ! Polygon ID for Daily output
-   ip_Pasture_GW_CP=1898        ! Polygon ID for Daily output
-   ip_Pasture_MIX_Flood=2007    ! Polygon ID for Daily output
-   ip_Pasture_MIX_WL=1935       ! Polygon ID for Daily output
-   ip_Pasture_MIX_CP=1686       ! Polygon ID for Daily output
-   ip_Pasture_SUB_DRY=1987      ! Polygon ID for Daily output
-   ip_ETnoIrr_Low_WC8=911       ! Polygon ID for Daily output
-   ip_ETnoIrr_High_WC8=902      ! Polygon ID for Daily output
-   ip_noETnoIrr=1228            ! Polygon ID for Daily output
-   ip_Water_Landuse=2100        ! Polygon ID for Daily output
-   ip_SW_Flood_DZ = 1627        ! Polygon ID for Daily output                                
+   write(900,'(a24)')'Total Recharge (m^3/day)'            
                                                        
    open(unit=91, file='well_out.dat')              
    write(91,'("#WELL: amount of monthly water pumped in each polygon")')
@@ -321,7 +259,7 @@
        else
          precip_adjusted=0.
        endif
-		   
+
 		   do ip=1, npoly    
                   
 	       if (imonth==3 .and. jday==31 .and. ip==2119) then ! If last day of the year, set irrigation flags and logical to zero
@@ -335,25 +273,15 @@
 
 		     end if
         
-         
          call IRRIGATION (ip, imonth, jday, precip_adjusted)    
 		     call recharge(ip,precip_adjusted,jday,imonth)
          call deficiency_check(ip, imonth, jday)       
 
        enddo              ! End of polygon loop
-       call daily_out(ip_AG_SW_Flood, ip_AG_SW_WL, ip_AG_SW_CP, ip_AG_GW_Flood, ip_AG_GW_WL, ip_AG_GW_CP, &                ! Print Daily Output for Selected Fields
-                     ip_AG_MIX_Flood, ip_AG_MIX_WL, ip_AG_MIX_CP, ip_AG_SUB_DRY, ip_Pasture_SW_Flood, &                  ! Print Daily Output for Selected Fields
-                     ip_Pasture_SW_WL, ip_Pasture_SW_CP, ip_Pasture_GW_Flood, ip_Pasture_GW_WL, &                        ! Print Daily Output for Selected Fields
-                     ip_Pasture_GW_CP, ip_Pasture_MIX_Flood, ip_Pasture_MIX_WL, ip_Pasture_MIX_CP, &                     ! Print Daily Output for Selected Fields
-                     ip_Pasture_SUB_DRY, ip_ETnoIrr_Low_WC8, ip_ETnoIrr_High_WC8, ip_noETnoIrr, ip_Water_Landuse, &      ! Print Daily Output for Selected Fields
-                     ip_SW_Flood_DZ)                                                                                     ! Print Daily Output for Selected Fields
-           
-      
-
+       if (daily_out_flag) call daily_out(num_daily_out,ip_daily_out)              ! Print Daily Output for Selected Fields
        call pumping(ip, jday, total_n_wells, npoly)   ! Stream depletion subroutine
 		   call monthly_SUM      ! add daily value to monthly total (e.g., monthly%irrigation = monthly%irrigation + daily%irrigation)
        call annual_SUM       ! add daily value to yearly total (e.g., yearly%irrigation = yearly%irrigation + daily%irrigation)
-       ! if (jday==numdays) call SFR_streamflow(numdays, imonth)   ! Convert remaining surface water to SFR inflows at end of the month
        if (jday==numdays) call SFR_streamflow(numdays, imonth)   ! Convert remaining surface water to SFR inflows at end of the month
        enddo             ! End of day loop
        jday = jday -1 ! reset jday to number of days in month (incremented to ndays +1 in do loop above)
@@ -379,116 +307,11 @@
    close(96)
    close(97)
    close(98)
-   
    close(800)
    call cpu_time(finish)
    write(*,'(A7,F6.2,A8)')'Time = ',((finish-start)/60),' minutes'
-   stop
-   contains
-
-!*****************************************************************************************
-   Subroutine final_averages
-
-   integer id, ifile
-   DOUBLE PRECISION, allocatable, dimension(:) :: dat, average, averagewell
-   open(unit=91, file='well_out.dat')
-   open(unit=92, file='irrig_out.dat')
-   open(unit=93, file='evapotrasp_out.dat')
-   open(unit=94, file='recharge_out.dat')
-   open(unit=95, file='moisture_out.dat')
-   open(unit=96, file='actualET_out.dat')
-   open(unit=97, file='deficiency_out.dat')
-   open(unit=98, file='well_out_flow.dat')
-
-   allocate( average(npoly), dat(npoly) )
-   allocate( averagewell(total_n_wells) )
-   average = 0.
-   averagewell = 0.
-   
-   do ifile = 1, 8
-     read(90+ifile,*)
-     do im = 1, nmonth 
-       read(90+ifile,*) id, dat
-       average = average + dat
-     enddo
-     average = average/nmonth
-     write(876,*) "* Average *", 90+ifile
-     write(876,*) average
-     if (ifile == 4) poly(:)%av_recharge = average
-     close(90+ifile)
-   enddo
-
-!   call flush(536)
-!   rewind(536)
-!   read(536,*)
-
-!   do i = 1,nmonth  
-!     read(536,*)
-!     do im = 1, total_n_wells
-!       read(536,*) single_well(i)%well_name, single_well(i)%coordx, &
-!                    single_well(i)%coordy, single_well(i)%pumping
-!       print *, i, im
-!       averagewell = averagewell + single_well(i)%pumping
-!     enddo
-!     averagewell = averagewell/nmonth
-!     write(877,*) single_well(i)%well_name, single_well(i)%coordx, &
-!                    single_well(i)%coordy, averagewell
-!   enddo
-   return
-   end Subroutine final_averages
-!*****************************************************************************************
-   SUBROUTINE AVERAGE_EVAPO
-! AV_REF_ET_1a   : average reference ET for alfalfa
-!                  with SW and flood irrigation.Average over March 25-Oct 15 in 1991-2011
-! AV_REF_ET_1b   : average reference ET for grain with SW and flood irrigation. 
-!                  Average over April 15-July 10 in 1991-2011
-! AV_REF_ET_2    : average reference ET for pasture with SW and flood irrigation, 
-!                  average over April 15-Oct 15 in 1991-2011
-   implicit none
-
-   integer :: counter1a, counter1b, counter2
-   
-   counter1a=0
-   counter1b=0
-   counter2 =0
-   AV_REF_ET_1a = 0.
-   AV_REF_ET_1b = 0.
-   AV_REF_ET_2  = 0.
-   open(unit=88,file="ref_et_new.txt", status = "old")
-!   open(unit=79, file='Kc_grain.dat')
-   do im=1, nmonth
-      imonth=MOD(im,12)
-      do jday=1, nday(imonth)
-        read(88,*) REF_ET
-!        read (79,*)kc_grain
-        if((imonth==6 .and. jday>24).or.(imonth==1 .and. jday<16).or. &
-          (imonth>6 .or. imonth<1)) then
-            counter1a=counter1a+1
-            AV_REF_ET_1a= AV_REF_ET_1a+ REF_ET
-        endif
-        if((imonth==6 .and. jday>14).or.(imonth==9 .and. jday<11).or. &
-          (imonth>6 .or. imonth<9)) then
-            counter1b=counter1b+1
-            AV_REF_ET_1b= AV_REF_ET_1b+ REF_ET*kc_grain
-        endif
-        if((imonth==6 .and. jday>14).or.(imonth==1 .and. jday<16).or. &
-           (imonth>6 .or. imonth<1)) then
-            counter2=counter2+1
-            AV_REF_ET_2= AV_REF_ET_2+ REF_ET
-        endif
-      enddo
-   enddo
-   AV_REF_ET_1a= AV_REF_ET_1a/counter1a
-   AV_REF_ET_1b= AV_REF_ET_1b/counter1b
-   AV_REF_ET_2= AV_REF_ET_2/counter2
-  
-   print *,' AV_REF_ET_1a', AV_REF_ET_1a,'AV_REF_ET_1b', AV_REF_ET_1b,'AV_REF_ET_2',AV_REF_ET_2  
-   rewind(88)
-!   rewind(79)
-   return
-   end SUBROUTINE AVERAGE_EVAPO
-
- end PROGRAM
+   write(800,'(A7,F6.2,A8)')'Time = ',((finish-start)/60),' minutes'
+   END PROGRAM SWBM
 
 !*******************************************************************************************	
   SUBROUTINE deficiency_check(ip,imonth,iday)
