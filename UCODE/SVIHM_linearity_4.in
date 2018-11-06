@@ -56,20 +56,20 @@ BEGIN Model_Input_Files Keywords
 END Model_Input_Files
  
 BEGIN Model_Output_Files Keywords
-  ModOutFile = .\Streamflow_FJ_SVIHM.txt
-    InstructionFile = .\Streamflow_FJ_SVIHM.txt.jif
+  ModOutFile = .\Streamflow_FJ_SVIHM.dat
+    InstructionFile = .\Streamflow_FJ_SVIHM.dat.jif
     Category = Obs
-  ModOutFile = .\Streamflow_BY_SVIHM.txt
-    InstructionFile = .\Streamflow_BY_SVIHM.txt.jif
+  ModOutFile = .\Streamflow_BY_SVIHM.dat
+    InstructionFile = .\Streamflow_BY_SVIHM.dat.jif
     Category = Obs
-  ModOutFile =  .\Streamflow_AS_SVIHM.txt
-    InstructionFile = .\Streamflow_AS_SVIHM.txt.jif
+  ModOutFile =  .\Streamflow_AS_SVIHM.dat
+    InstructionFile = .\Streamflow_AS_SVIHM.dat.jif
     Category = Obs
-  ModOutFile = .\Streamflow_LS_SVIHM.txt
-    InstructionFile = .\Streamflow_LS_SVIHM.txt.jif
+  ModOutFile = .\Streamflow_LS_SVIHM.dat
+    InstructionFile = .\Streamflow_LS_SVIHM.dat.jif
     Category = Obs
-  ModOutFile = .\HobData_SVIHM.txt
-    InstructionFile = .\HobData_SVIHM.txt.jif
+  ModOutFile = .\HobData_SVIHM.dat
+    InstructionFile = .\HobData_SVIHM.dat.jif
     Category = Obs
 END Model_Output_Files
  
