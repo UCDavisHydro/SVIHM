@@ -32,18 +32,11 @@
   
   IMPLICIT NONE
 
-  INTEGER  :: nmonth, numdays, imonth,jday,i,im,ip, nrows, ncols, dummy, nsegs, n_wel_param, num_daily_out, unit_num
-  INTEGER  :: ip_AG_SW_Flood, ip_AG_SW_WL, ip_AG_SW_CP, ip_AG_GW_Flood, ip_AG_GW_WL, ip_AG_GW_CP                                    ! Field IDs for Daily Output
-  INTEGER  :: ip_AG_MIX_Flood, ip_AG_MIX_WL, ip_AG_MIX_CP, ip_AG_SUB_DRY, ip_Pasture_SW_Flood, ip_Pasture_SW_WL                     ! Field IDs for Daily Output
-  INTEGER  :: ip_Pasture_SW_CP, ip_Pasture_GW_Flood, ip_Pasture_GW_WL, ip_Pasture_GW_CP, ip_Pasture_MIX_Flood, ip_Pasture_MIX_WL    ! Field IDs for Daily Output
-  INTEGER  :: ip_Pasture_MIX_CP, ip_Pasture_SUB_DRY, ip_ETnoIrr_Low_WC8, ip_ETnoIrr_High_WC8, ip_noETnoIrr, ip_Water_Landuse        ! Field IDs for Daily Output
-  INTEGER  :: ip_SW_Flood_DZ
-  INTEGER  :: num_MAR_fields
+  INTEGER  :: nmonth, numdays, imonth,jday,i,im,ip, nrows, ncols, dummy, nsegs, n_wel_param, num_daily_out, unit_num, num_MAR_fields
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
   REAL   :: precip, Total_Ref_ET, max_MAR_total_vol
   INTEGER, ALLOCATABLE, DIMENSION(:)  :: MAR_fields, ip_daily_out
   REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow, max_MAR_field_rate, moisture_save
-  REAL, ALLOCATABLE, DIMENSION(:,:)  :: MAR_Matrix
   REAL :: start, finish
   INTEGER, DIMENSION(0:11)  :: nday
   CHARACTER(9) :: param_dummy
@@ -86,7 +79,6 @@
    ALLOCATE(no_flow_matrix(nrows,ncols))
    ALLOCATE(output_zone_matrix(nrows,ncols))
    ALLOCATE(Discharge_Zone_Cells(nrows,ncols))
-   ALLOCATE(MAR_Matrix(nrows,ncols))
    ALLOCATE(drain_flow(nmonth))
    
    
@@ -100,29 +92,25 @@
    read(212,*) no_flow_matrix   
    open (unit=214,file='ET_Cells_DZ.txt',status='old')      ! Read in MODFLOW recharge zone matrix
    read(214,*) Discharge_Zone_Cells
-   ! open(unit=215,file='MAR_Array.txt',status='old')      ! Read in MAR recharge matrix
-   ! read(215,*) MAR_Matrix
-   open(unit=216,file='MAR_Fields.txt',status='old')      ! Read in MAR recharge matrix
-   read(216,*) num_MAR_fields
+   open(unit=215,file='MAR_Fields.txt',status='old')      ! Read in MAR recharge matrix
+   read(215,*) num_MAR_fields
    ALLOCATE(MAR_fields(num_MAR_fields))                  ! Array of MAR field polygon IDs
    ALLOCATE(max_MAR_field_rate(num_MAR_fields))          ! Array of maximum infiltration rate for MAR fields (1/10th lowest SSURGO value)
    ALLOCATE(moisture_save(npoly))                        ! Array of soil-moisture needed to recalculate recharge for MAR fields
    moisture_save = 0.                                    ! Initialize array
    do i=1, num_MAR_fields
-     read(216,*)MAR_fields(i), max_MAR_field_rate(i)
+     read(215,*)MAR_fields(i), max_MAR_field_rate(i)
    end do
    max_MAR_total_vol = 42.*2446.57554277                           ! Maximum MAR volume per day in m^3 (42 cfs over 1 day)
    close(210)
    close(212)
    close(214)
-   ! close(215)
-   close(216)
+   close(215)
    
    output_zone_matrix = zone_matrix * no_flow_matrix        ! Create Recharge Zone Matrix with zeros at no flow cells
 !    write(888,'(210i5)') rch_zone_matrix
 !    write(889,'(210i2)') no_flow_matrix   
 !    write(890,'(210i5)') output_zone_matrix   
-
 
    open(unit=532,file='5daysdeficiency_MAR.dat')
 !   open(unit=887,file='precip_m_LowBias_July2017.txt')         ! Missing data assumed to have value of zero
