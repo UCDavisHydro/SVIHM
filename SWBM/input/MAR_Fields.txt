@@ -1,4 +1,4 @@
-32  ! Number of MAR fields
+32  102756  ! Number of MAR fields, Daily volume (m^3) available for MAR
 211  0.03456 ! Field Polygon Number, Max infiltration rate (1/10th lowest K from SSURGO)
 289  0.03456
 252  0.03456

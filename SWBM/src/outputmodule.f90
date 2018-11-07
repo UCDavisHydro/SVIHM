@@ -401,15 +401,16 @@ end subroutine monthly_pumping
 !     end subroutine yearly_out
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~       
-   subroutine daily_out(num_daily_out,ip_daily_out)
+   subroutine daily_out(num_daily_out,ip_daily_out, eff_precip)
    
    INTEGER, INTENT(in) ::  num_daily_out
    INTEGER, DIMENSION(num_daily_out), INTENT(in) :: ip_daily_out
    INTEGER  :: unit_num, i
+   DOUBLE PRECISION, INTENT(in) :: eff_precip
    
    do i=1,num_daily_out
      unit_num = 599+i
-     write(unit_num,'(i5,11F20.8,3i4)') ip_daily_out(i), precip_adjusted, streamflow_in(poly(ip_daily_out(i))%subwn),      &
+     write(unit_num,'(i5,11F20.8,3i4)') ip_daily_out(i), eff_precip, streamflow_in(poly(ip_daily_out(i))%subwn),      &
                                         daily(ip_daily_out(i))%irrigation, daily(ip_daily_out(i))%well,          &
                                         daily(ip_daily_out(i))%recharge, daily(ip_daily_out(i))%moisture,        & 
                                         daily(ip_daily_out(i))%evapotrasp,  daily(ip_daily_out(i))%actualET,     &  
@@ -424,10 +425,10 @@ end subroutine monthly_pumping
 ! but makes the program very slow and should be done only when there is the specific 
 ! purpose of saving all these values
 
-!    subroutine daily_out( ip, precip_adjusted)!
+!    subroutine daily_out( ip, eff_precip)!
 
 !      INTEGER::ip
-!      DOUBLE PRECISION :: precip_adjusted
+!      DOUBLE PRECISION :: eff_precip
 !      character(len=9) :: fileroot
 !      character(len=13) :: outday
          
@@ -438,7 +439,7 @@ end subroutine monthly_pumping
 
 !      open (unit = 600, file = outday, position="append")
 
-!      write(600,'(i5,10f16.5,2i4)') ip, precip_adjusted,streamflow_in(poly(ip)%subwn), &
+!      write(600,'(i5,10f16.5,2i4)') ip, eff_precip,streamflow_in(poly(ip)%subwn), &
 !                               daily(ip)%irrigation, daily(ip)%well,       &
 !                               daily(ip)%recharge, daily(ip)%moisture,     &
 !                               daily(ip)%evapotrasp, daily(ip)%actualET,   &
@@ -734,7 +735,9 @@ end subroutine monthly_pumping
              	 grain_irr_area = grain_irr_area + poly(ip)%area	      ! Add area to irrigated grain category
              end if	  
            else
-           	print*,'SOMETHING IS ROTTEN IN DENMARK. ALFALFA-GRAIN ROTATION ERROR.'
+           	write(*,*)'SOMETHING IS ROTTEN IN DENMARK. ALFALFA-GRAIN ROTATION ERROR.'
+           	write(800,*)'SOMETHING IS ROTTEN IN DENMARK. ALFALFA-GRAIN ROTATION ERROR.'
+           	CALL EXIT
            end if
        case (2)    ! pasture
            if (poly(ip)%irr_type == 555) then               ! If n* (non-irrigated alfalfa/grain)
