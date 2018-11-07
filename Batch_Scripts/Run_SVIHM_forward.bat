@@ -1,4 +1,6 @@
 @ECHO OFF
+copy Drains_initial_m3day.txt Drains_m3day.txt
+
 REM Run SWBM
 SWBM.exe
 
