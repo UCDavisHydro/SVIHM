@@ -1,2 +1,2 @@
-2119  167  252  440  210  2 UCODE
-! npolygons  total_n_wells nmonth nrows ncols RD_mult SFR_Template
+2119  167  252  440  210  2 UCODE Basecase
+! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, nlay, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR
