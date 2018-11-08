@@ -291,14 +291,19 @@
 		     call deficiency_check(ip, imonth, jday)       
        enddo              ! End of polygon loop
        if (MAR_active) then 
-         call MAR(imonth, num_MAR_fields, MAR_fields, max_MAR_field_rate, MAR_vol,&
-                  eff_precip,jday,moisture_save)
+         call MAR(imonth, num_MAR_fields, MAR_fields, max_MAR_field_rate, MAR_vol, eff_precip, jday, moisture_save)
        end if
        if (daily_out_flag) call daily_out(num_daily_out,ip_daily_out, eff_precip)              ! Print Daily Output for Selected Fields
        call pumping(ip, jday, total_n_wells, npoly)   ! Stream depletion subroutine
 		   call monthly_SUM      ! add daily value to monthly total (e.g., monthly%irrigation = monthly%irrigation + daily%irrigation)
        call annual_SUM       ! add daily value to yearly total (e.g., yearly%irrigation = yearly%irrigation + daily%irrigation)
-       if (jday==numdays) call SFR_streamflow(numdays, imonth)   ! Convert remaining surface water to SFR inflows at end of the month
+       if (jday==numdays) then
+         if (MAR_active) then
+           call SFR_streamflow_w_MAR(numdays, imonth)   ! Convert remaining surface water to SFR inflows at end of the month
+         else
+           call SFR_streamflow(numdays, imonth)         ! Convert remaining surface water to SFR inflows at end of the month	
+         end if
+       end if
        if (MAR_active .and. jday==numdays) then
          write(*,'(a13,f4.2,a6,f5.2,a13)')'MAR Volume = ',sum(monthly%MAR_vol)/1E6, ' Mm3 (', &
          sum(monthly%MAR_vol)*0.000408734569/numdays,' cfs per day)'
