@@ -257,14 +257,13 @@ MODULE irrigationmodule
     do iMAR=1, num_MAR_fields
       daily(MAR_fields(iMAR))%MAR = max_MAR_field_rate(iMAR)
       daily(MAR_fields(iMAR))%MAR_vol = daily(MAR_fields(iMAR))%MAR * poly(MAR_fields(iMAR))%area
-      if (sum(daily%MAR_vol)>MAR_vol) then                                                  ! Don't exceed 42cfs maximum per day
+      if (sum(daily%MAR_vol)>MAR_vol) then                                                            ! Don't exceed maximum availabe MAR volume per day
         daily(MAR_fields(iMAR))%MAR_vol = 0.                                                          ! Reset MAR volume for field
         daily(MAR_fields(iMAR))%MAR_vol = min(MAR_vol-sum(daily%MAR_vol),&
                                               max_MAR_field_rate(iMAR)*poly(MAR_fields(iMAR))%area)   ! Minimum between available voume and max infiltration rate
         daily(MAR_fields(iMAR))%MAR = daily(MAR_fields(iMAR))%MAR_vol / poly(MAR_fields(iMAR))%area   ! Convert volume to length      
       end if
-      daily(MAR_fields(iMAR))%irrigation = daily(MAR_fields(iMAR))%irrigation &                       ! Add MAR to existing irrigation value (irrigation only overlaps for 5 days in March so it should be relatively small)
-                                         + daily(MAR_fields(iMAR))%MAR      
+      daily(MAR_fields(iMAR))%irrigation = daily(MAR_fields(iMAR))%irrigation + daily(MAR_fields(iMAR))%MAR ! Add MAR to existing irrigation value (irrigation only overlaps for 5 days in March so it should be relatively small)        
       daily(MAR_fields(iMAR))%actualET=min(daily(MAR_fields(iMAR))%evapotrasp,&
                                            moisture_save(MAR_fields(iMAR))+eff_precip+&
                                            daily(MAR_fields(iMAR))%irrigation) 
@@ -770,7 +769,7 @@ MODULE irrigationmodule
       SFR_Flows(32) = 0.
     else if (imonth == 4 .or. imonth == 5 .or. imonth == 6) then
       SFR_Flows(31) = 0.                                            ! No MAR Diversion from Farmer's Ditch
-      SFR_Flows(32) = sum(daily%MAR_vol)                            ! 42 cfs diversion from SVID
+      SFR_Flows(32) = sum(monthly%MAR_vol) / numdays                ! Divert MAR volume for the month converted to a daily flow rate
     else
       SFR_Flows(31) = 8.  * 2446.58                                 ! Farmers Ditch Diversion (~8 cfs total diversion, leakage rate is about 6 cfs, assumed 2 cfs consumptive use)
       SFR_Flows(32) = 16. * 2446.58                                 ! SVID Diversion (~16 cfs total diversion, leakage rate is about 14 cfs, assumed 2 cfs consumptive use)     	
