@@ -19,11 +19,13 @@ source('Read_LST.R')
 ###########################################################################################
 LST_Name = 'SVIHM.lst'
 LST_MAR_Name = 'SVIHM_MAR.lst'
+LST_ILR_Name = 'SVIHM_ILR.lst'
 WB_Components_MODFLOW = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
 out_dir = paste0(getwd(),'/Results')
 nstress = 252
 PRINT_BUDGET = FALSE         # Print monthly water budget to file (TRUE/FALSE)
-COMPARE_MAR_BUDGET = TRUE   # Compare basecase budget with MAR scenario water budget (TRUE/FALSE)
+COMPARE_MAR_BUDGET = FALSE   # Compare basecase budget with MAR scenario water budget (TRUE/FALSE)
+COMPARE_ILR_BUDGET = TRUE   # Compare basecase budget with MAR scenario water budget (TRUE/FALSE)
 StartingMonths = seq(as.Date("1990/10/1"), by = "month", length.out = 252)
 Dry_Avg_Wet_Yrs = c(2001,2010,2006)
 ###############################################################################################
@@ -937,7 +939,7 @@ if (COMPARE_MAR_BUDGET==TRUE){
       scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,by = 5), expand = c(0,0)) +
       xlab('') +
       ylab('Volume (TAF)') +
-      ggtitle('Annual MODFLOW Water Budget') +
+      ggtitle('MODFLOW Annual Water Budget Difference: MAR') +
       scale_fill_manual(values = MODFLOW_colors)+
       theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_rect(color = 'black', fill = NA),
@@ -956,6 +958,90 @@ if (COMPARE_MAR_BUDGET==TRUE){
   #graphics.off()
   }
 
+##############################################################################################
+##############                   COMPARE ILR BUDGET                 ##########################
+##############################################################################################
+if (COMPARE_ILR_BUDGET==TRUE){
+  # SWBM Budget
+  SWBM_ILR_Budget_Monthly = read.table('monthly_water_budget_ILR.dat', header = T)
+  names(SWBM_ILR_Budget_Monthly) = c('Month',SWBM_Terms)  
+  SWBM_ILR_Budget_Monthly$Month = format(seq(as.Date("1990/10/1"), by = "month", length.out = 252),'%b-%Y')
+  SWBM_ILR_Budget_Monthly$WY = rep(seq(1991,2011),each = 12)
+  SWBM_ILR_Budget_Annual = aggregate(.~WY,SWBM_ILR_Budget_Monthly[,!names(SWBM_ILR_Budget_Monthly)%in%'Month'], FUN = sum)
+  SWBM_ILR_Monthly_Diff = subset(SWBM_ILR_Budget_Monthly, select = SWBM_Terms) - subset(SWBM_Budget_Monthly, select = SWBM_Terms)
+  SWBM_ILR_Monthly_Diff$WY = rep(seq(1991,2011),each = 12)
+  SWBM_ILR_Annual_Diff = aggregate(.~WY, SWBM_ILR_Monthly_Diff, FUN = sum)                           
+  SWBM_ILR_Annual_Diff_melt = melt(SWBM_ILR_Annual_Diff, id.vars = 'WY')
+  SWBM_ILR_Annual_Diff_melt$variable = factor(SWBM_ILR_Annual_Diff_melt$variable, levels = SWBM_flux_labels)
+  SWBM_ILR_Annual_Diff_melt = SWBM_ILR_Annual_Diff_melt[order(SWBM_ILR_Annual_Diff_melt$variable),]
+  
+  #pdf(paste0(out_dir,'/Water_Budget_Annual_ILR_Diff_SWBM_Mm3.pdf'), width = 8.5, height = 4)
+  (SWBM_Annual_ILR_Diff_Plot_Mm3 = ggplot(SWBM_ILR_Annual_Diff_melt, aes(x = WY, y = value/1E6)) +
+      geom_bar(aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
+      scale_x_continuous(limits = c(1990.4,2011.6), breaks = seq(1991,2011,by = 2),expand = c(0,0))  +
+      #scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,by = 10), expand = c(0,0)) +
+      xlab('') +
+      ylab(bquote('Volume ('*Mm^3*')')) +
+      ggtitle('SWBM Annual Water Budget Difference: ILR') +
+      scale_fill_manual(values = SWBM_colors)+
+      theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.background = element_rect(color = 'black', fill = NA),
+            plot.background = element_rect(color = NA, fill = NA),
+            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.7), 
+            axis.text = element_text(size = 8),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = c(0.25, 0.95), 
+            legend.key = element_rect(fill = NA, color = NA),
+            legend.background = element_rect(fill = NA, color = NA),
+            legend.direction = 'horizontal',
+            legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
+            legend.key.height = unit(10,'pt')
+      )
+  )
+  #graphics.off()
+  
+  MODFLOW_Budget(LST_ILR_Name, WB_Components_MODFLOW,'ILR')
+  Water_Budget_MODFLOW_ILR_Annual_Plotting = data.frame(Water_Year = rep(seq(1991,2011),each = 12),
+                                                        Recharge = Volumetric_Flux_MODFLOW_ILR$RECHARGE_net_m3,
+                                                        ET = Volumetric_Flux_MODFLOW_ILR$ET_SEGMENTS_net_m3,
+                                                        Storage = Volumetric_Flux_MODFLOW_ILR$STORAGE_net_m3,
+                                                        Drains = Volumetric_Flux_MODFLOW_ILR$DRAINS_net_m3,
+                                                        `Stream Leakage` = Volumetric_Flux_MODFLOW_ILR$STREAM_LEAKAGE_net_m3,
+                                                        Wells = -Volumetric_Flux_MODFLOW_ILR$WELLS_out_m3,              #negative sign since flux is out
+                                                        `Canal Seepage/MFR` = Volumetric_Flux_MODFLOW_ILR$WELLS_in_m3)
+  names(Water_Budget_MODFLOW_ILR_Annual_Plotting) = c('Water Year', MODFLOW_flux_labels)
+  Water_Budget_MODFLOW_ILR_Annual_Plotting = aggregate(.~`Water Year`,Water_Budget_MODFLOW_ILR_Annual_Plotting, FUN = sum)
+  Water_Budget_MODFLOW_ILR_Annual_Diff = Water_Budget_MODFLOW_ILR_Annual_Plotting - Water_Budget_MODFLOW_Annual_Plotting
+  Water_Budget_MODFLOW_ILR_Annual_Diff$`Water Year` = seq(1991,2011)
+  Water_Budget_MODFLOW_ILR_Annual_Diff_Plotting_melt = melt(Water_Budget_MODFLOW_ILR_Annual_Diff, id.vars = 'Water Year')
+  Water_Budget_MODFLOW_ILR_Annual_Diff_Plotting_melt$variable = factor(Water_Budget_MODFLOW_ILR_Annual_Diff_Plotting_melt$variable, levels = c('Recharge','ET','Storage','Drains','Stream Leakage','Wells', 'Canal Seepage/MFR'))
+  Water_Budget_MODFLOW_ILR_Annual_Diff_Plotting_melt = Water_Budget_MODFLOW_ILR_Annual_Diff_Plotting_melt[order(Water_Budget_MODFLOW_ILR_Annual_Diff_Plotting_melt$variable),]
+  
+  #pdf(paste0(out_dir,'/Water_Budget_Annual_ILR_Diff_MODFLOW_Mm3.pdf'), width = 8.5, height = 4)
+  (MODFLOW_Annual_ILR_Diff_Budget_Plot_TAF = ggplot(Water_Budget_MODFLOW_ILR_Annual_Diff_Plotting_melt, aes(x = `Water Year`, y = value*0.000810714/1000)) +
+      geom_bar(aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
+      scale_x_continuous(limits = c(1990.4,2011.6), breaks = seq(1991,2011,by = 2),expand = c(0,0))  +
+      scale_y_continuous(limits = c(-12,12), breaks = seq(-12,12,by = 4), expand = c(0,0)) +
+      xlab('') +
+      ylab('Volume (TAF)') +
+      ggtitle('MODFLOW Annual Water Budget Difference: ILR') +
+      scale_fill_manual(values = MODFLOW_colors)+
+      theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.background = element_rect(color = 'black', fill = NA),
+            plot.background = element_rect(color = NA, fill = NA),
+            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.7), 
+            axis.text = element_text(size = 8),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = c(0.25, 0.95), 
+            legend.key = element_rect(fill = NA, color = NA),
+            legend.background = element_rect(fill = NA, color = NA),
+            legend.direction = 'horizontal',
+            legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
+            legend.key.height = unit(10,'pt')
+      )
+  )
+  #graphics.off()
+}
 # 
 # ##############################################################################################
 # ##############                 MONTHLY STREAM LEAKAGE               ##########################
