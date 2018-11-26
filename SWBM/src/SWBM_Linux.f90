@@ -87,25 +87,29 @@
   read(536,*)param_dummy,n_wel_param  ! read in number of well parameters (for printing later)
   close(536)
   
-  call READ_KC_IRREFF                        ! Read in crop coefficients and irrigation efficiencies
-  call readpoly                              ! Read in field info
-  call read_well                             ! Read in well info
-  
   ALLOCATE(zone_matrix(nrows,ncols))
   ALLOCATE(no_flow_matrix(nrows,ncols))
   ALLOCATE(output_zone_matrix(nrows,ncols))
   ALLOCATE(Discharge_Zone_Cells(nrows,ncols))
   ALLOCATE(drain_flow(nmonth))
   
+  open(unit=211,file='Recharge_Zones_SVIHM.txt',status='old')      ! Read in MODFLOW recharge zone matrix
+  read(211,*) zone_matrix
+  open(unit=212,file='No_Flow_SVIHM.txt',status='old')       ! Read in MODFLOW no flow cell matrix
+  read(212,*) no_flow_matrix  
+  output_zone_matrix = zone_matrix * no_flow_matrix        ! Create Recharge Zone Matrix with zeros at no flow cells
   open(unit=213, file='SVIHM_SFR_template.txt', status='old')
-  read(213,*) dummy,nsegs
-  close(213)
-  open (unit=210,file='Recharge_Zones_SVIHM.txt',status='old')      ! Read in MODFLOW recharge zone matrix
-  read(210,*) zone_matrix
-  open (unit=212,file='No_Flow_SVIHM.txt',status='old')       ! Read in MODFLOW no flow cell matrix
-  read(212,*) no_flow_matrix   
-  open (unit=214,file='ET_Cells_DZ.txt',status='old')      ! Read in MODFLOW recharge zone matrix
+  read(213,*) dummy,nsegs 
+  open(unit=214,file='ET_Cells_DZ.txt',status='old')      ! Read in MODFLOW recharge zone matrix
   read(214,*) Discharge_Zone_Cells
+  close(211)
+  close(212)
+  close(213)
+  close(214)
+  
+  call READ_KC_IRREFF                                ! Read in crop coefficients and irrigation efficiencies
+  call readpoly(npoly, nrows, ncols, output_zone_matrix) ! Read in field info
+  call read_well                                     ! Read in well info
   
   if (MAR_active) then
     open(unit=215,file='MAR_Fields.txt',status='old')      ! Read in MAR recharge matrix
@@ -121,12 +125,7 @@
   
   close(210)
   close(212)
-  close(214)
-  
-  output_zone_matrix = zone_matrix * no_flow_matrix        ! Create Recharge Zone Matrix with zeros at no flow cells
-!   write(888,'(210i5)') rch_zone_matrix
-!   write(889,'(210i2)') no_flow_matrix   
-!   write(890,'(210i5)') output_zone_matrix   
+  close(214) 
   
   open(unit=532,file='5daysdeficiency.dat')
 !  open(unit=887,file='precip_m_LowBias_July2017.txt')         ! Missing data assumed to have value of zero
@@ -162,10 +161,54 @@
   end if
   
   open(unit=900, file='Recharge_Total.dat')   
-  write(900,'(a24)')'Total Recharge (m^3/day)'            
+  write(900,*)'Total_Recharge_m^3/day  Total_Recharge_m^3'            
+  
+  open(unit=84, file='SVIHM.rch', STATUS = 'REPLACE')
                                                       
-  open(unit=91, file='well_out.dat')              
-  write(91,'("#WELL: amount of monthly water pumped in each polygon")')
+  open(unit=91, file='monthly_gw_normalized.dat', STATUS = 'REPLACE')              
+  write(91,*)'Monthly groundwater applied to each field normalized to the field area (m)'
+  write(91,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /)
+  open(unit=92, file='monthly_irrig_normalized.dat')
+  write(92,*)'Monthly irrigation applied to each field normalized to the field area (m)'
+  write(92,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /)    
+  open(unit=93, file='monthly_pET_normalized.dat')
+  write(93,*)'Monthly potential ET for each field normalized to the field area (m)'
+  write(93,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+  open(unit=94, file='monthly_recharge_normalized.dat')
+  write(94,*)'Monthly groundwater recharge from each field normalized to the field area (m)'
+  write(94,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+  open(unit=95, file='monthly_storage_normalized.dat')
+  write(95,*)'Storage at the end of the month for each field normalized to the field area (m)'
+  write(95,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+  open(unit=96, file='monthly_aET_normalized.dat')
+  write(96,*)'Monthly actual ET for each field normalized to the field area (m)'
+  write(96,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+  open(unit=97, file='monthly_deficiency_normalized.dat')
+  write(97,*)'Monthly groundwater recharge from each field normalized to the field area (m)'
+  write(97,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+  
+  open(unit=200, file='monthly_gw_volume.dat', STATUS = 'REPLACE')              
+  write(200,*)'Monthly groundwater volume applied to each field (m^3)'
+  write(200,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /)
+  open(unit=201, file='monthly_irrig_volume.dat')
+  write(201,*)'Monthly irrigation volume applied to each field (m^3)'
+  write(201,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /)    
+  open(unit=202, file='monthly_pET_volume.dat')
+  write(202,*)'Monthly potential ET for each field (m^3)'
+  write(202,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+  open(unit=203, file='monthly_recharge_volume.dat')
+  write(203,*)'Monthly groundwater recharge from each field (m^3)'
+  write(203,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+  open(unit=204, file='monthly_storage_volume.dat')
+  write(204,*)'Storage at the end of the month for each field (m^3)'
+  write(204,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+  open(unit=205, file='monthly_aET_volume.dat')
+  write(205,*)'Monthly actual ET for each field (m^3)'
+  write(205,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+  open(unit=206, file='monthly_deficiency_volume.dat')
+  write(206,*)'Monthly groundwater recharge from each field (m^3)'
+  write(206,'(a14, 2119i5)')' Stress_Period',(/ (i, i = 1, npoly) /) 
+                             
   open(unit=530, file='Monthly_Pumping_Volume_By_Well.dat')
   write(530,*)'Monthly Pumping Volume (m^3) by well'
   write(530,'(172i12)')single_well(:)%well_name
@@ -177,52 +220,39 @@
   write(537,'(200i12)')single_well(:)%well_name
   open(unit=538, file='daily_average_RCH.dat')
   write(538, *)"Daily weighted averaged recharge caluclated in each well, to be averaged and used in stream depletion"
-  open(unit=92, file='irrig_out.dat')
-  write(92,'("#IRRIGATION: amount of monthly irrigation in each polygon")')   
-  open(unit=93, file='evapotrasp_out.dat')
-  write(93,'("#Evapotrasp: amount of monthly evapotraspiration in each polygon")')
-  open(unit=94, file='recharge_out.dat')
-  write(94,'("#Recharge: amount of monthly recharge in each polygon")')
-  open(unit=84, file='SVIHM.rch')
-  open(unit=95, file='moisture_out.dat')
-  write(95,'("#Moisture: amount of monthly moisture in each polygon")')
-  open(unit=96, file='actualET_out.dat')
-  write(96,'("#ActualET: amount of monthly actualET in each polygon")')
-  open(unit=97, file='deficiency_out.dat')
-  write(97,'("#Deficiency: amount of monthly deficiency (ET-actualET) in each polygon")')
-  open(unit=98, file='well_out_flow.dat')
-  write(98,'("#WELL: monthly FLOW pumped in each polygon")')
   open(unit=120, file='ET_Active_Days.dat')                       
   write(120,'("Number of Days ET is Active in each polyon")')    
   open(unit=66, file='streamflow_input.txt', status='old')
   read(66,*)                                                        ! Read Header into nothing
   
-  open (unit=102, file='monthly_well_by_subw.dat')
-  open (unit=103, file='monthly_irrig_by_subw.dat')
-  open (unit=104, file='monthly_evapo_by_subw.dat')
-  open (unit=105, file='monthly_recharge_by_subw.dat')
-  open (unit=106, file='monthly_well_by_luse.dat')
-  open (unit=107, file='monthly_irrig_by_luse.dat')
-  open (unit=108, file='monthly_evapo_by_luse.dat')
-  open (unit=109, file='monthly_recharge_by_luse.dat')
-  open (unit=110, file='monthly_deficiency_by_subw.dat')
-  open (unit=111, file='monthly_deficiency_by_luse.dat')
-  open (unit=112, file='monthly_actualET_by_luse.dat')
-  open (unit=113, file='monthly_actualET_by_subw.dat')
-  open (unit=114, file='monthly_moisture_by_subw.dat') 
-  open (unit=115, file='monthly_moisture_by_luse.dat') 
+  open(unit=101, file='monthly_surfacewater_by_subw.dat')        
+  open(unit=102, file='monthly_groundwater_by_subw.dat')      
+  open(unit=103, file='monthly_irrigation_by_subw.dat')     
+  open(unit=104, file='monthly_pET_by_subw.dat')     
+  open(unit=105, file='monthly_aET_by_subw.dat')  
+  open(unit=106, file='monthly_recharge_by_subw.dat')  
+  open(unit=107, file='monthly_deficiency_by_subw.dat')
+  open(unit=108, file='monthly_storage_by_subw.dat')   
   
-  open (unit=116, file='monthly_water_budget.dat')
-  write(116,*)'Stress_Period Precip SW_Irr GW_Irr ET Recharge Storage'
-   
-!   open (unit=202, file='yearly_well_by_subw.dat')
-!   open (unit=203, file='yearly_irrig_by_subw.dat')
-!   open (unit=204, file='yearly_evapo_by_subw.dat')
-!   open (unit=205, file='yearly_recharge_by_subw.dat')
-!   open (unit=206, file='yearly_well_by_luse.dat')
-!   open (unit=207, file='yearly_irrig_by_luse.dat')
-!   open (unit=208, file='yearly_evapo_by_luse.dat')
-!   open (unit=209, file='yearly_recharge_by_luse.dat')
+  do i=101,108
+    write(i,*)'Stress_Period  Scott  French  Etna  Patterson  Kidder  Moffet  Mill  Shackleford  Scott_Tailings'
+  end do
+                                                       
+  open(unit=109, file='monthly_surfacewater_by_luse.dat')        
+  open(unit=110, file='monthly_groundwater_by_luse.dat')      
+  open(unit=111, file='monthly_irrigation_by_luse.dat')     
+  open(unit=112, file='monthly_pET_by_luse.dat')     
+  open(unit=113, file='monthly_aET_by_luse.dat')  
+  open(unit=114, file='monthly_recharge_by_luse.dat')  
+  open(unit=115, file='monthly_deficiency_by_luse.dat')
+  open(unit=116, file='monthly_storage_by_luse.dat')  
+  
+  do i=109,116
+    write(i,*)'Stress_Period  Alfalfa  Grain  Pasture  ET_NoIrr  NoET_NoIrr'
+  end do
+  
+  open (unit=117, file='monthly_water_budget.dat')
+  write(117,*)'Stress_Period Precip SW_Irr GW_Irr ET Recharge Storage'
 
    CALL EXECUTE_COMMAND_LINE('cp SVIHM_ETS_template.txt SVIHM.ets')
    CALL EXECUTE_COMMAND_LINE('cp SVIHM_SFR_template.txt SVIHM.sfr')
@@ -255,7 +285,6 @@
      call zero_month                                 ! Zero out monthly accumulated volume
      if (imonth==1) then                             ! If October:
        call zero_year                                ! Zero out yearly accumulated volume
-       call open_yearly_file                         ! Open new file for yearly output
      endif    
      read(220,*)drain_flow(im)                       ! Read drain flow into array         
      do jday=1, nday(imonth)                         ! Loop over days in each month
@@ -291,14 +320,19 @@
 		     call deficiency_check(ip, imonth, jday)       
        enddo              ! End of polygon loop
        if (MAR_active) then 
-         call MAR(imonth, num_MAR_fields, MAR_fields, max_MAR_field_rate, MAR_vol,&
-                  eff_precip,jday,moisture_save)
+         call MAR(imonth, num_MAR_fields, MAR_fields, max_MAR_field_rate, MAR_vol, eff_precip, jday, moisture_save)
        end if
        if (daily_out_flag) call daily_out(num_daily_out,ip_daily_out, eff_precip)              ! Print Daily Output for Selected Fields
        call pumping(ip, jday, total_n_wells, npoly)   ! Stream depletion subroutine
 		   call monthly_SUM      ! add daily value to monthly total (e.g., monthly%irrigation = monthly%irrigation + daily%irrigation)
        call annual_SUM       ! add daily value to yearly total (e.g., yearly%irrigation = yearly%irrigation + daily%irrigation)
-       if (jday==numdays) call SFR_streamflow(numdays, imonth)   ! Convert remaining surface water to SFR inflows at end of the month
+       if (jday==numdays) then
+         if (MAR_active) then
+           call SFR_streamflow_w_MAR(numdays, imonth)   ! Convert remaining surface water to SFR inflows at end of the month
+         else
+           call SFR_streamflow(numdays, imonth)         ! Convert remaining surface water to SFR inflows at end of the month	
+         end if
+       end if
        if (MAR_active .and. jday==numdays) then
          write(*,'(a13,f4.2,a6,f5.2,a13)')'MAR Volume = ',sum(monthly%MAR_vol)/1E6, ' Mm3 (', &
          sum(monthly%MAR_vol)*0.000408734569/numdays,' cfs per day)'
@@ -309,11 +343,11 @@
        end if
        enddo             ! End of day loop
        jday = jday -1 ! reset jday to number of days in month (incremented to ndays +1 in do loop above)
-       call monthly_out_length(im)
+       call convert_length_to_volume
+       call monthly_out_by_field(im)
        call monthly_pumping(im, jday, total_n_wells)
 		   call ET_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells,npoly)
 		   Total_Ref_ET = 0.  ! Reset monthly Average ET
-       call recharge_out (im)
 		   call recharge_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix)    
        call monthly_volume_out		   
        call write_MODFLOW_SFR(im, nmonth, nsegs, SFR_Flows, drain_flow)
@@ -410,23 +444,25 @@
   REAL, DIMENSION(npoly), INTENT(inout) :: moisture_save
   LOGICAL, INTENT(in)  :: MAR_active
   
-  daily(ip)%actualET=min(daily(ip)%evapotrasp,before(ip)%moisture+eff_precip+daily(ip)%irrigation) 
-  daily(ip)%deficiency=daily(ip)%evapotrasp-daily(ip)%actualET
-  if (daily(ip)%actualET > 0) daily(ip)%ET_active =  1   ! Set ET flag to 1 if ET is active that day
-  if (poly(ip)%landuse==2) then                                    ! if pasture  
-    rch = max(0., (before(ip)%moisture+eff_precip+daily(ip)%irrigation-daily(ip)%actualET)-0.5*poly(ip)%WC8 )
-    daily(ip)%recharge = rch  
-  else if ( poly(ip)%landuse==25 .or. poly(ip)%landuse==3 )  then  ! if alfalfa/grain/native veg 
-    rch = max(0., (before(ip)%moisture+eff_precip+daily(ip)%irrigation-daily(ip)%actualET)-poly(ip)%WC8 )
-    daily(ip)%recharge = rch 
-  else if (poly(ip)%landuse==4) then  ! noET/NoIrr 
-    daily(ip)%recharge = eff_precip
-  endif
-  daily(ip)%moisture=max(0.,before(ip)%moisture+eff_precip+daily(ip)%irrigation-daily(ip)%actualET-daily(ip)%recharge)
-  call waterbudget(ip, eff_precip)
-  if (MAR_active) moisture_save(ip) = before(ip)%moisture 
-  before(ip)%moisture = daily(ip)%moisture
-  daily(ip)%change_in_storage = eff_precip+daily(ip)%irrigation-daily(ip)%actualET-daily(ip)%recharge
+  if (poly(ip)%landuse /= 6) then      ! No recharge for fields with water landuse
+    daily(ip)%actualET=min(daily(ip)%evapotrasp,before(ip)%moisture+eff_precip+daily(ip)%irrigation) 
+    daily(ip)%deficiency=daily(ip)%evapotrasp-daily(ip)%actualET
+    if (daily(ip)%actualET > 0) daily(ip)%ET_active =  1   ! Set ET flag to 1 if ET is active that day
+    if (poly(ip)%landuse==2) then                                    ! if pasture  
+      rch = max(0., (before(ip)%moisture+eff_precip+daily(ip)%irrigation-daily(ip)%actualET)-0.5*poly(ip)%WC8 )
+      daily(ip)%recharge = rch  
+    else if ( poly(ip)%landuse==25 .or. poly(ip)%landuse==3 )  then  ! if alfalfa/grain/native veg 
+      rch = max(0., (before(ip)%moisture+eff_precip+daily(ip)%irrigation-daily(ip)%actualET)-poly(ip)%WC8 )
+      daily(ip)%recharge = rch 
+    else if (poly(ip)%landuse==4) then  ! noET/NoIrr 
+      daily(ip)%recharge = eff_precip
+    endif
+    daily(ip)%moisture=max(0.,before(ip)%moisture+eff_precip+daily(ip)%irrigation-daily(ip)%actualET-daily(ip)%recharge)
+    call waterbudget(ip, eff_precip)
+    if (MAR_active) moisture_save(ip) = before(ip)%moisture 
+    before(ip)%moisture = daily(ip)%moisture
+    daily(ip)%change_in_storage = eff_precip+daily(ip)%irrigation-daily(ip)%actualET-daily(ip)%recharge	
+  end if  
 
   END SUBROUTINE RECHARGE
   

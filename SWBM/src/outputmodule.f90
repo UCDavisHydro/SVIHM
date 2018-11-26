@@ -14,62 +14,21 @@
  DOUBLE PRECISION :: G_n_star_area, G_SUB_area, G_DRY_Area
  DOUBLE PRECISION :: P_n_star_area, P_SUB_area, P_DRY_Area 
  DOUBLE PRECISION :: LU3_area, Total_area
+ DOUBLE PRECISION, DIMENSION(nsubwn) :: subwnwell, subwnactualET, subwnsw, subwnmoisture, subwnstorage
+ DOUBLE PRECISION, DIMENSION(nsubwn) :: subwnirrig, subwnevapo, subwnrecharge, subwndeficiency
+ DOUBLE PRECISION, DIMENSION(nlanduse) :: landuseirrig, landuseevapo, landusedeficiency, landusesw
+ DOUBLE PRECISION, DIMENSION(nlanduse) :: landusewell, landuserecharge,landuseactualET, landusemoisture, landusestorage
  contains
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine open_monthly_file(imonth)
- 
-      integer  :: imonth
-      character(len=6) :: fileroot
-      character(len=9) :: outmonth
     
-      fileroot = "month."
-      if (imonth<10) then
-        write(outmonth,'(a6,"00",i1)') fileroot, imonth
-      else if(imonth<100) then
-        write(outmonth,'(a6,"0",i2)') fileroot, imonth
-      else
-        write(outmonth,'(a6,i3)') fileroot, imonth
-      endif
-      open (unit = 89, file = outmonth)
-
-      return
-
-    end subroutine open_monthly_file
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    subroutine open_yearly_file
- 
-      integer, save  ::  iyear =0 
-      character(len=5) :: prefix
-      character(len=25) :: outyear
-      character(len=18) :: suffix
-    
-!      if (imonth==0) then
-
-        iyear=iyear+1
-        prefix = "year_" 
-        suffix = "_annual_totals.dat"
-        
-        if (iyear<10) then
-          write(outyear,'(a5,i1,a18)') prefix, iyear, suffix 
-        else  
-          write(outyear,'(a5,i2,a18)') prefix, iyear, suffix   
-        end if  
-        open (unit = 99, file = outyear)
-
-!      endif
-
-      return
-
-    end subroutine open_yearly_file
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     subroutine monthly_SUM
 
+    ! Minor issue with change in storage and moisture. Change in storage is really the running total, need to fix it by differencing from month to month and also year to year.
+    
     monthly%irrigation         = monthly%irrigation         + daily%irrigation        ! Add daily irrigation length to monthly total
     monthly%well               = monthly%well               + daily%well              ! Add daily pumping length to monthly total
     monthly%recharge           = monthly%recharge           + daily%recharge          ! Add daily recharge length to monthly total
-    monthly%moisture           = monthly%moisture           + daily%moisture          ! Add daily moisture length to monthly total
+    monthly%moisture           = monthly%moisture           + daily%change_in_storage !  
     monthly%evapotrasp         = monthly%evapotrasp         + daily%evapotrasp        ! Add daily ET length to monthly total
     monthly%actualET           = monthly%actualET           + daily%actualET          ! Add daily actualET length to monthly total
     monthly%deficiency         = monthly%deficiency         + daily%deficiency        ! Add daily deficiency length to monthly total
@@ -80,20 +39,20 @@
     
     end subroutine monthly_SUM
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     subroutine annual_SUM
 
     yearly%irrigation          = yearly%irrigation          + daily%irrigation         ! Add daily irrigation length to yearly total
     yearly%well                = yearly%well                + daily%well               ! Add daily pumping length to yearly total   
     yearly%recharge            = yearly%recharge            + daily%recharge           ! Add daily recharge length to yearly total  
-    yearly%moisture            = yearly%moisture            + daily%moisture           ! Add daily moisture length to yearly total  
+    yearly%moisture            = yearly%moisture            + daily%change_in_storage  ! Add daily moisture length to yearly total  
     yearly%evapotrasp          = yearly%evapotrasp          + daily%evapotrasp         ! Add daily ET length to yearly total        
     yearly%actualET            = yearly%actualET            + daily%actualET           ! Add daily actualET length to yearly total  
     yearly%deficiency          = yearly%deficiency          + daily%deficiency         ! Add daily deficiency length to yearly total
     yearly%ET_active           = yearly%ET_active           + daily%ET_active          ! Add daily ET length to yearly total    
     yearly%effprecip           = yearly%effprecip           + daily%effprecip          ! Add daily effective precip length to yearly total    
     yearly%change_in_storage   = yearly%change_in_storage   + daily%change_in_storage  ! Add daily change in storage length to yearly total    
-    yearly%MAR_vol             = yearly%MAR_vol         + daily%MAR_vol                ! Add daily MAR to annual total
+    yearly%MAR_vol             = yearly%MAR_vol             + daily%MAR_vol            ! Add daily MAR to annual total
     
     end subroutine annual_SUM
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,34 +62,34 @@
     integer, save :: imonth = 0
     
     imonth = imonth+1
-    subwnwell = 0.       
-    subwnirrig = 0.
-    subwnevapo = 0.
-    subwnactualET = 0.
-    subwnrecharge = 0.
-    subwndeficiency = 0.
-    subwnmoisture = 0.      
-    subwnstorage = 0.                      
-                              
-    landusewell = 0.
-    landuseirrig = 0.
-    landuseevapo = 0.
-    landuserecharge = 0.
+    subwnsw           = 0.
+    subwnwell         = 0.                            
+    subwnirrig        = 0.                         
+    subwnevapo        = 0.                          
+    subwnactualET     = 0.                       
+    subwnrecharge     = 0.                    
+    subwndeficiency   = 0.                 
+    subwnmoisture     = 0.                  
+     
+    landusesw         = 0.                          
+    landusewell       = 0.
+    landuseirrig      = 0.
+    landuseevapo      = 0.
+    landuserecharge   = 0.
     landusedeficiency = 0.
-    landuseactualET = 0.
-    landusemoisture = 0.
-    landusestorage  = 0.
-    
-    call convert_length_to_volume      
+    landuseactualET   = 0.
+    landusemoisture   = 0.      
     
     do ip = 1, npoly
-      subwnwell( poly(ip)%subwn ) = subwnwell( poly(ip)%subwn ) + monthly(ip)%well_vol  
-      subwnirrig( poly(ip)%subwn ) = subwnirrig( poly(ip)%subwn ) + monthly(ip)%irrigation_vol
-      subwnevapo( poly(ip)%subwn ) = subwnevapo( poly(ip)%subwn ) + monthly(ip)%evapotrasp_vol
-      subwnactualET( poly(ip)%subwn ) = subwnactualET( poly(ip)%subwn ) + monthly(ip)%actualET_vol
-      subwnrecharge( poly(ip)%subwn ) = subwnrecharge( poly(ip)%subwn ) + monthly(ip)%recharge_vol
-      subwndeficiency( poly(ip)%subwn ) = subwndeficiency( poly(ip)%subwn ) + monthly(ip)%deficiency_vol   
-      subwnmoisture( poly(ip)%subwn ) = subwnmoisture( poly(ip)%subwn ) + monthly(ip)%moisture_vol
+      subwnsw(poly(ip)%subwn)         = subwnsw(poly(ip)%subwn) &
+                                        + (monthly(ip)%irrigation_vol - monthly(ip)%well_vol)
+      subwnwell(poly(ip)%subwn)       = subwnwell(poly(ip)%subwn)       + monthly(ip)%well_vol  
+      subwnirrig(poly(ip)%subwn)      = subwnirrig(poly(ip)%subwn)      + monthly(ip)%irrigation_vol
+      subwnevapo(poly(ip)%subwn)      = subwnevapo(poly(ip)%subwn)      + monthly(ip)%evapotrasp_vol
+      subwnactualET(poly(ip)%subwn)   = subwnactualET(poly(ip)%subwn)   + monthly(ip)%actualET_vol
+      subwnrecharge(poly(ip)%subwn)   = subwnrecharge(poly(ip)%subwn)   + monthly(ip)%recharge_vol
+      subwndeficiency(poly(ip)%subwn) = subwndeficiency(poly(ip)%subwn) + monthly(ip)%deficiency_vol   
+      subwnmoisture(poly(ip)%subwn)   = subwnmoisture(poly(ip)%subwn)   + monthly(ip)%moisture_vol
     
       select case (poly(ip)%landuse)
         case (25)   !alfalfa / grain
@@ -146,12 +105,16 @@
           else
             ilanduse = 3 ! pasture
           endif
-         case(3)
+        case(3)
            ilanduse = 4  ! ET_noIRRIG
+           if (daily(ip)%irrigation .GT. 0) write(800,*)'Polygon',ip
+           if (monthly(ip)%irrigation_vol .GT. 0) write(800,*)'Polygon',ip
         case (4)
-           ilanduse = 5  ! noET_noIRRIG
+           ilanduse = 5  ! noET_noIRRIG     
         end select 
-        
+      
+      landusesw(ilanduse)         = landusesw(ilanduse)  &
+                                    + (monthly(ip)%irrigation_vol - monthly(ip)%well_vol)
       landusewell(ilanduse)       = landusewell(ilanduse)       + monthly(ip)%well_vol 
       landuseirrig(ilanduse)      = landuseirrig(ilanduse)      + monthly(ip)%irrigation_vol
       landuseevapo(ilanduse)      = landuseevapo(ilanduse)      + monthly(ip)%evapotrasp_vol
@@ -160,24 +123,26 @@
       landuseactualET(ilanduse)   = landuseactualET(ilanduse)   + monthly(ip)%actualET_vol   
       landusemoisture(ilanduse)   = landusemoisture(ilanduse)   + monthly(ip)%moisture_vol
     enddo    
-    
-    write(102,'(i3,9F20.8)') imonth, subwnwell(:)
-    write(103,'(i3,9F20.8)') imonth, subwnirrig(:)         
-    write(104,'(i3,9F20.8)') imonth, subwnevapo(:)
-    write(113,'(i3,9F20.8)') imonth, subwnactualET(:)
-    write(105,'(i3,9F20.8)') imonth, subwnrecharge(:)
-    write(110,'(i3,9F20.8)') imonth, subwndeficiency(:)
-    write(114,'(i3,9F20.8)') imonth, subwnmoisture(:)
-     
-    write(106,'(i3,5F20.8)') imonth, landusewell(:)    
-    write(107,'(i3,5F20.8)') imonth, landuseirrig(:)   
-    write(108,'(i3,5F20.8)') imonth, landuseevapo(:) 
-    write(109,'(i3,5F20.8)') imonth, landuserecharge(:)
-    write(111,'(i3,5F20.8)') imonth, landusedeficiency(:)
-    write(112,'(i3,5F20.8)') imonth, landuseactualET(:)
-    write(115,'(i3,5F20.8)') imonth, landusemoisture(:)
-    
-    write(116,'(i4,6F20.0)')imonth, sum(monthly%effprecip_vol), (sum(monthly%irrigation_vol)-sum(monthly%well_vol)), &
+                                          
+    write(101,'(i4,9F20.8)') imonth, subwnsw(:)                         
+    write(102,'(i4,9F20.8)') imonth, subwnwell(:)                     
+    write(103,'(i4,9F20.8)') imonth, subwnirrig(:)                    
+    write(104,'(i4,9F20.8)') imonth, subwnevapo(:)                    
+    write(105,'(i4,9F20.8)') imonth, subwnactualET(:)                 
+    write(106,'(i4,9F20.8)') imonth, subwnrecharge(:)                 
+    write(107,'(i4,9F20.8)') imonth, subwndeficiency(:)               
+    write(108,'(i4,9F20.8)') imonth, subwnmoisture(:)                 
+                                                                      
+    write(109,'(i4,5F20.8)') imonth, landusesw(:)                     
+    write(110,'(i4,5F20.8)') imonth, landusewell(:)                   
+    write(111,'(i4,5F20.8)') imonth, landuseirrig(:)                                                                    
+    write(112,'(i4,5F20.8)') imonth, landuseevapo(:)                      
+    write(113,'(i4,5F20.8)') imonth, landuseactualET(:)                   
+    write(114,'(i4,5F20.8)') imonth, landuserecharge(:)                  
+    write(115,'(i4,5F20.8)') imonth, landusedeficiency(:)               
+    write(116,'(i4,5F20.8)') imonth, landusemoisture(:)                                          
+                                                                        
+    write(117,'(i4,6F20.0)')imonth, sum(monthly%effprecip_vol), (sum(monthly%irrigation_vol)-sum(monthly%well_vol)), &
     sum(monthly%well_vol), -sum(monthly%actualET_vol), -sum(monthly%recharge_vol), -sum(monthly%change_in_storage_vol)
     
     end subroutine monthly_volume_out
@@ -194,16 +159,16 @@
 
     do ip=1, npoly
        iwell = poly(ip)%id_well
-       areawell(iwell) = areawell(iwell) + poly(ip)%area
+       areawell(iwell) = areawell(iwell) + poly(ip)%MF_area
     enddo
 
     do ip=1, npoly
        iwell = poly(ip)%id_well
-!       wav_recharge(iwell) = wav_recharge(iwell) + daily(ip)%recharge*poly(ip)%area  *  &
-!                             poly(ip)%area/areawell(iwell)
+!       wav_recharge(iwell) = wav_recharge(iwell) + daily(ip)%recharge*poly(ip)%MF_area  *  &
+!                             poly(ip)%MF_area/areawell(iwell)
 !With or without weighted average???
 
-		wav_recharge(iwell) = wav_recharge(iwell) + daily(ip)%recharge*poly(ip)%area  
+		wav_recharge(iwell) = wav_recharge(iwell) + daily(ip)%recharge*poly(ip)%MF_area  
     enddo
     
 !   do iwell = 1, total_n_wells  
@@ -232,7 +197,8 @@ subroutine pumping(ip, jday, total_n_wells, npoly)
     
     do ip=1, npoly
          iwell = poly(ip)%id_well  ! obtain well index location
-         single_well(iwell)%daily_well_vol =  single_well(iwell)%daily_well_vol + daily(ip)%well*poly(ip)%area   ! assign daily pumping volume
+         single_well(iwell)%daily_well_vol =  single_well(iwell)%daily_well_vol + &
+                                              daily(ip)%well*poly(ip)%MF_area   ! assign daily pumping volume
     enddo
     
     do iwell=1,total_n_wells
@@ -313,94 +279,6 @@ end subroutine monthly_pumping
   
   end subroutine  write_MODFLOW_WEL
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! !!! TO BE FIXED!!!!!!!!!!!!!!!
-! 
-!     subroutine yearly_out
-! 
-!     integer :: ip, ilanduse 
-!     integer, save :: iyear  = 0
-! 
-! ! Yearly data will be saved for pumpage, irrigation, evapotranspiration and recharge as a total rate for each subwatershed.
-! ! To get the rate, first flows for each polygon are calculated, then summed up for each subwatershed and finaly divided 
-! ! by the area of the subwatershed. same procedure for the total landuse calculation
-! 
-!     
-! !    call flow_calc (ip)      !transform rates in flows before summing up over the subwatershed or landuse
-! !    call calc_rate (ip)      !transform flows in rates for each subwatershed and each landuse
-! 
-!     ilanduse = 0
-!     iyear = iyear+1
-!     subwnwell = 0.
-!     do ip = 1, npoly
-! !      call flow_calc (ip)  
-!       subwnwell( poly(ip)%subwn ) = subwnwell( poly(ip)%subwn ) + yearly(ip)%wellflow  
-!     enddo    
-!     write(202,'(i8,20g12.4)') iyear, subwnwell(1:nsubwn)
-!     
-!     subwnirrig = 0.
-!     do ip = 1, npoly
-!       subwnirrig( poly(ip)%subwn ) = subwnirrig( poly(ip)%subwn ) + yearly(ip)%irrigationflow  
-!     enddo    
-!     write(203,'(i8,20g12.4)') iyear, subwnirrig(1:nsubwn)
-! 
-!     subwnevapo = 0.
-!     do ip = 1, npoly
-!       subwnevapo( poly(ip)%subwn ) = subwnevapo( poly(ip)%subwn ) + yearly(ip)%evapotraspflow  
-!     enddo    
-!     write(204,'(i8,20g12.4)') iyear, subwnevapo(1:nsubwn)
-! 
-!     subwnrecharge = 0.
-!     do ip = 1, npoly
-!       subwnrecharge( poly(ip)%subwn ) = subwnrecharge( poly(ip)%subwn ) + yearly(ip)%rechargeflow  
-!     enddo 
-!     write(205,'(i8,20g12.4)') iyear, subwnrecharge(1:nsubwn)
-! 
-! ! Yearly data will be saved for pumpage, irrigation, evapotranspiration and recharge as a total for each landuse
-! 
-!     landusewell = 0.
-!     landuseirrig = 0.
-!     landuseevapo = 0.
-!     landuserecharge = 0.
-! 
-!     do ip = 1, npoly
-!       select case (poly(ip)%landuse)
-!       case (25)   !alfalfa / grain
-!          if(poly(ip)%rotation == 11) ilanduse=1
-!          if(poly(ip)%rotation == 12) ilanduse=2
-!       case (2)
-!          ilanduse = 3  !pasture
-!        case(3)
-!          ilanduse = 4  !ET_noIRRIG
-!       case (4)
-!          ilanduse = 5  !noET_noIRRIG
-!       end select 
-! 
-!       landusewell( ilanduse )    = landusewell( ilanduse ) + yearly(ip)%wellflow  
-!       landuseirrig( ilanduse )   = landuseirrig(ilanduse ) + yearly(ip)%irrigationflow 
-!       landuseevapo(ilanduse )    = landuseevapo(ilanduse ) + yearly(ip)%evapotraspflow 
-!       landuserecharge(ilanduse ) = landuserecharge(ilanduse ) + yearly(ip)%rechargeflow 
-!     enddo  
-!     write(206,'(i8,20f20.4)') iyear, landusewell(1:nlanduse)    
-!     write(207,'(i8,20f20.4)') iyear, landuseirrig(1:nlanduse)   
-!     write(208,'(i8,20f20.4)') iyear, landuseevapo(1:nlanduse) 
-!     write(209,'(i8,20f20.4)') iyear, landuserecharge(1:nlanduse)
-! 
-!     write(99,'("#polyid irrigation well recharge moisture evapo actual_ET deficiency sws l_use rotation water_source")')
-! 
-!     do ip = 1, npoly
-! 
-!       write(99,'(i5,7f10.3,4i4)') ip, yearly(ip)%irrigation, yearly(ip)%well,   &
-!                                   yearly(ip)%recharge, yearly(ip)%moisture,     &
-!                                   yearly(ip)%evapotrasp, yearly(ip)%actualET,   &
-!                                   yearly(ip)%deficiency, poly(ip)%subwn,        &
-!                                   poly(ip)%landuse, poly(ip)%rotation, poly(ip)%water_source
-! 
-!     enddo
-!     close(99)
-!     end subroutine yearly_out
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~       
    subroutine daily_out(num_daily_out,ip_daily_out, eff_precip)
    
    INTEGER, INTENT(in) ::  num_daily_out
@@ -448,37 +326,30 @@ end subroutine monthly_pumping
 !      close(600)
 !    end subroutine daily_out
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine monthly_out_length(im)
- 
-    integer :: im
-
-    write(91,*) im, monthly(:)%well
-    write(92,*) im, monthly(:)%irrigation
-    write(93,*) im, monthly(:)%evapotrasp
-    write(94,*) im, monthly(:)%recharge
-    write(96,*) im, monthly(:)%actualET
-    write(97,*) im, monthly(:)%deficiency
-    write(98,*) im, monthly(:)%well_vol
-    write(120,'(i4,2119i4)')im, monthly(:)%ET_active
+    subroutine monthly_out_by_field(im)                                  
+                                                            
+    INTEGER, INTENT(in) :: im                               
+                                                                         
+    write(91,'(i4,2119g12.5)')im, monthly%well               
+    write(92,'(i4,2119g12.5)')im, monthly%irrigation      
+    write(93,'(i4,2119g12.5)')im, monthly%evapotrasp                   
+    write(94,'(i4,2119g12.5)')im, monthly%recharge        
+    write(95,'(i4,2119g12.5)')im, daily%moisture             
+    write(96,'(i4,2119g12.5)')im, monthly%actualET        
+    write(97,'(i4,2119g12.5)')im, monthly%deficiency                           
+    write(120,'(i4,2119i4)')im, monthly%ET_active        
+                                                                         
+    write(200,'(i4,2119g12.5)')im, monthly%well_vol          
+    write(201,'(i4,2119g12.5)')im, monthly%irrigation_vol 
+    write(202,'(i4,2119g12.5)')im, monthly%evapotrasp_vol                  
+    write(203,'(i4,2119g12.5)')im, monthly%recharge_vol   
+    write(204,'(i4,2119g12.5)')im, daily%moisture*poly%MF_area           
+    write(205,'(i4,2119g12.5)')im, monthly%actualET_vol                    
+    write(206,'(i4,2119g12.5)')im, monthly%deficiency_vol
         
-    end subroutine monthly_out_length
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine irrig_out(imonth)
- 
-    integer :: imonth
+    end subroutine monthly_out_by_field
 
-    write(92,*) imonth, monthly(:)%irrigation
-
-    end subroutine irrig_out
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine evapotrasp_out(imonth)
- 
-    integer :: imonth
-
-    write(93,*) imonth, monthly(:)%evapotrasp
-
-    end subroutine evapotrasp_out
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     subroutine ET_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells, npoly)
  
     INTEGER, INTENT(IN) :: im,imonth,nrows,ncols, npoly
@@ -519,14 +390,7 @@ end subroutine monthly_pumping
       write(83,'(10e14.6)') Extinction_depth_matrix  ! Write ET Extinction Depth
     end if
     end subroutine ET_out_MODFLOW	
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine recharge_out(imonth)
 
-    integer :: imonth
-
-    write(94,*) imonth, monthly(:)%recharge
-
-    end subroutine recharge_out	
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     subroutine recharge_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix)  ! Recharge file            
@@ -557,7 +421,7 @@ end subroutine monthly_pumping
         end do
       write(84,'(10e14.6)') recharge_matrix   
       ttl_rch = sum(recharge_matrix*10000)
-      write(900,*) ttl_rch
+      write(900,*) ttl_rch, ttl_rch*nday(imonth)
     end subroutine recharge_out_MODFLOW
     
 ! ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
@@ -607,66 +471,30 @@ end subroutine monthly_pumping
 !       write(84,'(10e14.6)') recharge_matrix      
 !       write(900,*) ttl_rch
 !     end subroutine recharge_out_MODFLOW_w_MAR
-	
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine moisture_out(imonth)
- 
-    integer :: imonth
 
-    write(95,*) imonth, monthly(:)%moisture
-
-    end subroutine moisture_out		
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine actualET_out(imonth)
- 
-    integer :: imonth
-
-    write(96,*) imonth, monthly(:)%actualET
-
-    end subroutine actualET_out	
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine deficiency_out(imonth)
- 
-    integer :: imonth
-
-    write(97,*) imonth, monthly(:)%deficiency
-
-    end subroutine deficiency_out
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine well_out_vol(imonth)
- 
-    integer :: imonth
-
-    write(98,*) imonth, monthly(:)%well_vol
-
-    end subroutine well_out_vol
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
     subroutine convert_length_to_volume
 
-    monthly%irrigation_vol         = monthly%irrigation        *poly%area
-    monthly%evapotrasp_vol         = monthly%evapotrasp        *poly%area
-    monthly%moisture_vol           = monthly%moisture          *poly%area
-    monthly%actualET_vol           = monthly%actualET          *poly%area
-    monthly%recharge_vol           = monthly%recharge          *poly%area
-    monthly%well_vol               = monthly%well              *poly%area
-    monthly%deficiency_vol         = monthly%deficiency        *poly%area      
-    monthly%effprecip_vol          = monthly%effprecip         *poly%area      
-    monthly%change_in_storage_vol  = monthly%change_in_storage *poly%area
+    monthly%irrigation_vol         = monthly%irrigation        *poly%MF_area
+    monthly%evapotrasp_vol         = monthly%evapotrasp        *poly%MF_area
+    monthly%moisture_vol           = monthly%moisture          *poly%MF_area
+    monthly%actualET_vol           = monthly%actualET          *poly%MF_area
+    monthly%recharge_vol           = monthly%recharge          *poly%MF_area
+    monthly%well_vol               = monthly%well              *poly%MF_area
+    monthly%deficiency_vol         = monthly%deficiency        *poly%MF_area      
+    monthly%effprecip_vol          = monthly%effprecip         *poly%MF_area      
+    monthly%change_in_storage_vol  = monthly%change_in_storage *poly%MF_area
 
-    yearly%irrigation_vol          = yearly%irrigation         *poly%area
-    yearly%evapotrasp_vol          = yearly%evapotrasp         *poly%area
-    yearly%moisture_vol            = yearly%moisture           *poly%area
-    yearly%actualET_vol            = yearly%actualET           *poly%area
-    yearly%recharge_vol            = yearly%recharge           *poly%area
-    yearly%well_vol                = yearly%well               *poly%area
-    yearly%deficiency_vol          = yearly%deficiency         *poly%area
-    yearly%effprecip_vol           = yearly%effprecip          *poly%area      
-    yearly%change_in_storage_vol   = yearly%change_in_storage  *poly%area
+    yearly%irrigation_vol          = yearly%irrigation         *poly%MF_area
+    yearly%evapotrasp_vol          = yearly%evapotrasp         *poly%MF_area
+    yearly%moisture_vol            = yearly%moisture           *poly%MF_area
+    yearly%actualET_vol            = yearly%actualET           *poly%MF_area
+    yearly%recharge_vol            = yearly%recharge           *poly%MF_area
+    yearly%well_vol                = yearly%well               *poly%MF_area
+    yearly%deficiency_vol          = yearly%deficiency         *poly%MF_area
+    yearly%effprecip_vol           = yearly%effprecip          *poly%MF_area      
+    yearly%change_in_storage_vol   = yearly%change_in_storage  *poly%MF_area
     
    end subroutine convert_length_to_volume
 
@@ -675,64 +503,61 @@ end subroutine monthly_pumping
 
     integer ::  ip, im
  
-    scott_area        =0.
-    french_area       =0.
-    etna_area         =0.
-    patterson_area    =0.
-    kidder_area       =0.
-    moffet_area       =0.
-    mill_area         =0.
-    shackleford_area  =0.
-    scott_tailing_area=0.
+    scott_area         = 0.
+    french_area        = 0.
+    etna_area          = 0.
+    patterson_area     = 0.
+    kidder_area        = 0.
+    moffet_area        = 0.
+    mill_area          = 0.
+    shackleford_area   = 0.
+    scott_tailing_area = 0.
 
-    alfalfa_irr_area   =0.
-    grain_irr_area     =0.
-    pasture_irr_area   =0.
-    et_noirr_area  =0.
-    noet_noirr_area=0.
-	  water_area=0.
-	  A_n_star_area = 0.
-	  A_SUB_area = 0.
-	  A_DRY_area = 0.
-	  G_n_star_area = 0.
-	  G_SUB_area = 0.
-	  G_DRY_area = 0.
-	  P_n_star_area = 0.
-	  P_SUB_area = 0.
-	  P_DRY_area = 0.
-    LU3_area = 0.
+    alfalfa_irr_area   = 0.
+    grain_irr_area     = 0.
+    pasture_irr_area   = 0.
+    et_noirr_area      = 0.
+    noet_noirr_area    = 0.
+	  water_area         = 0.
+	  A_n_star_area      = 0.
+	  A_SUB_area         = 0.
+	  A_DRY_area         = 0.
+	  G_n_star_area      = 0.
+	  G_SUB_area         = 0.
+	  G_DRY_area         = 0.
+	  P_n_star_area      = 0.
+	  P_SUB_area         = 0.
+	  P_DRY_area         = 0.
+    LU3_area           = 0.
     do ip = 1, npoly
-      
-       ! I sum here only the area of the polygons interested by irrigation, so this is NOT the total area
-       ! for each landuse
     
        select case (poly(ip)%landuse)
        case (25)   ! alfalfa / grain
            if (poly(ip)%rotation==11) then
              if (poly(ip)%irr_type == 555) then               ! If n* (non-irrigated alfalfa)
-               et_noirr_area = et_noirr_area + poly(ip)%area	! Add area to ET/noIrr
-               A_n_star_area = A_n_star_area + poly(ip)%area  ! Add area to alfalfa n* sub category
+               et_noirr_area = et_noirr_area + poly(ip)%MF_area	! Add area to ET/noIrr
+               A_n_star_area = A_n_star_area + poly(ip)%MF_area  ! Add area to alfalfa n* sub category
              else if (poly(ip)%water_source == 4) then        ! If SUB (non-irrigated alfalfa)
-           	   et_noirr_area = et_noirr_area + poly(ip)%area	! Add area to ET/noIrr
-               A_SUB_area = A_SUB_area + poly(ip)%area	      ! Add area to  alfalfa sub-irrigated sub category
+           	   et_noirr_area = et_noirr_area + poly(ip)%MF_area	! Add area to ET/noIrr
+               A_SUB_area = A_SUB_area + poly(ip)%MF_area	      ! Add area to  alfalfa sub-irrigated sub category
              else if (poly(ip)%water_source == 5) then        ! If DRY (non-irrigated alfalfa)
-               et_noirr_area = et_noirr_area + poly(ip)%area	! Add area to ET/noIrr
-               A_DRY_area = A_DRY_area + poly(ip)%area        ! Add area to alfalfa dry sub category
+               et_noirr_area = et_noirr_area + poly(ip)%MF_area	! Add area to ET/noIrr
+               A_DRY_area = A_DRY_area + poly(ip)%MF_area        ! Add area to alfalfa dry sub category
              else
-             	 alfalfa_irr_area = alfalfa_irr_area + poly(ip)%area    ! Add area to irrigated alfalfa category
+             	 alfalfa_irr_area = alfalfa_irr_area + poly(ip)%MF_area    ! Add area to irrigated alfalfa category
              end if
            else if (poly(ip)%rotation==12) then
              if (poly(ip)%irr_type == 555) then               ! If n* (non-irrigated grain)
-               et_noirr_area = et_noirr_area + poly(ip)%area	! Add area to ET/noIrr
-               G_n_star_area = G_n_star_area + poly(ip)%area  ! Add area to  grain n* sub category
+               et_noirr_area = et_noirr_area + poly(ip)%MF_area	! Add area to ET/noIrr
+               G_n_star_area = G_n_star_area + poly(ip)%MF_area  ! Add area to  grain n* sub category
              else if (poly(ip)%water_source == 4) then        ! If SUB (non-irrigated grain)
-           	   et_noirr_area = et_noirr_area + poly(ip)%area	! Add area to ET/noIrr
-               G_SUB_area = G_SUB_area + poly(ip)%area	      ! Add area to grain sub-irrigated sub category
+           	   et_noirr_area = et_noirr_area + poly(ip)%MF_area	! Add area to ET/noIrr
+               G_SUB_area = G_SUB_area + poly(ip)%MF_area	      ! Add area to grain sub-irrigated sub category
              else if (poly(ip)%water_source == 5) then        ! If DRY (non-irrigated grain)
-               et_noirr_area = et_noirr_area + poly(ip)%area	! Add area to ET/noIrr
-               G_DRY_area = G_DRY_area + poly(ip)%area        ! Add area to grain dry sub category
+               et_noirr_area = et_noirr_area + poly(ip)%MF_area	! Add area to ET/noIrr
+               G_DRY_area = G_DRY_area + poly(ip)%MF_area        ! Add area to grain dry sub category
              else
-             	 grain_irr_area = grain_irr_area + poly(ip)%area	      ! Add area to irrigated grain category
+             	 grain_irr_area = grain_irr_area + poly(ip)%MF_area	      ! Add area to irrigated grain category
              end if	  
            else
            	write(*,*)'SOMETHING IS ROTTEN IN DENMARK. ALFALFA-GRAIN ROTATION ERROR.'
@@ -741,45 +566,45 @@ end subroutine monthly_pumping
            end if
        case (2)    ! pasture
            if (poly(ip)%irr_type == 555) then               ! If n* (non-irrigated alfalfa/grain)
-             et_noirr_area = et_noirr_area + poly(ip)%area	! Add area to ET/noIrr
-             P_n_star_area = P_n_star_area + poly(ip)%area  ! Add area to n* sub category
+             et_noirr_area = et_noirr_area + poly(ip)%MF_area	! Add area to ET/noIrr
+             P_n_star_area = P_n_star_area + poly(ip)%MF_area  ! Add area to n* sub category
            else if (poly(ip)%water_source == 4) then        ! If SUB (non-irrigated alfalfa/grain)
-           	 et_noirr_area = et_noirr_area + poly(ip)%area	! Add area to ET/noIrr
-             P_SUB_area = P_SUB_area + poly(ip)%area	      ! Add area to sub-irrigated sub category
+           	 et_noirr_area = et_noirr_area + poly(ip)%MF_area	! Add area to ET/noIrr
+             P_SUB_area = P_SUB_area + poly(ip)%MF_area	      ! Add area to sub-irrigated sub category
            else if (poly(ip)%water_source == 5) then        ! If DRY (non-irrigated alfalfa/grain)
-             et_noirr_area = et_noirr_area + poly(ip)%area	! Add area to ET/noIrr
-             P_DRY_area = P_DRY_area + poly(ip)%area        ! Add area to dry sub category
+             et_noirr_area = et_noirr_area + poly(ip)%MF_area	! Add area to ET/noIrr
+             P_DRY_area = P_DRY_area + poly(ip)%MF_area        ! Add area to dry sub category
            else                                             
-             pasture_irr_area=pasture_irr_area + poly(ip)%area      ! Add area to irrigated pasture category   
+             pasture_irr_area=pasture_irr_area + poly(ip)%MF_area      ! Add area to irrigated pasture category   
            endif
        case (3)    !ET_noIRR
-         et_noirr_area  = et_noirr_area + poly(ip)%area     ! Total area of ET/noIrr including n*, SUB, and DRY fields
-         LU3_area  = LU3_area + poly(ip)%area               ! Original area of Landuse = 3 in polygon input table    
+         et_noirr_area  = et_noirr_area + poly(ip)%MF_area     ! Total area of ET/noIrr including n*, SUB, and DRY fields
+         LU3_area  = LU3_area + poly(ip)%MF_area               ! Original area of Landuse = 3 in polygon input table    
        case (4)    !noET_noIRR
-         noet_noirr_area  = noet_noirr_area + poly(ip)%area
+         noet_noirr_area  = noet_noirr_area + poly(ip)%MF_area
 	   case (6)    !water
-         water_area  = water_area + poly(ip)%area
+         water_area  = water_area + poly(ip)%MF_area
        end select
 
        select case ( poly(ip)%subwn)
         case (1)
-         scott_area = scott_area + poly(ip)%area 
+         scott_area = scott_area + poly(ip)%MF_area 
         case (2)
-         french_area =  french_area + poly(ip)%area
+         french_area =  french_area + poly(ip)%MF_area
          case (3)
-       etna_area  =  etna_area + poly(ip)%area
+       etna_area  =  etna_area + poly(ip)%MF_area
          case (4)
-       patterson_area =  patterson_area + poly(ip)%area
+       patterson_area =  patterson_area + poly(ip)%MF_area
          case (5)
-       kidder_area =  kidder_area + poly(ip)%area
+       kidder_area =  kidder_area + poly(ip)%MF_area
          case (6) 
-       moffet_area =  moffet_area + poly(ip)%area
+       moffet_area =  moffet_area + poly(ip)%MF_area
          case (7)
-       mill_area   =  mill_area + poly(ip)%area
+       mill_area   =  mill_area + poly(ip)%MF_area
          case (8)
-       shackleford_area = shackleford_area + poly(ip)%area
+       shackleford_area = shackleford_area + poly(ip)%MF_area
          case (9)
-       scott_tailing_area =  scott_tailing_area + poly(ip)%area
+       scott_tailing_area =  scott_tailing_area + poly(ip)%MF_area
 
        end select
 	   
@@ -790,7 +615,7 @@ end subroutine monthly_pumping
                                 pasture_irr_area + P_n_star_area + P_SUB_area + P_DRY_area + &
                                 LU3_area + noet_noirr_area + water_area
     write(60,'(i3,9F20.8)') im ,scott_area, french_area,  etna_area, patterson_area, kidder_area,  moffet_area,  mill_area, &
-                shackleford_area,  scott_tailing_area
+                            shackleford_area,  scott_tailing_area
     write(61,'(i3,6F20.8)') im, alfalfa_irr_area,  grain_irr_area,  pasture_irr_area,  et_noirr_area,  noet_noirr_area, water_area
     write(62,'(i4,16F20.4)') im, alfalfa_irr_area, A_n_star_area, A_SUB_area, A_DRY_area, &
                                 grain_irr_area, G_n_star_area, G_SUB_area, G_DRY_area, &

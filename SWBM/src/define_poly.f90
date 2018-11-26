@@ -7,6 +7,7 @@
       REAL      :: area
       INTEGER   :: id_well
       INTEGER   :: water_source
+      INTEGER   :: num_MF_cells
       REAL      :: WC8
       INTEGER   :: rotation
       REAL      :: av_recharge
@@ -14,6 +15,9 @@
       INTEGER   :: WL2CP_year
       INTEGER   :: ILR_Flag
       LOGICAL   :: ILR_Active
+      REAL      :: area_conv_fact
+      REAL      :: MF_Area
+      REAL      :: init_fill_frac
     end type
     
     type accumulator
@@ -56,7 +60,7 @@
   
   contains
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
      SUBROUTINE read_well                                                                           
                                                                                                     
@@ -89,49 +93,58 @@
  
 
      END subroutine read_well
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-     SUBROUTINE readpoly
+     SUBROUTINE readpoly(npoly, nrows, ncols, output_zone_matrix)
 
-       INTEGER i, idummy
-
-!       read(*,*)npoly
-!       npoly= 2119
+       INTEGER, INTENT(in):: npoly, nrows, ncols
+       INTEGER, DIMENSION(nrows, ncols), INTENT(in)  :: output_zone_matrix
+       INTEGER :: ip, idummy
+       INTEGER, DIMENSION(nrows, ncols)  :: dummy_mat
+       
 
        allocate(poly(npoly), monthly(npoly), daily(npoly), yearly(npoly))
        allocate( before(npoly))
        daily%irrigation = 0.
        daily%daydef = 0
-       call zero_before
+       call initial_conditions
 
        open(unit=10,file="polygons_table.txt",status="old")
 !       open(unit=10,file="polygons_table__SW_only.txt",status="old")
        read(10,*)
        nrot = 0
-
-       write(800,*)"Polygon_ID Subwatershed Landuse Irr_Type Polygon_Area Water_Source WC8 WL2CP_year ILR_Flag"
-       do i=1, npoly
-         read(10,*)idummy, poly(i)%subwn,poly(i)%landuse, poly(i)%irr_type,    &
-                poly(i)%area, poly(i)%water_source, &
-                poly(i)%WC8, poly(i)%WL2CP_year, poly(i)%ILR_Flag
-         if (poly(i)%landuse==25 .and. poly(i)%water_source==1) poly(i)%water_source = 3   ! Alfalfa/Grain is never irrigated with surface-water only. Irrigation type is kept the same
-         if (poly(i)%landuse == 25 .or. poly(i)%landuse == 3) then
-           poly(i)%WC8 = poly(i)%WC8 * RD_Mult    ! Scale root zone depth by multiplier for alfalfa/grain and native veg (pasture fixed at 4 ft since WC8 is multiplied by 0.5 during the irrigation call)
+       write(800,*)'Field_ID Subwatershed Landuse Irr_Type Area SWBM_2_MF_Con_Fact&
+         & MF_Area Water_Src WC8 init_fill_frac WL2CP_year ILR_Flag' 
+       do ip=1, npoly
+         read(10,*)idummy, poly(ip)%subwn, poly(ip)%landuse, poly(ip)%irr_type,    &
+                poly(ip)%area, poly(ip)%water_source, poly(ip)%WC8, poly(ip)%init_fill_frac, &
+                poly(ip)%WL2CP_year, poly(ip)%ILR_Flag
+         if (poly(ip)%landuse==25 .and. poly(ip)%water_source==1) poly(ip)%water_source = 3   ! Alfalfa/Grain is never irrigated with surface-water only. Irrigation type is kept the same
+         if (poly(ip)%landuse == 25 .or. poly(ip)%landuse == 3) then
+           poly(ip)%WC8 = poly(ip)%WC8 * RD_Mult    ! Scale root zone depth by multiplier for alfalfa/grain and native veg (pasture fixed at 4 ft since WC8 is multiplied by 0.5 during the irrigation call)
          end if
-         if ( poly(i)%landuse == 25 ) nrot = nrot + 1
-         if (poly(i)%irr_type == 999) then 
-           poly(i)%irr_type = 2                ! Change unknown irrigation type to wheel line
+         if ( poly(ip)%landuse == 25 ) nrot = nrot + 1
+         if (poly(ip)%irr_type == 999) then 
+           poly(ip)%irr_type = 2                ! Change unknown irrigation type to wheel line
          endif
           
-         if (poly(i)%irr_type == 555) then       ! Change non-irrigated field to dry irrigation type
-           poly(i)%water_source = 5
+         if (poly(ip)%irr_type == 555) then       ! Change non-irrigated field to dry irrigation type
+           poly(ip)%water_source = 5
          endif
           
-         if (poly(i)%water_source == 999) then   ! Change unknown water source to groundwater
-           poly(i)%water_source = 2
+         if (poly(ip)%water_source == 999) then   ! Change unknown water source to groundwater
+           poly(ip)%water_source = 2
          endif
-         write(800,'(i6,i3,i4,i5,f20.5,i5,f20.5,i6,i3)')idummy ,poly(i)%subwn,poly(i)%landuse,poly(i)%irr_type, &
-         poly(i)%area, poly(i)%water_source, poly(i)%WC8, poly(i)%WL2CP_year, poly(i)%ILR_Flag
+         dummy_mat = 0
+         where (output_zone_matrix(:,:) == ip) 
+           dummy_mat(:,:) = 1
+         end where
+         poly(ip)%num_MF_cells = SUM(dummy_mat)
+         poly(ip)%MF_area = poly(ip)%num_MF_cells * 100 * 100
+         poly(ip)%area_conv_fact = poly(ip)%MF_area / poly(ip)%area
+         write(800,'(i6,i3,i4,i5,f20.7,f20.7,f20.1,i5,f20.5,f20.5,i6,i3)')idummy,poly(ip)%subwn,poly(ip)%landuse, &
+         poly(ip)%irr_type, poly(ip)%area, poly(ip)%area_conv_fact, poly(ip)%MF_Area, poly(ip)%water_source, &
+         poly(ip)%WC8, poly(ip)%init_fill_frac, poly(ip)%WL2CP_year, poly(ip)%ILR_Flag
        enddo
 
        close(10)
@@ -146,22 +159,23 @@
 	   
      end subroutine readpoly
 
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      subroutine zero_month
      
-         monthly%irrigation        = 0.
-         monthly%recharge          = 0.
-         monthly%well              = 0.
-         monthly%moisture          = 0.
-         monthly%evapotrasp        = 0.
-         monthly%actualET          = 0.
-         monthly%deficiency        = 0.
-         monthly%effprecip         = 0.
-         monthly%change_in_storage = 0.
-         monthly%MAR               = 0.
-         monthly%MAR_vol           = 0.
-      
+         monthly%irrigation        = 0.         
+         monthly%recharge          = 0.               
+         monthly%well              = 0.           
+         monthly%moisture          = 0.           
+         monthly%evapotrasp        = 0.         
+         monthly%actualET          = 0.          
+         monthly%deficiency        = 0.      
+         monthly%effprecip         = 0.          
+         monthly%change_in_storage = 0.          
+         monthly%MAR               = 0.  
+         monthly%MAR_vol           = 0.            
+         
      end subroutine zero_month
-
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  subroutine zero_year
      
          yearly%irrigation        = 0.
@@ -177,30 +191,30 @@
          yearly%MAR_vol           = 0.
      
      end subroutine zero_year
-    
-     subroutine zero_before
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+     subroutine initial_conditions
      
          before%irrigation        = 0.
          before%recharge          = 0.
          before%well              = 0.
-         before%moisture          = 0.
          before%evapotrasp        = 0.
          before%actualET          = 0.
          before%deficiency        = 0.
          before%effprecip         = 0.
          before%change_in_storage = 0.
-         
-     end subroutine zero_before
-     
+         before%moisture          = poly%WC8*poly%init_fill_frac   
+         daily%moisture           = poly%WC8*poly%init_fill_frac
+     end subroutine initial_conditions
+! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     
  subroutine Update_Irr_Type(im)
    
-   integer :: i, im, year
+   integer :: ip, im, year
    
    year = im/12 + 1991     
    
-   do i = 1, npoly
-      if (poly(i)%WL2CP_year .LE. year .and. poly(i)%WL2CP_year .NE. 0) then    ! If WL2CP Year
-        poly(i)%irr_type = 3                                                    ! Change irrigation type to center pivot
+   do ip = 1, npoly
+      if (poly(ip)%WL2CP_year .LE. year .and. poly(ip)%WL2CP_year .NE. 0) then    ! If WL2CP Year
+        poly(ip)%irr_type = 3                                                    ! Change irrigation type to center pivot
       end if
     enddo
     
