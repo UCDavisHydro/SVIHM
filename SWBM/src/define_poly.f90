@@ -107,10 +107,8 @@
        allocate( before(npoly))
        daily%irrigation = 0.
        daily%daydef = 0
-       call initial_conditions
 
        open(unit=10,file="polygons_table.txt",status="old")
-!       open(unit=10,file="polygons_table__SW_only.txt",status="old")
        read(10,*)
        nrot = 0
        write(800,*)'Field_ID Subwatershed Landuse Irr_Type Area SWBM_2_MF_Con_Fact&
@@ -127,11 +125,9 @@
          if (poly(ip)%irr_type == 999) then 
            poly(ip)%irr_type = 2                ! Change unknown irrigation type to wheel line
          endif
-          
          if (poly(ip)%irr_type == 555) then       ! Change non-irrigated field to dry irrigation type
            poly(ip)%water_source = 5
          endif
-          
          if (poly(ip)%water_source == 999) then   ! Change unknown water source to groundwater
            poly(ip)%water_source = 2
          endif
@@ -146,9 +142,8 @@
          poly(ip)%irr_type, poly(ip)%area, poly(ip)%area_conv_fact, poly(ip)%MF_Area, poly(ip)%water_source, &
          poly(ip)%WC8, poly(ip)%init_fill_frac, poly(ip)%WL2CP_year, poly(ip)%ILR_Flag
        enddo
-
+       call initial_conditions
        close(10)
-       
        write(*,*) nrot, " polygons do grain/alfalfa rotation"
        write(*,*) total_n_wells, " irrigation wells"
        write(800,*)' '
@@ -202,8 +197,9 @@
          before%deficiency        = 0.
          before%effprecip         = 0.
          before%change_in_storage = 0.
-         before%moisture          = poly%WC8*poly%init_fill_frac   
-         daily%moisture           = poly%WC8*poly%init_fill_frac
+         before%moisture = poly%WC8 * poly%init_fill_frac     ! Set previous day's moisture to same as initial condition 
+         daily%moisture  = poly%WC8 * poly%init_fill_frac     ! Set current day's moisture to initial condition
+         
      end subroutine initial_conditions
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     
  subroutine Update_Irr_Type(im)

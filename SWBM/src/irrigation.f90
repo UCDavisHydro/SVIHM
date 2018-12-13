@@ -49,12 +49,6 @@ MODULE irrigationmodule
   REAL             :: irreff_wl, irreff_cp
    
   if (sum(poly%irr_flag).ge.250) irrigating = .true.      ! If 20% of the fields are irrigating (by number, not area; 1251 irrigated fields), set logical to true
-
-  daily(ip)%irrigation = 0.                                ! Reset daily irrigation value to zero
-  daily(ip)%well       = 0.                                ! Reset daily pumping value to zero
-  daily(ip)%effprecip  = 0.                                ! Reset daily effective precip value to zero
-  daily(ip)%evapotrasp = 0.                                ! Reset daily ET value to zero
-  daily(ip)%recharge   = 0.                                ! Reset daily recharge value to zero 
   
   select case (poly(ip)%landuse)
     case (25)   ! alfalfa / grain
@@ -308,12 +302,6 @@ MODULE irrigationmodule
   	write(800,*)'Value of ILR Flag = ',poly(ip)%ILR_Flag
   	call exit
   end if
-  
-  daily(ip)%irrigation = 0.                                ! Reset daily irrigation value to zero
-  daily(ip)%well       = 0.                                ! Reset daily pumping value to zero
-  daily(ip)%effprecip  = 0.                                ! Reset daily effective precip value to zero
-  daily(ip)%evapotrasp = 0.                                ! Reset daily ET value to zero
-  daily(ip)%recharge   = 0.                                ! Reset daily recharge value to zero  
   
   select case (poly(ip)%landuse)
     case (25)   ! alfalfa / grain
