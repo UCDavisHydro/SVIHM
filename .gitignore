@@ -6,3 +6,7 @@
 *.DS_Store
 *.pdf
 *.png
+*.dat
+*_par*
+*unirandpar*
+*covrandpar*
