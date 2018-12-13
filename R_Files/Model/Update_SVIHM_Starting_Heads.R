@@ -4,7 +4,7 @@ rm(list=ls())  #Clear workspace
 ## Read Head File
 NLAY = 2# Number of layers in model (MODIFY AS NEEDED)
 NSP =  252 #Number of Stress Preiods (MODIFY AS NEEDED)
-filename = 'SVIHM.hds'
+filename = list.files(pattern = 'hds')
 
 Head_Print_Dates = seq(as.Date("1990/11/1"), by = "month", length.out = 252)-1   #Dates for the end of each SP
 bytes_all = matrix(data = 0,nrow = 252,ncol = 1)
