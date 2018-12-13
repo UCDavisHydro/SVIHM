@@ -273,8 +273,10 @@
    do im=1, nmonth            ! Loop over each month
      imonth=MOD(im,12)        ! Create repeating integers for months (Oct=1, Nov=2, ..., Aug=11, Sep=0)
      numdays = nday(imonth)   ! Number of days in the current month
+     call zero_month                                 ! Zero out monthly accumulated volume
+     if (imonth==1) call zero_year                             ! If October, Zero out yearly accumulated volume
      if (im==1) then 
-       call do_rotation(im)                   ! populate initial poly%rotation values 
+       call do_rotation(im)                   ! populate initial poly%rotation values \
      else if (imonth==4 .and. im.ne.4) then
        call do_rotation(im)	                 ! Rotate alfalfa/grain in January, except for first year since rotation happened in October   
      end if                   
@@ -282,14 +284,15 @@
      call read_streamflow(numdays)     ! Read in streamflow inputs
      write(*,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', nday(imonth)
      write(800,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', nday(imonth)
-     call zero_month                                 ! Zero out monthly accumulated volume
-     if (imonth==1) then                             ! If October:
-       call zero_year                                ! Zero out yearly accumulated volume
-     endif    
      read(220,*)drain_flow(im)                       ! Read drain flow into array         
      do jday=1, nday(imonth)                         ! Loop over days in each month
        if (jday==1) monthly%ET_active = 0            ! Set ET counter to 0 at the beginning of the month. Used for turning ET on and off in MODFLOW so it is not double counted.    
-       daily%ET_active = 0
+       daily%ET_active      = 0
+       daily%irrigation = 0.                                ! Reset daily irrigation value to zero
+       daily%well       = 0.                                ! Reset daily pumping value to zero
+       daily%effprecip  = 0.                                ! Reset daily effective precip value to zero
+       daily%evapotrasp = 0.                                ! Reset daily ET value to zero
+       daily%recharge   = 0.                                ! Reset daily recharge value to zero 
        read(88,*) REF_ET
        Total_Ref_ET = Total_Ref_ET + REF_ET                 
        read(79,*) kc_grain
@@ -301,7 +304,7 @@
        else
          eff_precip=0.
        endif
-		   do ip=1, npoly      
+		   do ip=1, npoly   
 	       if (imonth==3 .and. jday==31 .and. ip==npoly) then ! If last day of the year, set irrigation flags and logical to zero
 			     poly%irr_flag = 0         
 			     irrigating = .false.           
@@ -316,8 +319,15 @@
 	       else
 	         call IRRIGATION(ip, imonth, jday, eff_precip)
 	       end if
+	       
+	       
+	       if (ip==26) write(800,*)'Before Recharge call = ',daily(ip)%recharge
 	       call RECHARGE(ip,eff_precip,jday,imonth,moisture_save,MAR_active)
+		     if (ip==26) write(800,*)'after recharge call = ',daily(ip)%recharge
 		     call deficiency_check(ip, imonth, jday)       
+         if (ip==26) write(800,*)'after deficiency check = ',daily(ip)%recharge
+       
+       
        enddo              ! End of polygon loop
        if (MAR_active) then 
          call MAR(imonth, num_MAR_fields, MAR_fields, max_MAR_field_rate, MAR_vol, eff_precip, jday, moisture_save)
@@ -343,6 +353,9 @@
        end if
        enddo             ! End of day loop
        jday = jday -1 ! reset jday to number of days in month (incremented to ndays +1 in do loop above)
+       
+       
+       
        call convert_length_to_volume
        call monthly_out_by_field(im)
        call monthly_pumping(im, jday, total_n_wells)
@@ -443,7 +456,7 @@
   DOUBLE PRECISION :: eff_precip
   REAL, DIMENSION(npoly), INTENT(inout) :: moisture_save
   LOGICAL, INTENT(in)  :: MAR_active
-  
+
   if (poly(ip)%landuse /= 6) then      ! No recharge for fields with water landuse
     daily(ip)%actualET=min(daily(ip)%evapotrasp,before(ip)%moisture+eff_precip+daily(ip)%irrigation) 
     daily(ip)%deficiency=daily(ip)%evapotrasp-daily(ip)%actualET
