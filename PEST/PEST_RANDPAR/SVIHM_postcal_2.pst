@@ -6,7 +6,7 @@ restart estimation
  10 -3 0.3 0.03 10         
  10 10 0.001           
  0.1             
- 0 0.005 4 4 0.005 4        
+ -1 0.005 4 4 0.005 4        
  1 1 1           
 * parameter groups
  Conductivity	relative	0.01	0	switch	2	parabolic
@@ -19,10 +19,10 @@ restart estimation
  Chnl_Rough	relative	0.01	0	switch	2	parabolic
  SWBM	relative	0.01	0	switch	2	parabolic
 * parameter data
-kx1	log	factor	7.37E+01	1.00E-07	1.00E+03	Conductivity	1	0	1
-kx2	log	factor	6.00E+00	1.00E-07	1.00E+03	Conductivity	1	0	1
-kx3	log	factor	9.18E+00	1.00E-07	1.00E+03	Conductivity	1	0	1
-kx4	log	factor	2.37E+01	1.00E-07	1.00E+03	Conductivity	1	0	1
+kx1	log	factor	2.64E+01	1.00E-07	1.00E+03	Conductivity	1	0	1
+kx2	log	factor	3.88E+00	1.00E-07	1.00E+03	Conductivity	1	0	1
+kx3	log	factor	1.16E+02	1.00E-07	1.00E+03	Conductivity	1	0	1
+kx4	log	factor	2.47E+01	1.00E-07	1.00E+03	Conductivity	1	0	1
 kx5	fixed	factor	1.00E+01	1.00E-07	1.00E+03	Conductivity	1	0	1
 kx6	fixed	factor	3.00E+01	1.00E-07	1.00E+03	Conductivity	1	0	1
 kx7	fixed	factor	1.00E+03	1.00E-07	1.10E+03	Conductivity	1	0	1
@@ -37,9 +37,9 @@ kvar6	fixed	factor	1.00E+02	0.99	1000	Vert_Aniso	1	0	1
 kvar7	fixed	factor	1.00E+00	0.99	1000	Vert_Aniso	1	0	1
 kvar8	fixed	factor	1.00E+02	0.99	1000	Vert_Aniso	1	0	1
 kvar9	fixed	factor	1.00E+02	0.99	1000	Vert_Aniso	1	0	1
-sy1	log	factor	1.26E-01	0.01	0.35	Sy	1	0	1
+sy1	log	factor	7.51E-02	0.01	0.35	Sy	1	0	1
 sy2	fixed	factor	1.50E-01	0.01	0.35	Sy	1	0	1
-sy3	log	factor	3.76E-02	0.01	0.35	Sy	1	0	1
+sy3	log	factor	6.12E-02	0.01	0.35	Sy	1	0	1
 sy4	fixed	factor	1.00E-01	0.01	0.35	Sy	1	0	1
 sy5	fixed	factor	1.50E-01	0.01	0.35	Sy	1	0	1
 sy6	fixed	factor	1.50E-01	0.01	0.35	Sy	1	0	1
@@ -70,15 +70,15 @@ bedk3	fixed	factor	1.00E+01	1.00E-07	20	Streambed_K	1	0	1
 rough1	fixed	factor	3.50E-02	0.01	0.06	Chnl_Rough	1	0	1
 rough2	fixed	factor	3.50E-02	0.01	0.06	Chnl_Rough	1	0	1
 rough3	fixed	factor	3.50E-02	0.01	0.06	Chnl_Rough	1	0	1
-RD_Mult	log	factor	1.93E+00	5.00E-01	2.00E+00	SWBM	1	0	1
-EIE_Flood	log	factor	8.00E-01	5.00E-01	8.00E-01	SWBM	1	0	1
-EIE_WL_LU25	log	factor	1.05E+00	1.00E+00	1.20E+00	SWBM	1	0	1
-EIE_CP_LU25	log	factor	1.00E+00	1.00E+00	1.20E+00	SWBM	1	0	1
-EIE_WL_LU2	log	factor	9.89E-01	8.00E-01	1.00E+00	SWBM	1	0	1
-EIE_CP_LU2	log	factor	9.11E-01	8.00E-01	1.00E+00	SWBM	1	0	1
+RD_Mult	log	factor	1.67E+00	5.00E-01	2.00E+00	SWBM	1	0	1
+EIE_Flood	log	factor	7.35E-01	5.00E-01	8.00E-01	SWBM	1	0	1
+EIE_WL_LU25	log	factor	1.04E+00	1.00E+00	1.20E+00	SWBM	1	0	1
+EIE_CP_LU25	log	factor	1.01E+00	1.00E+00	1.20E+00	SWBM	1	0	1
+EIE_WL_LU2	log	factor	8.00E-01	8.00E-01	1.00E+00	SWBM	1	0	1
+EIE_CP_LU2	log	factor	8.55E-01	8.00E-01	1.00E+00	SWBM	1	0	1
 kc_alf_mult	log	factor	1.05E+00	9.50E-01	1.05E+00	SWBM	1	0	1
 kc_grn_mult	fixed	factor	1.00E+00	9.50E-01	1.05E+00	SWBM	1	0	1
-kc_pst_mult	log	factor	9.79E-01	9.50E-01	1.05E+00	SWBM	1	0	1
+kc_pst_mult	log	factor	1.01E+00	9.50E-01	1.05E+00	SWBM	1	0	1
 kc_noirr	fixed	factor	6.00E-01	5.00E-01	8.00E-01	SWBM	1	0	1
 * observation groups            
  FortJLow             
