@@ -6,13 +6,14 @@ library(lubridate)
 library(magrittr)
 library(reshape2)
 library(dplyr)
+library(grid)
 #############################################################################################
 ############################              USER INPUT             ############################
 #############################################################################################
 COMPARE_MAR = TRUE
 COMPARE_ILR = TRUE
 COMPARE_MAR_ILR = TRUE
-
+graphics_type = 'png'    #output type for graphics, currently pdf or png
 #############################################################################################
 ############################             IMPORT DATA             ############################
 #############################################################################################
@@ -213,9 +214,9 @@ MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MA
 ####################        STRESS PERIOD AVERAGE DIFFERENCE PLOTS       ####################
 #############################################################################################
 (MAR_Monthly_Diff_Plot = ggplot(Flow_Diff_SP_Avg, aes(x = Date, y = MAR_difference_cfs)) +
+    geom_hline(yintercept = 0) +
     geom_line() +
     geom_point() +
-    geom_hline(yintercept = 0) +
     scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
    scale_x_date(limits = c(as.Date('1990-10-1'),
                            as.Date('2011-9-30')),
@@ -231,9 +232,9 @@ MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MA
           axis.title.y = element_text(size = 8))
 )
 (ILR_Monthly_Diff_Plot = ggplot(Flow_Diff_SP_Avg, aes(x = Date, y = ILR_difference_cfs)) +
+    geom_hline(yintercept = 0) +
     geom_line() +
     geom_point() +
-    geom_hline(yintercept = 0) +
     scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
     scale_x_date(limits = c(as.Date('1990-10-1'),
                             as.Date('2011-9-30')),
@@ -249,9 +250,9 @@ MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MA
           axis.title.y = element_text(size = 8))
 )
 (MAR_ILR_Monthly_Diff_Plot = ggplot(Flow_Diff_SP_Avg, aes(x = Date, y = MAR_ILR_difference_cfs)) +
+    geom_hline(yintercept = 0) +
     geom_line() +
     geom_point() +
-    geom_hline(yintercept = 0) +
     scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
     scale_x_date(limits = c(as.Date('1990-10-1'),
                             as.Date('2011-9-30')),
@@ -272,11 +273,11 @@ MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MA
 (MAR_Monthly_Avg_Plot = ggplot(data = Flow_Diff_Monthly_Avg) + 
     geom_ribbon(data = MAR_geom_ribbon_data[1:4,], aes(x = x,ymin = y, ymax = 0), fill = 'red', alpha=  0.5) +
     geom_ribbon(data = MAR_geom_ribbon_data[4:13,], aes(x = x,ymin = 0, ymax = y), fill = 'dodgerblue', alpha=  0.5) + 
+    geom_hline(yintercept = 0) +
     geom_line(aes(x = seq(1,12), y = MAR_difference_cfs, group = 1)) +
     geom_errorbar(aes(x = seq(1,12), ymin = MAR_difference_cfs-MAR_difference_cfs_SD, 
                       ymax = MAR_difference_cfs+MAR_difference_cfs_SD, group = 1), width = 0.25) +
     geom_point(aes(x = seq(1,12), y = MAR_difference_cfs, group = 1),size = 1.5) +
-    geom_hline(yintercept = 0) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = Flow_Diff_Monthly_Avg$Date) +
     scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
     theme(panel.background = element_blank(),
@@ -292,11 +293,11 @@ MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MA
     geom_ribbon(data = ILR_geom_ribbon_data[1:4,], aes(x = x,ymin = 0, ymax = y), fill = 'dodgerblue', alpha=  0.5) +
     geom_ribbon(data = ILR_geom_ribbon_data[4:8,], aes(x = x,ymin = y, ymax = 0), fill = 'red', alpha=  0.5) +
     geom_ribbon(data = ILR_geom_ribbon_data[8:14,], aes(x = x,ymin = 0, ymax = y), fill = 'dodgerblue', alpha=  0.5) +
+    geom_hline(yintercept = 0) +
     geom_line(aes(x = seq(1,12), y = ILR_difference_cfs, group = 1)) +
     geom_errorbar(aes(x = seq(1,12), ymin = ILR_difference_cfs-ILR_difference_cfs_SD, 
                       ymax = ILR_difference_cfs+ILR_difference_cfs_SD, group = 1), width = 0.25) +
     geom_point(aes(x = seq(1,12), y = ILR_difference_cfs, group = 1),size = 1.5) +
-    geom_hline(yintercept = 0) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = Flow_Diff_Monthly_Avg$Date) +
     scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
     theme(panel.background = element_blank(),
@@ -313,11 +314,11 @@ MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MA
     geom_ribbon(data = MAR_ILR_geom_ribbon_data[4:6,], aes(x = x,ymin = y, ymax = 0), fill = 'dodgerblue', alpha=  0.5) +
     geom_ribbon(data = MAR_ILR_geom_ribbon_data[6:9,], aes(x = x,ymin = 0, ymax = y), fill = 'red', alpha=  0.5) +
     geom_ribbon(data = MAR_ILR_geom_ribbon_data[9:15,], aes(x = x,ymin = 0, ymax = y), fill = 'dodgerblue', alpha=  0.5) +
+    geom_hline(yintercept = 0) +
     geom_line(aes(x = seq(1,12), y = MAR_ILR_difference_cfs, group = 1)) +
     geom_point(aes(x = seq(1,12), y = MAR_ILR_difference_cfs, group = 1),size = 1.5) +
     geom_errorbar(aes(x = seq(1,12), ymin = MAR_ILR_difference_cfs-MAR_ILR_difference_cfs_SD, 
                       ymax = MAR_ILR_difference_cfs+MAR_ILR_difference_cfs_SD, group = 1), width = 0.25) +
-    geom_hline(yintercept = 0) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = Flow_Diff_Monthly_Avg$Date) +
     scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
     theme(panel.background = element_blank(),
@@ -340,9 +341,9 @@ Flow_Diff_SP_Dry_Avg_Wet = Flow_Diff_SP_Dry_Avg_Wet[order(Flow_Diff_SP_Dry_Avg_W
 Flow_Diff_SP_Dry_Avg_Wet$Date = format(Flow_Diff_SP_Dry_Avg_Wet$Date, '%m')
 
 (MAR_Dry_Avg_Wet_Diff_Plot = ggplot(data = Flow_Diff_SP_Dry_Avg_Wet, aes(x = as.numeric(Date), y = MAR_difference_cfs, group = Year_Type, color = Year_Type)) +
+   geom_hline(yintercept = 0) +
    geom_line(size = 1) +
    geom_point(size = 1.5) +
-   geom_hline(yintercept = 0) +
    scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
    scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = format(seq(as.Date("2001/1/1"), by = "month", length.out = 12),'%b')) +
    scale_color_manual(values = c('red','black','blue')) +
@@ -356,14 +357,14 @@ Flow_Diff_SP_Dry_Avg_Wet$Date = format(Flow_Diff_SP_Dry_Avg_Wet$Date, '%m')
          axis.title.y = element_text(size = 8),
          legend.key = element_blank(),
          legend.title = element_blank(),
-         legend.position = c(0.12,0.9),
+         legend.position = c(0.80,0.15),
          legend.background = element_blank())
 )
 (ILR_Dry_Avg_Wet_Diff_Plot = ggplot(data = Flow_Diff_SP_Dry_Avg_Wet, aes(x = as.numeric(Date), y = ILR_difference_cfs, group = Year_Type, color = Year_Type)) +
+    geom_hline(yintercept = 0) +
     geom_line(size = 1) +
     geom_point(size = 1.5) +
-    geom_hline(yintercept = 0) +
-    scale_y_continuous(limits = c(-30,30), breaks = seq(-30,30,by = 10), expand = c(0,0)) +
+    scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = format(seq(as.Date("2001/1/1"), by = "month", length.out = 12),'%b')) +
     scale_color_manual(values = c('red','black','blue')) +
     theme(panel.background = element_blank(),
@@ -376,14 +377,14 @@ Flow_Diff_SP_Dry_Avg_Wet$Date = format(Flow_Diff_SP_Dry_Avg_Wet$Date, '%m')
           axis.title.y = element_text(size = 8),
           legend.key = element_blank(),
           legend.title = element_blank(),
-          legend.position = c(0.12,0.9),
+          legend.position = c(0.80,0.15),
           legend.background = element_blank())
 )
 (MAR_ILR_Dry_Avg_Wet_Diff_Plot = ggplot(data = Flow_Diff_SP_Dry_Avg_Wet, aes(x = as.numeric(Date), y = MAR_ILR_difference_cfs, group = Year_Type, color = Year_Type)) +
+    geom_hline(yintercept = 0) +
     geom_line(size = 1) +
     geom_point(size = 1.5) +
-    geom_hline(yintercept = 0) +
-    #scale_y_continuous(limits = c(-30,30), breaks = seq(-30,30,by = 10), expand = c(0,0)) +
+    scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = format(seq(as.Date("2001/1/1"), by = "month", length.out = 12),'%b')) +
     scale_color_manual(values = c('red','black','blue')) +
     theme(panel.background = element_blank(),
@@ -396,6 +397,75 @@ Flow_Diff_SP_Dry_Avg_Wet$Date = format(Flow_Diff_SP_Dry_Avg_Wet$Date, '%m')
           axis.title.y = element_text(size = 8),
           legend.key = element_blank(),
           legend.title = element_blank(),
-          legend.position = c(0.12,0.9),
+          legend.position = c(0.80,0.15),
           legend.background = element_blank())
 )
+
+if (graphics_type == 'pdf'){
+  pdf('MAR_Flow_Diff_cfs.pdf', width = 7, height = 3)
+} else if (graphics_type == 'png'){
+  png('MAR_Flow_Diff_cfs.png', width = 7, height = 3, units = 'in', res = 600 )
+}
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(1,2)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+print(MAR_Monthly_Avg_Plot + 
+      ylab('Streamflow Difference (cfs)'),
+      vp = vplayout(1,1))
+print(MAR_Dry_Avg_Wet_Diff_Plot +
+       ylab(''),
+      vp = vplayout(1,2))
+graphics.off()
+
+if (graphics_type == 'pdf'){
+  pdf('ILR_Flow_Diff_cfs.pdf', width = 7, height = 3)
+} else if (graphics_type == 'png'){
+  png('ILR_Flow_Diff_cfs.png', width = 7, height = 3, units = 'in', res = 600 )
+}
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(1,2)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+print(ILR_Monthly_Avg_Plot + 
+        ylab('Streamflow Difference (cfs)'),
+      vp = vplayout(1,1))
+print(ILR_Dry_Avg_Wet_Diff_Plot +
+        ylab(''),
+      vp = vplayout(1,2))
+graphics.off()
+
+if (graphics_type == 'pdf'){
+  pdf('MAR_ILR_Flow_Diff_cfs.pdf', width = 7, height = 3)
+} else if (graphics_type == 'png'){
+  png('MAR_ILR_Flow_Diff_cfs.png', width = 7, height = 3, units = 'in', res = 600 )
+}
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(1,2)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+print(MAR_ILR_Monthly_Avg_Plot + 
+        ylab('Streamflow Difference (cfs)'),
+      vp = vplayout(1,1))
+print(MAR_ILR_Dry_Avg_Wet_Diff_Plot +
+        ylab(''),
+      vp = vplayout(1,2))
+graphics.off()
+
+
+# png(paste0('MAR_Flow_Diff_cfs_Monthly_Avg.png'), res = 600, width = 5, height = 4, units = 'in')
+# MAR_Monthly_Avg_Plot + ylab('Streamflow Difference (cfs)') + ggtitle('MAR')
+# graphics.off()
+# png(paste0('ILR_Flow_Diff_cfs_Monthly_Avg.png'), res = 600, width = 5, height = 4, units = 'in')
+# ILR_Monthly_Avg_Plot + ylab('Streamflow Difference (cfs)') + ggtitle('ILR')
+# graphics.off()
+# png(paste0('MAR_ILR_Flow_Diff_cfs_Monthly_Avg.png'), res = 600, width = 5, height = 4, units = 'in')
+# MAR_ILR_Monthly_Avg_Plot + ylab('Streamflow Difference (cfs)') + ggtitle('MAR + ILR')
+# graphics.off()
+# 
+# png(paste0('MAR_Flow_Diff_Dry_Avg_Wet.png'), res = 600, width = 5, height = 4, units = 'in')
+# MAR_Dry_Avg_Wet_Diff_Plot + ylab('Streamflow Difference (cfs)') + ggtitle('MAR')
+# graphics.off()
+# png(paste0('ILR_Flow_Diff_Dry_Avg_Wet.png'), res = 600, width = 5, height = 4, units = 'in')
+# ILR_Dry_Avg_Wet_Diff_Plot + ylab('Streamflow Difference (cfs)') + ggtitle('ILR')
+# graphics.off()
+# png(paste0('MAR_ILR_Flow_Diff_Dry_Avg_Wet.png'), res = 600, width = 5, height = 4, units = 'in')
+# MAR_ILR_Dry_Avg_Wet_Diff_Plot + ylab('Streamflow Difference (cfs)') + ggtitle('MAR + ILR')
+# graphics.off()
