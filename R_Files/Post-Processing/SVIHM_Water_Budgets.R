@@ -12,22 +12,38 @@ library(ggplot2)
 library(reshape2)
 library(grid)
 library(magrittr)
+#library(data.table)
 dir.create(file.path(getwd(),'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
+out_dir = paste0(getwd(),'/Results')
 source('Read_LST.R')
+
 ###########################################################################################
 ########################                 USER INPUT                 #######################
 ###########################################################################################
 LST_Name = 'SVIHM.lst'
 LST_MAR_Name = 'SVIHM_MAR.lst'
 LST_ILR_Name = 'SVIHM_ILR.lst'
+LST_MAR_ILR_Name = 'SVIHM_MAR_ILR.lst'
+
+RCH_Name = 'SVIHM.rch'
+RCH_MAR_Name = 'SVIHM_MAR.rch'
+RCH_ILR_Name = 'SVIHM_ILR.rch'
+RCH_MAR_ILR_Name = 'SVIHM_MAR_ILR.rch'
+
 WB_Components_MODFLOW = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
-out_dir = paste0(getwd(),'/Results')
 nstress = 252
-PRINT_BUDGET = FALSE         # Print monthly water budget to file (TRUE/FALSE)
-COMPARE_MAR_BUDGET = FALSE   # Compare basecase budget with MAR scenario water budget (TRUE/FALSE)
-COMPARE_ILR_BUDGET = TRUE   # Compare basecase budget with MAR scenario water budget (TRUE/FALSE)
+PRINT_BUDGET = TRUE             # Print monthly water budget to file (TRUE/FALSE)
+Print_SWBM_by_landuse = TRUE    # Print 21 year average, dry year (2001), average year (2010), and wet year (2006) SWBM by landuse
+COMPARE_MAR_BUDGET = FALSE       # Compare basecase budget with MAR scenario water budget (TRUE/FALSE)
+COMPARE_ILR_BUDGET = FALSE       # Compare basecase budget with ILR scenario water budget (TRUE/FALSE)
+COMPARE_MAR_ILR_BUDGET = FALSE   # Compare basecase budget with MAR_ILR scenario water budget (TRUE/FALSE)
+CHK_RCH = FALSE                   # Compare basecase recharge output by SWBM, input to MODFLOW, and ultimately used by MODFLOW (TRUE/FALSE)
+CHK_RCH_MAR = FALSE              # Compare MAR recharge output by SWBM, input to MODFLOW, and ultimately used by MODFLOW (TRUE/FALSE)
+CHK_RCH_ILR = FALSE              # Compare ILR recharge output by SWBM, input to MODFLOW, and ultimately used by MODFLOW (TRUE/FALSE)
+CHK_RCH_MAR_ILR = FALSE          # Compare MAR_ILR recharge output by SWBM, input to MODFLOW, and ultimately used by MODFLOW (TRUE/FALSE)
 StartingMonths = seq(as.Date("1990/10/1"), by = "month", length.out = 252)
 Dry_Avg_Wet_Yrs = c(2001,2010,2006)
+
 ###############################################################################################
 #############                    IMPORT SWBM BUDGET                   #########################
 ###############################################################################################
@@ -35,12 +51,61 @@ SWBM_Terms = c('Precipitation', 'SW Irrigation', 'GW Irrigation', 'ET', 'Recharg
 SWBM_Budget_Monthly = read.table('monthly_water_budget.dat', header = T)
 names(SWBM_Budget_Monthly) = c('Month',SWBM_Terms)
 
+if (Print_SWBM_by_landuse==T){
+  source('SWBM_Landuse.R')
+  budget_terms = c('pET', 'aET', 'irrigation', 'surfacewater', 'groundwater', 'recharge', 'deficiency')
+  header_names = c('pET', 'aET', 'Irrigation', 'SW_Irrigation', 'GW_Irrigation', 'GW_Recharge', 'Deficiency')
+  landuse_cats = c('Alfalfa','Grain','Pasture','ET/NoIrr','NoET/NoIrr')
+  SWBM_output_by_landuse(budget_terms, landuse_cats, header_names)
+}
+
+#SWBM BY LANDUSE
 ###############################################################################################
 #############                   IMPORT MODFLOW BUDGET                 #########################
 ###############################################################################################
 MODFLOW_Budget(LST_Name, WB_Components_MODFLOW)
 if (PRINT_BUDGET==TRUE){
-write.table(Volumetric_Flux_MODFLOW, file = paste0(out_dir,'/MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
+write.table(MODFLOW_Budget_Monthly, file = paste0(out_dir,'/MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
+}
+
+###############################################################################################
+#############        COMPARE RECHARGE BETWEEN SWBM AND MODFLOW        #########################
+###############################################################################################
+if (CHK_RCH==TRUE){
+#COMPARE SWBM -> RCH File
+#Compare RCH File -> MODFLOW Budget
+#Compare SWBM - MODFLOW Budget
+  numdays = as.numeric(diff(seq(as.Date('1990-10-1'), by = 'month', length.out = 253)))
+  rch_text = readLines('SVIHM.rch')
+  rch_start = grep('10e14.6', rch_text)
+  rch_in = array(data = NA, dim = 252)
+  
+  #####
+  rch_out_monthly = read.table('monthly_recharge_volume.dat', skip = 2, header = F, row.names = 1)
+  names(rch_out_monthly) = as.character(seq(1,2119))
+  rch_zones = as.matrix(read.table('Recharge_Zones_SVIHM.txt', header = F))
+  #####
+  
+  SWBM_RCH_pct_diff = array(data = NA, dim = 252)
+  RCH_LST_pct_diff = array(data = NA, dim = 252)
+  SWBM_LST_pct_diff = array(data = NA, dim = 252)
+  for (i in 1:252) {
+    eval(parse(text = paste0("rch_in[",i,"] = sum(matrix(as.numeric(unlist(lapply(strsplit(rch_text[(rch_start[",i,"]+1):(rch_start[",i,"]+9240)],' '),function(x){x[!x =='']}))),nrow = 440,ncol=210,byrow = T))*100*100*numdays[",i,"]")))
+    eval(parse(text = paste0("SWBM_RCH_pct_diff[",i,"] = ((SWBM_Budget_Monthly$Recharge[",i,"] + rch_in[",i,"])/-SWBM_Budget_Monthly$Recharge[",i,"])*100")))
+    eval(parse(text = paste0("RCH_LST_pct_diff[",i,"] = ((rch_in[",i,"] - MODFLOW_Budget_Monthly$RECHARGE_net_m3[",i,"])/rch_in[",i,"])*100")))
+    eval(parse(text = paste0("SWBM_LST_pct_diff[",i,"] = ((SWBM_Budget_Monthly$Recharge[",i,"] + MODFLOW_Budget_Monthly$RECHARGE_net_m3[",i,"])/-SWBM_Budget_Monthly$Recharge[",i,"])*100")))
+  }
+  basecase_RCH_pct_diffs = data.frame(Month = StartingMonths,
+                                  SWBM_RCH = SWBM_RCH_pct_diff,
+                                  RCH_LST = RCH_LST_pct_diff,
+                                  SWBM_LST = SWBM_LST_pct_diff)
+  basecase_RCH_pct_diffs_melt = melt(basecase_RCH_pct_diffs, id.vars = 'Month')
+  (Recharge_Percent_Diffs_Plot = ggplot(data = basecase_RCH_pct_diffs, aes(x = Month)) +
+      geom_line(aes(y = SWBM_RCH), color = 'red') +
+      geom_line(aes(y = RCH_LST), color = 'black') +
+      geom_line(aes(y = SWBM_LST), color = 'blue')
+    
+  )
 }
 ##############################################################################################
 ##############             CREATE MONTHLY WATER BUDGETS           ############################
@@ -52,10 +117,9 @@ SWBM_Budget_Monthly$WY = rep(seq(1991,2011),each = 12)
 
 #MODFLOW
 month_abbv = format(seq(as.Date('1990/10/1'), as.Date('1991/9/30'), by = 'month'),'%b')
-Water_Budget_MODFLOW_Monthly = Volumetric_Flux_MODFLOW
-Water_Budget_MODFLOW_Monthly$Month = strtrim(Water_Budget_MODFLOW_Monthly$Month,3)
+MODFLOW_Budget_Monthly$Month = strtrim(MODFLOW_Budget_Monthly$Month,3)
 for (i in 1:12){
-  eval(parse(text = paste0("Water_Budget_",month_abbv[i]," = subset(Water_Budget_MODFLOW_Monthly, select = paste0(WB_Components_MODFLOW,'_net_m3'), Month == '",month_abbv[i],"')")))
+  eval(parse(text = paste0("Water_Budget_",month_abbv[i]," = subset(MODFLOW_Budget_Monthly, select = paste0(WB_Components_MODFLOW,'_net_m3'), Month == '",month_abbv[i],"')")))
   eval(parse(text = paste0('Water_Budget_',month_abbv[i],'$WY = seq(1991,2011)')))
 }
 ##############################################################################################
@@ -66,7 +130,7 @@ for (i in 1:12){
 SWBM_Budget_Annual = aggregate(.~WY,SWBM_Budget_Monthly[,!names(SWBM_Budget_Monthly)%in%'Month'], FUN = sum)
 
 #MODFLOW
-Water_Budget_MODFLOW_Annual = subset(Volumetric_Flux_MODFLOW, select = paste0(WB_Components_MODFLOW,'_net_m3'))
+Water_Budget_MODFLOW_Annual = subset(MODFLOW_Budget_Monthly, select = paste0(WB_Components_MODFLOW,'_net_m3'))
 Water_Budget_MODFLOW_Annual$Water_Year = rep(seq(1991,2011),each = 12)
 Water_Budget_MODFLOW_Annual = aggregate(.~Water_Year, Water_Budget_MODFLOW_Annual, FUN = sum)
 
@@ -84,9 +148,9 @@ MODFLOW_colors = c('mediumblue', 'red', 'goldenrod', 'mediumorchid2','dodgerblue
 ###############              MODFLOW MODEL ERROR                  ############################
 ##############################################################################################
 Model_Error_melt = melt(data.frame(Month = seq(as.Date('1990/11/1'), as.Date('2011/10/1'), by = 'month') - 1,
-                                   Error_Cumulative_percent = Volumetric_Flux_MODFLOW$Error_Cumulative_percent,
-                                   Error_Stress_Period_percent = Volumetric_Flux_MODFLOW$Error_Stress_Period_percent,
-                                   Error_Timestep_percent = Volumetric_Flux_MODFLOW$Error_Timestep_percent),
+                                   Error_Cumulative_percent = MODFLOW_Budget_Monthly$Error_Cumulative_percent,
+                                   Error_Stress_Period_percent = MODFLOW_Budget_Monthly$Error_Stress_Period_percent,
+                                   Error_Timestep_percent = MODFLOW_Budget_Monthly$Error_Timestep_percent),
                         id.vars = 'Month')
 
 png(paste0(out_dir,'/Model_Error.png'), width = 6, height = 4, units = 'in',  res = 600)
@@ -162,22 +226,22 @@ Volumetric_Flux_SWBM_Cumulative_Mm3_melt = Volumetric_Flux_SWBM_Cumulative_Mm3_m
 ##############################################################################################
 ###############          MODFLOW CUMULATIVE NET FLUX              ############################
 ##############################################################################################
-Volumetric_Flux_MODFLOW_Cumulative = data.frame(Month =seq(as.Date('1990/11/1'), as.Date('2011/10/1'),
+MODFLOW_Budget_Monthly_Cumulative = data.frame(Month =seq(as.Date('1990/11/1'), as.Date('2011/10/1'),
                                                              by = 'month') - 1,
-                                                  Recharge = RECHARGE_cumulative_net,
-                                                  ET = ET_SEGMENTS_cumulative_net,
-                                                  Storage = STORAGE_cumulative_net,
-                                                  Drains = DRAINS_cumulative_net,
-                                                  Stream_Leakage = STREAM_LEAKAGE_cumulative_net,
-                                                  Wells = -WELLS_cumulative_out,
-                                                  Canals_MFR = WELLS_cumulative_in)
-names(Volumetric_Flux_MODFLOW_Cumulative) = c('Month',MODFLOW_flux_labels)
-Volumetric_Flux_MODFLOW_Cumulative_melt = melt(Volumetric_Flux_MODFLOW_Cumulative, id.vars = 'Month')
-Volumetric_Flux_MODFLOW_Cumulative_melt$variable = factor(Volumetric_Flux_MODFLOW_Cumulative_melt$variable, levels = MODFLOW_flux_labels)
-Volumetric_Flux_MODFLOW_Cumulative_melt = Volumetric_Flux_MODFLOW_Cumulative_melt[order(Volumetric_Flux_MODFLOW_Cumulative_melt$variable),]
+                                                  Recharge = cumsum(MODFLOW_Budget_Monthly$RECHARGE_net_m3),
+                                                  ET = cumsum(MODFLOW_Budget_Monthly$ET_SEGMENTS_net_m3),
+                                                  Storage = cumsum(MODFLOW_Budget_Monthly$STORAGE_net_m3),
+                                                  Drains = cumsum(MODFLOW_Budget_Monthly$DRAINS_net_m3),
+                                                  Stream_Leakage = cumsum(MODFLOW_Budget_Monthly$STREAM_LEAKAGE_net_m3),
+                                                  Wells = -cumsum(MODFLOW_Budget_Monthly$WELLS_out_m3),
+                                                  Canals_MFR = cumsum(MODFLOW_Budget_Monthly$WELLS_in_m3))
+names(MODFLOW_Budget_Monthly_Cumulative) = c('Month',MODFLOW_flux_labels)
+MODFLOW_Budget_Monthly_Cumulative_melt = melt(MODFLOW_Budget_Monthly_Cumulative, id.vars = 'Month')
+MODFLOW_Budget_Monthly_Cumulative_melt$variable = factor(MODFLOW_Budget_Monthly_Cumulative_melt$variable, levels = MODFLOW_flux_labels)
+MODFLOW_Budget_Monthly_Cumulative_melt = MODFLOW_Budget_Monthly_Cumulative_melt[order(MODFLOW_Budget_Monthly_Cumulative_melt$variable),]
 
 #png(paste0(out_dir,'/Cumulative_Flux_MODFLOW_Mm3.png'), width = 6, height = 4, units = 'in',  res = 600)
-(Cumulative_Volumetric_Flux_MODFLOW_Mm3_Plot = ggplot(Volumetric_Flux_MODFLOW_Cumulative_melt, aes(x = Month, y = value/1E6, col = factor(variable, labels = MODFLOW_flux_labels))) +
+(Cumulative_MODFLOW_Budget_Monthly_Mm3_Plot = ggplot(MODFLOW_Budget_Monthly_Cumulative_melt, aes(x = Month, y = value/1E6, col = factor(variable, labels = MODFLOW_flux_labels))) +
     geom_line(size = 0.75) + 
     scale_color_manual(values=MODFLOW_colors) + 
     scale_x_date(limits = c(as.Date('Oct-01-1990', format = '%b-%m-%y'), as.Date('Oct-01-2011', format = '%b-%m-%y')),
@@ -197,7 +261,7 @@ Volumetric_Flux_MODFLOW_Cumulative_melt = Volumetric_Flux_MODFLOW_Cumulative_mel
 #graphics.off()
 
 #png(paste0(out_dir,'/Cumulative_Flux_MODFLOW_TAF.png'), width = 6, height = 4, units = 'in',  res = 600)
-(Cumulative_Volumetric_Flux_MODFLOW_TAF_Plot = ggplot(Volumetric_Flux_MODFLOW_Cumulative_melt, aes(x = Month, y = value*0.000810714/1000, col = factor(variable, labels = MODFLOW_flux_labels))) +
+(Cumulative_MODFLOW_Budget_Monthly_TAF_Plot = ggplot(MODFLOW_Budget_Monthly_Cumulative_melt, aes(x = Month, y = value*0.000810714/1000, col = factor(variable, labels = MODFLOW_flux_labels))) +
     geom_line(size = 0.75) + 
     scale_color_manual(values=MODFLOW_colors) + 
     scale_x_date(limits = c(as.Date('Oct-01-1990', format = '%b-%m-%y'), as.Date('Oct-01-2011', format = '%b-%m-%y')),
@@ -277,13 +341,13 @@ SWBM_Budget_Annual_melt = SWBM_Budget_Annual_melt[order(SWBM_Budget_Annual_melt$
 ##############             MODFLOW ANNUAL WATER BUDGET PLOT         ##########################
 ##############################################################################################
 Water_Budget_MODFLOW_Annual_Plotting = data.frame(Water_Year = rep(seq(1991,2011),each = 12),
-                                 Recharge = Volumetric_Flux_MODFLOW$RECHARGE_net_m3,
-                                 ET = Volumetric_Flux_MODFLOW$ET_SEGMENTS_net_m3,
-                                 Storage = Volumetric_Flux_MODFLOW$STORAGE_net_m3,
-                                 Drains = Volumetric_Flux_MODFLOW$DRAINS_net_m3,
-                                 `Stream Leakage` = Volumetric_Flux_MODFLOW$STREAM_LEAKAGE_net_m3,
-                                 Wells = -Volumetric_Flux_MODFLOW$WELLS_out_m3,              #negative sign since flux is out
-                                 `Canal Seepage/MFR` = Volumetric_Flux_MODFLOW$WELLS_in_m3)
+                                 Recharge = MODFLOW_Budget_Monthly$RECHARGE_net_m3,
+                                 ET = MODFLOW_Budget_Monthly$ET_SEGMENTS_net_m3,
+                                 Storage = MODFLOW_Budget_Monthly$STORAGE_net_m3,
+                                 Drains = MODFLOW_Budget_Monthly$DRAINS_net_m3,
+                                 `Stream Leakage` = MODFLOW_Budget_Monthly$STREAM_LEAKAGE_net_m3,
+                                 Wells = -MODFLOW_Budget_Monthly$WELLS_out_m3,              #negative sign since flux is out
+                                 `Canal Seepage/MFR` = MODFLOW_Budget_Monthly$WELLS_in_m3)
 names(Water_Budget_MODFLOW_Annual_Plotting) = c('Water Year', MODFLOW_flux_labels)
 Water_Budget_MODFLOW_Annual_Plotting = aggregate(.~`Water Year`,Water_Budget_MODFLOW_Annual_Plotting, FUN = sum)
 Water_Budget_MODFLOW_Annual_Plotting_melt = melt(Water_Budget_MODFLOW_Annual_Plotting, id.vars = 'Water Year')
@@ -478,7 +542,7 @@ for (i in 1:length(Dry_Avg_Wet_Yrs)){
 #############       PLOT MODFLOW DRY, AVERAGE, WET YEAR BUDGETS       #########################
 ###############################################################################################
 for (i in 1:length(Dry_Avg_Wet_Yrs)){
-eval(parse(text = paste0("MODFLOW_Water_Budget_",Dry_Avg_Wet_Yrs[i]," = subset(Volumetric_Flux_MODFLOW, Water_Year == ",Dry_Avg_Wet_Yrs[i],", 
+eval(parse(text = paste0("MODFLOW_Water_Budget_",Dry_Avg_Wet_Yrs[i]," = subset(MODFLOW_Budget_Monthly, Water_Year == ",Dry_Avg_Wet_Yrs[i],", 
                                                             select = c('Month', 'RECHARGE_net_m3','ET_SEGMENTS_net_m3',
                                                                        'STORAGE_net_m3','DRAINS_net_m3','STREAM_LEAKAGE_net_m3',
                                                                        'WELLS_out_m3', 'WELLS_in_m3'))")))
@@ -689,11 +753,54 @@ graphics.off()
     )
 )
 #graphics.off()
+
+##############################################################################################
+################      MONTHLY SWBM STORAGE CHANGE (PERCENT OF TOTAL)     #####################
+##############################################################################################
+#pdf(paste(out_dir,'/Storage_Monthly_SWBM_Mm3.pdf',sep=''),width = 5.5, height = 6.5)
+(Monthly_Storage_Plot_SWBM_Mm3 = ggplot(data = SWBM_Budget_Monthly,
+                                        aes(x = as.Date(paste0(Month,'-01'),'%b-%Y-%d'),
+                                            y = ((-cumsum(SWBM_Budget_Monthly$Storage)/1E6)-mean((-cumsum(SWBM_Budget_Monthly$Storage)/1E6)))/(160235466/1E6))) +
+   geom_hline(yintercept = 0, size = 0.25) +
+   geom_line(size = 0.5) +
+   geom_point(size = 0.75) +
+   # geom_rect(aes(xmin = as.Date('1990-10-01'), xmax = as.Date('1992-10-01'), ymin = -60 , ymax = -52), fill = '#ff8282', color = 'black', size = 0.2) +
+   # geom_rect(aes(xmin = as.Date('1993-10-01'), xmax = as.Date('1994-10-01'), ymin = -60 , ymax = -52), fill = '#ff8282', color = 'black', size = 0.2) +
+   # geom_rect(aes(xmin = as.Date('1994-10-01'), xmax = as.Date('1999-10-01'), ymin = -60 , ymax = -52), fill = 'skyblue', color = 'black', size = 0.2) +
+   # geom_rect(aes(xmin = as.Date('2000-10-01'), xmax = as.Date('2002-10-01'), ymin = -60 , ymax = -52), fill = '#ff8282', color = 'black', size = 0.2) +
+   # geom_rect(aes(xmin = as.Date('2005-10-01'), xmax = as.Date('2006-10-01'), ymin = -60 , ymax = -52), fill = 'skyblue', color = 'black', size = 0.2) +
+   # geom_rect(aes(xmin = as.Date('2006-10-01'), xmax = as.Date('2009-10-01'), ymin = -60 , ymax = -52), fill = '#ff8282', color = 'black', size = 0.2) +
+   # geom_rect(aes(xmin = as.Date('2010-10-01'), xmax = as.Date('2011-10-01'), ymin = -60 , ymax = -52), fill = 'skyblue', color = 'black', size = 0.2) +
+   # annotate('text', x = as.Date('1991-10-01'), y = -55, label = 'Dry', size = 2.5) +
+   # annotate('text', x = as.Date('1994-06-01'), y = -55, label = 'Dry', size = 2.5) +
+   # annotate('text', x = as.Date('1997-10-01'), y = -55, label = 'Wet', size = 2.5) +
+   # annotate('text', x = as.Date('2001-10-01'), y = -55, label = 'Dry', size = 2.5) +
+ # annotate('text', x = as.Date('2006-06-01'), y = -55, label = 'Wet', size = 2.5) +
+ # annotate('text', x = as.Date('2008-10-01'), y = -55, label = 'Dry', size = 2.5) +
+ # annotate('text', x = as.Date('2011-06-01'), y = -55, label = 'Wet', size = 2.5) +
+ scale_x_date(limits = c(as.Date('Oct-01-1990', format = '%b-%m-%y'),
+                         as.Date('Oct-01-2011', format = '%b-%m-%y')),
+              breaks = seq(as.Date("1990/10/1"), by = "2 years", length.out = 22), expand = c(0,0),
+              date_labels = ('%b-%y'))  +
+   scale_y_continuous(limits = c(-30,30), breaks = seq(-30,30,by = 10), expand = c(0,0)) +
+   ylab(ylab(bquote('Relative Soil Storage ('*Mm^3*')'))) +
+   ggtitle('Monthly Relative Soil Storage') +
+   theme(panel.background = element_blank(),
+         panel.border = element_rect(fill=NA, color = 'black'),
+         axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
+         axis.text.y = element_text(size = 8),
+         axis.ticks = element_line(size = 0.2),
+         plot.title = element_text(hjust = 0.5, size = 10),
+         axis.title.x = element_blank(),
+         axis.title.y = element_text(size = 8) 
+   )
+)
+#graphics.off()
 ##############################################################################################
 ##############             MONTHLY MODFLOW STORAGE CHANGE           ##########################
 ##############################################################################################
 #pdf(paste(out_dir,'/Storage_Monthly_MODFLOW_Mm3.pdf',sep=''),width = 5.5, height = 6.5)
-(Monthly_Storage_Plot_MODFLOW_Mm3 = ggplot(data = Volumetric_Flux_MODFLOW,
+(Monthly_Storage_Plot_MODFLOW_Mm3 = ggplot(data = MODFLOW_Budget_Monthly,
                                aes(x = as.Date(paste0(Month,'-01'),'%b-%Y-%d'), y = -cumsum(STORAGE_net_m3)/1E6)) +
    geom_hline(yintercept = 0, size = 0.25) +
    geom_line(size = 0.5) +
@@ -890,13 +997,13 @@ if (COMPARE_MAR_BUDGET==TRUE){
   SWBM_MAR_Annual_Diff_melt$variable = factor(SWBM_MAR_Annual_Diff_melt$variable, levels = SWBM_flux_labels)
   SWBM_MAR_Annual_Diff_melt = SWBM_MAR_Annual_Diff_melt[order(SWBM_MAR_Annual_Diff_melt$variable),]
   
-  #pdf(paste0(out_dir,'/Water_Budget_Annual_MAR_Diff_SWBM_Mm3.pdf'), width = 8.5, height = 4)
-  (SWBM_Annual_MAR_Diff_Plot_Mm3 = ggplot(SWBM_MAR_Annual_Diff_melt, aes(x = WY, y = value/1E6)) +
+  #pdf(paste0(out_dir,'/Water_Budget_Annual_MAR_Diff_SWBM_TAF.pdf'), width = 8.5, height = 4)
+  (SWBM_Annual_MAR_Diff_Plot_TAF = ggplot(SWBM_MAR_Annual_Diff_melt, aes(x = WY, y = value*0.000810714/1000)) +
       geom_bar(aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
       scale_x_continuous(limits = c(1990.4,2011.6), breaks = seq(1991,2011,by = 2),expand = c(0,0))  +
-      scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,by = 10), expand = c(0,0)) +
+      scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,by = 5), expand = c(0,0)) +
       xlab('') +
-      ylab(bquote('Volume ('*Mm^3*')')) +
+      ylab('Volume (TAF)') +
       ggtitle('SWBM Annual Water Budget Difference: MAR') +
       scale_fill_manual(values = SWBM_colors)+
       theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -917,13 +1024,13 @@ if (COMPARE_MAR_BUDGET==TRUE){
   
   MODFLOW_Budget(LST_MAR_Name, WB_Components_MODFLOW,'MAR')
   Water_Budget_MODFLOW_MAR_Annual_Plotting = data.frame(Water_Year = rep(seq(1991,2011),each = 12),
-                                                    Recharge = Volumetric_Flux_MODFLOW_MAR$RECHARGE_net_m3,
-                                                    ET = Volumetric_Flux_MODFLOW_MAR$ET_SEGMENTS_net_m3,
-                                                    Storage = Volumetric_Flux_MODFLOW_MAR$STORAGE_net_m3,
-                                                    Drains = Volumetric_Flux_MODFLOW_MAR$DRAINS_net_m3,
-                                                    `Stream Leakage` = Volumetric_Flux_MODFLOW_MAR$STREAM_LEAKAGE_net_m3,
-                                                    Wells = -Volumetric_Flux_MODFLOW_MAR$WELLS_out_m3,              #negative sign since flux is out
-                                                    `Canal Seepage/MFR` = Volumetric_Flux_MODFLOW_MAR$WELLS_in_m3)
+                                                    Recharge = MODFLOW_Budget_Monthly_MAR$RECHARGE_net_m3,
+                                                    ET = MODFLOW_Budget_Monthly_MAR$ET_SEGMENTS_net_m3,
+                                                    Storage = MODFLOW_Budget_Monthly_MAR$STORAGE_net_m3,
+                                                    Drains = MODFLOW_Budget_Monthly_MAR$DRAINS_net_m3,
+                                                    `Stream Leakage` = MODFLOW_Budget_Monthly_MAR$STREAM_LEAKAGE_net_m3,
+                                                    Wells = -MODFLOW_Budget_Monthly_MAR$WELLS_out_m3,              #negative sign since flux is out
+                                                    `Canal Seepage/MFR` = MODFLOW_Budget_Monthly_MAR$WELLS_in_m3)
   names(Water_Budget_MODFLOW_MAR_Annual_Plotting) = c('Water Year', MODFLOW_flux_labels)
   Water_Budget_MODFLOW_MAR_Annual_Plotting = aggregate(.~`Water Year`,Water_Budget_MODFLOW_MAR_Annual_Plotting, FUN = sum)
   Water_Budget_MODFLOW_MAR_Annual_Diff = Water_Budget_MODFLOW_MAR_Annual_Plotting - Water_Budget_MODFLOW_Annual_Plotting
@@ -979,7 +1086,7 @@ if (COMPARE_ILR_BUDGET==TRUE){
   (SWBM_Annual_ILR_Diff_Plot_Mm3 = ggplot(SWBM_ILR_Annual_Diff_melt, aes(x = WY, y = value/1E6)) +
       geom_bar(aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
       scale_x_continuous(limits = c(1990.4,2011.6), breaks = seq(1991,2011,by = 2),expand = c(0,0))  +
-      #scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,by = 10), expand = c(0,0)) +
+      scale_y_continuous(limits = c(-25,25), breaks = seq(-25,25,by = 5), expand = c(0,0)) +
       xlab('') +
       ylab(bquote('Volume ('*Mm^3*')')) +
       ggtitle('SWBM Annual Water Budget Difference: ILR') +
@@ -1002,13 +1109,13 @@ if (COMPARE_ILR_BUDGET==TRUE){
   
   MODFLOW_Budget(LST_ILR_Name, WB_Components_MODFLOW,'ILR')
   Water_Budget_MODFLOW_ILR_Annual_Plotting = data.frame(Water_Year = rep(seq(1991,2011),each = 12),
-                                                        Recharge = Volumetric_Flux_MODFLOW_ILR$RECHARGE_net_m3,
-                                                        ET = Volumetric_Flux_MODFLOW_ILR$ET_SEGMENTS_net_m3,
-                                                        Storage = Volumetric_Flux_MODFLOW_ILR$STORAGE_net_m3,
-                                                        Drains = Volumetric_Flux_MODFLOW_ILR$DRAINS_net_m3,
-                                                        `Stream Leakage` = Volumetric_Flux_MODFLOW_ILR$STREAM_LEAKAGE_net_m3,
-                                                        Wells = -Volumetric_Flux_MODFLOW_ILR$WELLS_out_m3,              #negative sign since flux is out
-                                                        `Canal Seepage/MFR` = Volumetric_Flux_MODFLOW_ILR$WELLS_in_m3)
+                                                        Recharge = MODFLOW_Budget_Monthly_ILR$RECHARGE_net_m3,
+                                                        ET = MODFLOW_Budget_Monthly_ILR$ET_SEGMENTS_net_m3,
+                                                        Storage = MODFLOW_Budget_Monthly_ILR$STORAGE_net_m3,
+                                                        Drains = MODFLOW_Budget_Monthly_ILR$DRAINS_net_m3,
+                                                        `Stream Leakage` = MODFLOW_Budget_Monthly_ILR$STREAM_LEAKAGE_net_m3,
+                                                        Wells = -MODFLOW_Budget_Monthly_ILR$WELLS_out_m3,              #negative sign since flux is out
+                                                        `Canal Seepage/MFR` = MODFLOW_Budget_Monthly_ILR$WELLS_in_m3)
   names(Water_Budget_MODFLOW_ILR_Annual_Plotting) = c('Water Year', MODFLOW_flux_labels)
   Water_Budget_MODFLOW_ILR_Annual_Plotting = aggregate(.~`Water Year`,Water_Budget_MODFLOW_ILR_Annual_Plotting, FUN = sum)
   Water_Budget_MODFLOW_ILR_Annual_Diff = Water_Budget_MODFLOW_ILR_Annual_Plotting - Water_Budget_MODFLOW_Annual_Plotting
@@ -1021,10 +1128,95 @@ if (COMPARE_ILR_BUDGET==TRUE){
   (MODFLOW_Annual_ILR_Diff_Budget_Plot_TAF = ggplot(Water_Budget_MODFLOW_ILR_Annual_Diff_Plotting_melt, aes(x = `Water Year`, y = value*0.000810714/1000)) +
       geom_bar(aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
       scale_x_continuous(limits = c(1990.4,2011.6), breaks = seq(1991,2011,by = 2),expand = c(0,0))  +
-      scale_y_continuous(limits = c(-12,12), breaks = seq(-12,12,by = 4), expand = c(0,0)) +
+      scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,by = 10), expand = c(0,0)) +
       xlab('') +
       ylab('Volume (TAF)') +
       ggtitle('MODFLOW Annual Water Budget Difference: ILR') +
+      scale_fill_manual(values = MODFLOW_colors)+
+      theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.background = element_rect(color = 'black', fill = NA),
+            plot.background = element_rect(color = NA, fill = NA),
+            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.7), 
+            axis.text = element_text(size = 8),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = c(0.25, 0.95), 
+            legend.key = element_rect(fill = NA, color = NA),
+            legend.background = element_rect(fill = NA, color = NA),
+            legend.direction = 'horizontal',
+            legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
+            legend.key.height = unit(10,'pt')
+      )
+  )
+  #graphics.off()
+}
+
+##############################################################################################
+##############                 COMPARE MAR_ILR BUDGET             ##########################
+##############################################################################################
+if (COMPARE_MAR_ILR_BUDGET==TRUE){
+  # SWBM Budget
+  SWBM_MAR_ILR_Budget_Monthly = read.table('monthly_water_budget_MAR_ILR.dat', header = T)
+  names(SWBM_MAR_ILR_Budget_Monthly) = c('Month',SWBM_Terms)  
+  SWBM_MAR_ILR_Budget_Monthly$Month = format(seq(as.Date("1990/10/1"), by = "month", length.out = 252),'%b-%Y')
+  SWBM_MAR_ILR_Budget_Monthly$WY = rep(seq(1991,2011),each = 12)
+  SWBM_MAR_ILR_Budget_Annual = aggregate(.~WY,SWBM_MAR_ILR_Budget_Monthly[,!names(SWBM_MAR_ILR_Budget_Monthly)%in%'Month'], FUN = sum)
+  SWBM_MAR_ILR_Monthly_Diff = subset(SWBM_MAR_ILR_Budget_Monthly, select = SWBM_Terms) - subset(SWBM_Budget_Monthly, select = SWBM_Terms)
+  SWBM_MAR_ILR_Monthly_Diff$WY = rep(seq(1991,2011),each = 12)
+  SWBM_MAR_ILR_Annual_Diff = aggregate(.~WY, SWBM_MAR_ILR_Monthly_Diff, FUN = sum)                           
+  SWBM_MAR_ILR_Annual_Diff_melt = melt(SWBM_MAR_ILR_Annual_Diff, id.vars = 'WY')
+  SWBM_MAR_ILR_Annual_Diff_melt$variable = factor(SWBM_MAR_ILR_Annual_Diff_melt$variable, levels = SWBM_flux_labels)
+  SWBM_MAR_ILR_Annual_Diff_melt = SWBM_MAR_ILR_Annual_Diff_melt[order(SWBM_MAR_ILR_Annual_Diff_melt$variable),]
+  
+  #pdf(paste0(out_dir,'/Water_Budget_Annual_MAR_ILR_Diff_SWBM_Mm3.pdf'), width = 8.5, height = 4)
+  (SWBM_Annual_MAR_ILR_Diff_Plot_Mm3 = ggplot(SWBM_MAR_ILR_Annual_Diff_melt, aes(x = WY, y = value/1E6)) +
+      geom_bar(aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
+      scale_x_continuous(limits = c(1990.4,2011.6), breaks = seq(1991,2011,by = 2),expand = c(0,0))  +
+      #scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,by = 10), expand = c(0,0)) +
+      xlab('') +
+      ylab(bquote('Volume ('*Mm^3*')')) +
+      ggtitle('SWBM Annual Water Budget Difference: MAR_ILR') +
+      scale_fill_manual(values = SWBM_colors)+
+      theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.background = element_rect(color = 'black', fill = NA),
+            plot.background = element_rect(color = NA, fill = NA),
+            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.7), 
+            axis.text = element_text(size = 8),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = c(0.25, 0.95), 
+            legend.key = element_rect(fill = NA, color = NA),
+            legend.background = element_rect(fill = NA, color = NA),
+            legend.direction = 'horizontal',
+            legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
+            legend.key.height = unit(10,'pt')
+      )
+  )
+  #graphics.off()
+  
+  MODFLOW_Budget(LST_MAR_ILR_Name, WB_Components_MODFLOW,'MAR_ILR')
+  Water_Budget_MODFLOW_MAR_ILR_Annual_Plotting = data.frame(Water_Year = rep(seq(1991,2011),each = 12),
+                                                        Recharge = MODFLOW_Budget_Monthly_MAR_ILR$RECHARGE_net_m3,
+                                                        ET = MODFLOW_Budget_Monthly_MAR_ILR$ET_SEGMENTS_net_m3,
+                                                        Storage = MODFLOW_Budget_Monthly_MAR_ILR$STORAGE_net_m3,
+                                                        Drains = MODFLOW_Budget_Monthly_MAR_ILR$DRAINS_net_m3,
+                                                        `Stream Leakage` = MODFLOW_Budget_Monthly_MAR_ILR$STREAM_LEAKAGE_net_m3,
+                                                        Wells = -MODFLOW_Budget_Monthly_MAR_ILR$WELLS_out_m3,              #negative sign since flux is out
+                                                        `Canal Seepage/MFR` = MODFLOW_Budget_Monthly_MAR_ILR$WELLS_in_m3)
+  names(Water_Budget_MODFLOW_MAR_ILR_Annual_Plotting) = c('Water Year', MODFLOW_flux_labels)
+  Water_Budget_MODFLOW_MAR_ILR_Annual_Plotting = aggregate(.~`Water Year`,Water_Budget_MODFLOW_MAR_ILR_Annual_Plotting, FUN = sum)
+  Water_Budget_MODFLOW_MAR_ILR_Annual_Diff = Water_Budget_MODFLOW_MAR_ILR_Annual_Plotting - Water_Budget_MODFLOW_Annual_Plotting
+  Water_Budget_MODFLOW_MAR_ILR_Annual_Diff$`Water Year` = seq(1991,2011)
+  Water_Budget_MODFLOW_MAR_ILR_Annual_Diff_Plotting_melt = melt(Water_Budget_MODFLOW_MAR_ILR_Annual_Diff, id.vars = 'Water Year')
+  Water_Budget_MODFLOW_MAR_ILR_Annual_Diff_Plotting_melt$variable = factor(Water_Budget_MODFLOW_MAR_ILR_Annual_Diff_Plotting_melt$variable, levels = c('Recharge','ET','Storage','Drains','Stream Leakage','Wells', 'Canal Seepage/MFR'))
+  Water_Budget_MODFLOW_MAR_ILR_Annual_Diff_Plotting_melt = Water_Budget_MODFLOW_MAR_ILR_Annual_Diff_Plotting_melt[order(Water_Budget_MODFLOW_MAR_ILR_Annual_Diff_Plotting_melt$variable),]
+  
+  #pdf(paste0(out_dir,'/Water_Budget_Annual_MAR_ILR_Diff_MODFLOW_Mm3.pdf'), width = 8.5, height = 4)
+  (MODFLOW_Annual_MAR_ILR_Diff_Budget_Plot_TAF = ggplot(Water_Budget_MODFLOW_MAR_ILR_Annual_Diff_Plotting_melt, aes(x = `Water Year`, y = value*0.000810714/1000)) +
+      geom_bar(aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
+      scale_x_continuous(limits = c(1990.4,2011.6), breaks = seq(1991,2011,by = 2),expand = c(0,0))  +
+      scale_y_continuous(limits = c(-30,30), breaks = seq(-30,30,by = 10), expand = c(0,0)) +
+      xlab('') +
+      ylab('Volume (TAF)') +
+      ggtitle('MODFLOW Annual Water Budget Difference: MAR_ILR') +
       scale_fill_manual(values = MODFLOW_colors)+
       theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_rect(color = 'black', fill = NA),
@@ -1102,7 +1294,7 @@ if (COMPARE_ILR_BUDGET==TRUE){
 #     ggtitle('Net Stream-Aquifer Flux') +
 #     theme(panel.background = element_blank(),
 #           panel.border = element_rect(fill=NA, color = 'black'),
-#           axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
+#           axis.text.x = element_text(angle = 45, hjust = 1, vjus 0.7, size = 8),
 #           axis.text.y = element_text(size = 8),
 #           axis.ticks = element_line(size = 0.2),
 #           plot.title = element_text(hjust = 0.5, size = 10),
@@ -1137,7 +1329,7 @@ if (COMPARE_ILR_BUDGET==TRUE){
 #     ggtitle('Monthly Groundwater Pumping') +
 #     theme(panel.background = element_blank(),
 #           panel.border = element_rect(fill=NA, color = 'black'),
-#           axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
+#           axis.text.x = element_text(angle = 45, hjust = 1, vjus 0.7, size = 8),
 #           axis.text.y = element_text(size = 8),
 #           axis.ticks = element_line(size = 0.2),
 #           plot.title = element_text(hjust = 0.5, size = 10),
@@ -1170,7 +1362,7 @@ if (COMPARE_ILR_BUDGET==TRUE){
 #     ggtitle('Annual Groundwater Pumping') +
 #     theme(panel.background = element_blank(),
 #           panel.border = element_rect(fill=NA, color = 'black'),
-#           axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
+#           axis.text.x = element_text(angle = 45, hjust = 1, vjus 0.7, size = 8),
 #           axis.text.y = element_text(size = 8),
 #           axis.ticks = element_line(size = 0.2),
 #           plot.title = element_text(hjust = 0.5, size = 10),
@@ -1178,3 +1370,4 @@ if (COMPARE_ILR_BUDGET==TRUE){
 #           axis.title.y = element_text(size = 8) 
 #     )
 # )
+

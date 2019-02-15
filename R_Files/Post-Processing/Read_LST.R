@@ -93,7 +93,7 @@ MODFLOW_Budget = function(filename, mf_bud_terms, suffix){
   Cumulative_Mass_Balance_percent_diff = ((TOTAL_cumulative_in - TOTAL_cumulative_out)/((TOTAL_cumulative_in + TOTAL_cumulative_out)/2))*100
   SP_Mass_Balance_percent_diff = ((TOTAL_SP_Vol_in - TOTAL_SP_Vol_out)/((TOTAL_SP_Vol_in + TOTAL_SP_Vol_out)/2))*100
   TS_Mass_Balance_percent_diff = ((TOTAL_TS_Flux_in - TOTAL_TS_Flux_out)/((TOTAL_TS_Flux_in + TOTAL_TS_Flux_out)/2))*100
-  Volumetric_Flux_MODFLOW = data.frame(Month = format(seq(as.Date('1990/10/1'), as.Date('2011/9/30'), by = 'month'),'%b-%Y'),
+  MODFLOW_Budget_Monthly = data.frame(Month = format(seq(as.Date('1990/10/1'), as.Date('2011/9/30'), by = 'month'),'%b-%Y'),
                                        Water_Year = rep(seq(1991,2011),each=12),
                                        STORAGE_in_m3 = STORAGE_SP_Vol_in,
                                        STORAGE_out_m3 = STORAGE_SP_Vol_out,
@@ -127,11 +127,11 @@ MODFLOW_Budget = function(filename, mf_bud_terms, suffix){
     Cumulative_Mass_Balance_percent_diff <<- Cumulative_Mass_Balance_percent_diff
     SP_Mass_Balance_percent_diff <<- SP_Mass_Balance_percent_diff
     TS_Mass_Balance_percent_diff <<- TS_Mass_Balance_percent_diff
-    Volumetric_Flux_MODFLOW <<- Volumetric_Flux_MODFLOW
+    MODFLOW_Budget_Monthly <<- MODFLOW_Budget_Monthly
   } else {
     eval(parse(text = paste0('Cumulative_Mass_Balance_percent_diff_',suffix,' <<- Cumulative_Mass_Balance_percent_diff')))
     eval(parse(text = paste0('SP_Mass_Balance_percent_diff_',suffix,' <<- SP_Mass_Balance_percent_diff')))
     eval(parse(text = paste0('TS_Mass_Balance_percent_diff_',suffix,' <<- TS_Mass_Balance_percent_diff')))
-    eval(parse(text = paste0('Volumetric_Flux_MODFLOW_',suffix,' <<- Volumetric_Flux_MODFLOW')))
+    eval(parse(text = paste0('MODFLOW_Budget_Monthly_',suffix,' <<- MODFLOW_Budget_Monthly')))
   }
 }
