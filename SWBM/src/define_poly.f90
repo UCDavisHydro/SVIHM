@@ -197,9 +197,8 @@
          before%deficiency        = 0.
          before%effprecip         = 0.
          before%change_in_storage = 0.
-         before%moisture = poly%WC8 * poly%init_fill_frac     ! Set previous day's moisture to same as initial condition 
+         before%moisture = poly%WC8 * poly%init_fill_frac     ! Set previous day's moisture to same as initial condition
          daily%moisture  = poly%WC8 * poly%init_fill_frac     ! Set current day's moisture to initial condition
-         
      end subroutine initial_conditions
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     
  subroutine Update_Irr_Type(im)

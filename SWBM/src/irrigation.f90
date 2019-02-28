@@ -305,7 +305,7 @@ MODULE irrigationmodule
   
   select case (poly(ip)%landuse)
     case (25)   ! alfalfa / grain
-      if(poly(ip)%rotation == 11) then
+      if(poly(ip)%rotation == 11) then  ! alfalfa
       	daily(ip)%effprecip  = eff_precip                        ! Set effective precip
         daily(ip)%evapotrasp=REF_ET*Kc_alfalfa*kc_alfalfa_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
@@ -315,9 +315,9 @@ MODULE irrigationmodule
             call IRRIGATION_RULESET_ILR(imonth, jday, ip, irreff_wl, irreff_cp, eff_precip)
           end if
         end if
-      else if (poly(ip)%rotation == 12) then
+      else if (poly(ip)%rotation == 12) then  ! grain
         daily(ip)%effprecip  = eff_precip                        ! Set effective precip
-        daily(ip)%evapotrasp=REF_ET*Kc_grain*kc_grain_mult  !Set ET to current value for the day
+        daily(ip)%evapotrasp=REF_ET*Kc_grain*kc_grain_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
         irreff_cp = irreff_cp_LU25
         if ((imonth==6 .and. jday.ge.16 ) .or. (imonth.ge.7 .and. imonth.le.9 ) .or. (imonth==10 .and. jday.le.10)) then  ! If  March 16 - July 10
