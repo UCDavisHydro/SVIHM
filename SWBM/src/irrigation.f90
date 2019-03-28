@@ -24,19 +24,37 @@ MODULE irrigationmodule
     read(10,*)irreff_flood                     ! flood
     read(10,*)irreff_wl_LU25, irreff_cp_LU25   ! alfalfa/grain wheel line, alfalfa/grain center pivot
     read(10,*)irreff_wl_LU2, irreff_cp_LU2     ! pasture wheel line, pasture center pivot
+    write(*,*) ! Blank Line
+    write(*,'(A45)') "Effective Irrigation Efficiencies (IE + SMDF)"
+    write(*,'(A8,F4.2)') "Flood = ", irreff_flood
+    write(*,'(A22,F4.2)') "Alfalfa: Wheel Line = ", irreff_wl_LU25
+    write(*,'(A24,F4.2)') "Alfalfa: Center Pivot = ", irreff_cp_LU25
+    write(*,'(A22,F4.2)') "Pasture: Wheel Line = ", irreff_wl_LU2
+    write(*,'(A24,F4.2)') "Pasture: Center Pivot = ", irreff_cp_LU2
+    write(800,*) ! Blank Line
+    write(800,'(A45)') "Effective Irrigation Efficiencies (IE + SMDF)"
+    write(800,'(A8,F4.2)') "Flood = ", irreff_flood
+    write(800,'(A22,F4.2)') "Alfalfa: Wheel Line = ", irreff_wl_LU25
+    write(800,'(A24,F4.2)') "Alfalfa: Center Pivot = ", irreff_cp_LU25
+    write(800,'(A22,F4.2)') "Pasture: Wheel Line = ", irreff_wl_LU2
+    write(800,'(A24,F4.2)') "Pasture: Center Pivot = ", irreff_cp_LU2
     close (10)
     
     open(unit=11,file="crop_coeff_mult.txt",status="old")
     read(11,*)kc_alfalfa_mult, kc_grain_mult, kc_pasture_mult, kc_noirr
     close(11)
+    write(*,*) ! Blank Line
     write(*,'(A18,F4.2)') "kc_alfalfa_mult = ", kc_alfalfa_mult
     write(*,'(A16,F4.2)') "kc_grain_mult = ", kc_grain_mult
     write(*,'(A18,F4.2)') "kc_pasture_mult = ", kc_pasture_mult
     write(*,'(A11,F4.2)') "kc_noirr = ", kc_noirr
-    write(800,'(A18,F4.2)') "kc_alfalfa_mult = ", kc_alfalfa_mult
-    write(800,'(A16,F4.2)') "kc_grain_mult = ", kc_grain_mult
-    write(800,'(A18,F4.2)') "kc_pasture_mult = ", kc_pasture_mult
-    write(800,'(A11,F4.2)') "kc_noirr = ", kc_noirr
+    write(*,*) ! Blank Line
+    write(800,*) ! Blank Line
+    write(800,'(A24,F4.2)') "Alfalfa Kc Multiplier = ", kc_alfalfa_mult
+    write(800,'(A22,F4.2)') "Grain Kc Multiplier = ", kc_grain_mult
+    write(800,'(A24,F4.2)') "Pasture Kc Multiplier = ", kc_pasture_mult
+    write(800,'(A23,F4.2)') "Native Vegetation Kc = ", kc_noirr
+    write(800,*) ! Blank Line
     return
   end subroutine read_kc_irreff
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
