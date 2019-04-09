@@ -15,7 +15,8 @@ library(magrittr)
 #library(data.table)
 dir.create(file.path(getwd(),'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
 out_dir = paste0(getwd(),'/Results')
-source('Read_LST.R')
+source('MODFLOW_Budget.R')
+source('SVIHM_SFR_inputs.R')
 
 ###########################################################################################
 ########################                 USER INPUT                 #######################
@@ -32,12 +33,12 @@ RCH_MAR_ILR_Name = 'SVIHM_MAR_ILR.rch'
 
 WB_Components_MODFLOW = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
 nstress = 252
-PRINT_BUDGET = TRUE             # Print monthly water budget to file (TRUE/FALSE)
-Print_SWBM_by_landuse = TRUE    # Print 21 year average, dry year (2001), average year (2010), and wet year (2006) SWBM by landuse
+PRINT_BUDGET = TRUE              # Print monthly water budget to file (TRUE/FALSE)
+Print_SWBM_by_landuse = TRUE     # Print 21 year average, dry year (2001), average year (2010), and wet year (2006) SWBM by landuse
 COMPARE_MAR_BUDGET = FALSE       # Compare basecase budget with MAR scenario water budget (TRUE/FALSE)
 COMPARE_ILR_BUDGET = FALSE       # Compare basecase budget with ILR scenario water budget (TRUE/FALSE)
 COMPARE_MAR_ILR_BUDGET = FALSE   # Compare basecase budget with MAR_ILR scenario water budget (TRUE/FALSE)
-CHK_RCH = FALSE                   # Compare basecase recharge output by SWBM, input to MODFLOW, and ultimately used by MODFLOW (TRUE/FALSE)
+CHK_RCH = FALSE                  # Compare basecase recharge output by SWBM, input to MODFLOW, and ultimately used by MODFLOW (TRUE/FALSE)
 CHK_RCH_MAR = FALSE              # Compare MAR recharge output by SWBM, input to MODFLOW, and ultimately used by MODFLOW (TRUE/FALSE)
 CHK_RCH_ILR = FALSE              # Compare ILR recharge output by SWBM, input to MODFLOW, and ultimately used by MODFLOW (TRUE/FALSE)
 CHK_RCH_MAR_ILR = FALSE          # Compare MAR_ILR recharge output by SWBM, input to MODFLOW, and ultimately used by MODFLOW (TRUE/FALSE)
@@ -66,6 +67,30 @@ MODFLOW_Budget(LST_Name, WB_Components_MODFLOW)
 if (PRINT_BUDGET==TRUE){
 write.table(MODFLOW_Budget_Monthly, file = paste0(out_dir,'/MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
 }
+
+###############################################################################################
+#############                 IMPORT STREAMFLOW BUDGET                #########################
+###############################################################################################
+SFR_Monthly_Vol = SVIHM_SFR_inputs('SVIHM.sfr')
+SFR_Monthly_Vol$Stream_Leakage_m3 = -MODFLOW_Budget_Monthly$STREAM_LEAKAGE_net_m3
+FJ_Outflow = read.table('Streamflow_FJ_SVIHM.dat', skip = 2)[,3]
+FJ_Outflow = data.frame(Month = format(seq(as.Date('1990-10-01'), as.Date('2011-09-30'), by = 'day'),format = '%b-%Y'),
+                        FJ_Flow_m3 = FJ_Outflow)
+FJ_Outflow = aggregate(.~Month, FJ_Outflow, FUN = sum)
+FJ_Outflow$Month = as.Date(paste0('01-',FJ_Outflow$Month), '%d-%b-%Y')
+FJ_Outflow = FJ_Outflow[order(FJ_Outflow$Month),]
+SFR_Monthly_Vol$Outflow_m3 = -FJ_Outflow$FJ_Flow_m3
+SFR_Monthly_Vol$Storage = -rowSums(SFR_Monthly_Vol[,-1])
+
+SFR_Monthly_Vol$WY = rep(seq(1991,2011), each = 12)
+SFR_Monthly_Vol_melt = melt(SFR_Monthly_Vol, id.vars = c('Date', 'WY'))
+
+SFR_Annual_Vol = aggregate(.~WY, SFR_Monthly_Vol[,-1], FUN = sum)
+SFR_Annual_Vol_melt = melt(SFR_Annual_Vol,id.vars = 'WY')
+
+SFR_Monthly_Vol_melt$Month = format(SFR_Monthly_Vol_melt$Date,format = '%b')
+SFR_Monthly_Vol_melt$Month = factor(SFR_Monthly_Vol_melt$Month, levels = month.abb)
+SFR_Monthly_Vol_melt = SFR_Monthly_Vol_melt[order(SFR_Monthly_Vol_melt$Month),]
 
 ###############################################################################################
 #############        COMPARE RECHARGE BETWEEN SWBM AND MODFLOW        #########################
@@ -140,9 +165,11 @@ Water_Budget_MODFLOW_Annual = aggregate(.~Water_Year, Water_Budget_MODFLOW_Annua
 ##############################################################################################
 SWBM_flux_labels = c('Precipitation','ET','SW Irrigation', 'Recharge','GW Irrigation','Storage')
 MODFLOW_flux_labels = c('Recharge','ET','Storage','Drains','Stream Leakage','Wells', 'Canal Seepage/MFR')
+SFR_flux_labels = c('Inflow', 'Overland Flow', 'Farmers Ditch', 'SVID Ditch', 'Stream leakage', 'Outflow', 'Storage')
 
 SWBM_colors = c('lightblue1', 'red', 'darkcyan', 'mediumblue','darkgreen', 'goldenrod' )
 MODFLOW_colors = c('mediumblue', 'red', 'goldenrod', 'mediumorchid2','dodgerblue1', 'darkgreen', 'salmon' )
+SFR_colors = c('turquoise2', 'sienna3', 'green2', 'green4', 'dodgerblue1', 'lightgoldenrod1', 'goldenrod')  
 ##############################################################################################
 ###############              MODFLOW MODEL ERROR                  ############################
 ##############################################################################################
@@ -173,6 +200,103 @@ png(paste0(out_dir,'/Model_Error.png'), width = 6, height = 4, units = 'in',  re
           legend.key = element_rect(fill = NA, color = NA),
           legend.background = element_rect(fill = NA)))
 graphics.off()
+
+##############################################################################################
+###############             ANNUAL STREAMFLOW BUDGET              ############################
+##############################################################################################
+Streamflow_Budget_Annual_Plot_Mm3 =  ggplot(SFR_Annual_Vol_melt, aes(x = WY, y = value/1E6)) + 
+    geom_bar(aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
+    scale_fill_manual(values = SFR_colors, labels = SFR_flux_labels) +
+    scale_y_continuous(limits = c(-1000,1000), breaks = seq(-1000,1000,by = 250), expand = c(0,0)) +
+    scale_x_continuous(limits = c(1990,2012), breaks = seq(1991,2011,by=2), expand = c(0,0)) +
+    xlab('') +
+    ylab(bquote('Volume ('*Mm^3*')')) +
+    ggtitle('Surface Water Annual Budget') +
+    theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_rect(color = 'black', fill = NA),
+          plot.background = element_rect(color = NA, fill = NA),
+          axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.7), 
+          axis.text = element_text(size = 8),
+          plot.title = element_text(hjust = 0.5),
+          legend.position = c(0.35, 0.92), 
+          legend.key = element_rect(fill = NA, color = NA),
+          legend.background = element_rect(fill = NA, color = NA),
+          legend.direction = 'horizontal',
+          legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
+          legend.key.height = unit(10,'pt'))
+    
+#pdf(paste0(out_dir,'/Stream_Budget_Annual_Mm3.pdf'),width = 5.5, height = 4)
+#print(Streamflow_Budget_Annual_Plot_Mm3)
+#graphics.off()
+
+##############################################################################################
+##############      DRY, AVERAGE, WET YEAR STREAMFLOW BUDGETS     ############################
+##############################################################################################
+Streamflow_Budget_Dry_2001_Plot_Mm3 =  ggplot(SFR_Monthly_Vol_melt, aes(x = Month, y = value/1E6)) + 
+  geom_bar(data = subset(SFR_Monthly_Vol_melt, format(Date,format='%Y')==2001),
+           aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
+  scale_fill_manual(values = SFR_colors, labels = SFR_flux_labels) +
+  scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
+  #scale_x_continuous(limits = c(1990,2012), breaks = seq(1991,2011,by=2), expand = c(0,0)) +
+  xlab('') +
+  ylab(bquote('Volume ('*Mm^3*')')) +
+  ggtitle('Dry Year (2001)') +
+  theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_rect(color = 'black', fill = NA),
+        plot.background = element_rect(color = NA, fill = NA),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.7), 
+        axis.text = element_text(size = 8),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = c(0.35, 0.92), 
+        legend.key = element_rect(fill = NA, color = NA),
+        legend.background = element_rect(fill = NA, color = NA),
+        legend.direction = 'horizontal',
+        legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
+        legend.key.height = unit(10,'pt'))
+
+Streamflow_Budget_Avg_2010_Plot_Mm3 =  ggplot(SFR_Monthly_Vol_melt, aes(x = Month, y = value/1E6)) + 
+  geom_bar(data = subset(SFR_Monthly_Vol_melt, format(Date,format='%Y')==2010),
+           aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
+  scale_fill_manual(values = SFR_colors, labels = SFR_flux_labels) +
+  scale_y_continuous(limits = c(-100,100), breaks = seq(-100,100,by = 25),expand = c(0,0)) +
+  #scale_x_continuous(limits = c(1990,2012), breaks = seq(1991,2011,by=2), expand = c(0,0)) +
+  xlab('') +
+  ylab(bquote('Volume ('*Mm^3*')')) +
+  ggtitle('Average Year (2010)') +
+  theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_rect(color = 'black', fill = NA),
+        plot.background = element_rect(color = NA, fill = NA),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.7), 
+        axis.text = element_text(size = 8),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = c(0.35, 0.92), 
+        legend.key = element_rect(fill = NA, color = NA),
+        legend.background = element_rect(fill = NA, color = NA),
+        legend.direction = 'horizontal',
+        legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
+        legend.key.height = unit(10,'pt'))
+
+Streamflow_Budget_Wet_2006_Plot_Mm3 =  ggplot(SFR_Monthly_Vol_melt, aes(x = Month, y = value/1E6)) + 
+  geom_bar(data = subset(SFR_Monthly_Vol_melt, format(Date,format='%Y')==2006),
+           aes(fill = variable), position = "stack", stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
+  scale_fill_manual(values = SFR_colors, labels = SFR_flux_labels) +
+  scale_y_continuous(limits = c(-200,200), breaks = seq(-200,200,by = 50),expand = c(0,0)) +
+  #scale_x_continuous(limits = c(1990,2012), breaks = seq(1991,2011,by=2), expand = c(0,0)) +
+  xlab('') +
+  ylab(bquote('Volume ('*Mm^3*')')) +
+  ggtitle('Wet Year (2006)') +
+  theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_rect(color = 'black', fill = NA),
+        plot.background = element_rect(color = NA, fill = NA),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.7), 
+        axis.text = element_text(size = 8),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = c(0.65, 0.92), 
+        legend.key = element_rect(fill = NA, color = NA),
+        legend.background = element_rect(fill = NA, color = NA),
+        legend.direction = 'horizontal',
+        legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
+        legend.key.height = unit(10,'pt'))
 
 ##############################################################################################
 ###############            SWBM CUMULATIVE NET FLUX               ############################
@@ -280,7 +404,7 @@ MODFLOW_Budget_Monthly_Cumulative_melt = MODFLOW_Budget_Monthly_Cumulative_melt[
 #graphics.off()
 
 ##############################################################################################
-##############              SWBM ANNUAL WATER BUDGET PLOT           ##########################
+##############              Soil Zone Annual Budget PLOT           ##########################
 ##############################################################################################
 SWBM_Budget_Annual_melt = melt(SWBM_Budget_Annual, id.vars = 'WY')
 SWBM_Budget_Annual_melt$variable = factor(SWBM_Budget_Annual_melt$variable, levels = SWBM_flux_labels)
@@ -293,7 +417,7 @@ SWBM_Budget_Annual_melt = SWBM_Budget_Annual_melt[order(SWBM_Budget_Annual_melt$
     scale_y_continuous(limits = c(-300,300), breaks = seq(-300,300,by = 100), expand = c(0,0)) +
     xlab('') +
     ylab(bquote('Volume ('*Mm^3*')')) +
-    ggtitle('SWBM Annual Water Budget') +
+    ggtitle('Soil Zone Annual Budget') +
     scale_fill_manual(values = SWBM_colors)+
     theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_rect(color = 'black', fill = NA),
@@ -318,7 +442,7 @@ SWBM_Budget_Annual_melt = SWBM_Budget_Annual_melt[order(SWBM_Budget_Annual_melt$
     scale_y_continuous(limits = c(-300,300), breaks = seq(-300,300,by = 100), expand = c(0,0)) +
     xlab('') +
     ylab('Volume (TAF)') +
-    ggtitle('SWBM Annual Water Budget') +
+    ggtitle('Soil Zone Annual Budget') +
     scale_fill_manual(values = SWBM_colors)+
     theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_rect(color = 'black', fill = NA),
@@ -337,7 +461,7 @@ SWBM_Budget_Annual_melt = SWBM_Budget_Annual_melt[order(SWBM_Budget_Annual_melt$
 #graphics.off()
 
 ##############################################################################################
-##############             MODFLOW ANNUAL WATER BUDGET PLOT         ##########################
+##############             Aquifer Annual Budget PLOT         ##########################
 ##############################################################################################
 Water_Budget_MODFLOW_Annual_Plotting = data.frame(Water_Year = rep(seq(1991,2011),each = 12),
                                  Recharge = MODFLOW_Budget_Monthly$RECHARGE_net_m3,
@@ -406,22 +530,32 @@ Water_Budget_MODFLOW_Annual_Plotting_melt = Water_Budget_MODFLOW_Annual_Plotting
 ###############################################################################################
 #############            COMBINED ANNUAL WATER BUDGET PLOTS           #########################
 ###############################################################################################
-pdf(paste(out_dir,'/Water_Budget_Annual_Combined.pdf',sep=''),width = 4, height = 5)
+pdf(paste0(out_dir,'/Water_Budget_Annual_Combined.pdf'),width = 4, height = 6.75)
 grid.newpage()
-pushViewport(viewport(layout = grid.layout(2,1)))
+pushViewport(viewport(layout = grid.layout(3,1)))
 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
 print(SWBM_Annual_Budget_Plot_Mm3 + 
         ylab(bquote('Volume ('*Mm^3*')')) +
         theme(axis.text.x = element_blank(),
               axis.title.y = element_text(size = 8),
               plot.title = element_blank(),
-              plot.margin = margin(t=5, b=-10,l=3, r=3),
+              plot.margin = margin(t=5, b=-10,l=8, r=3),
               legend.key.height = unit(3,'pt'),
               legend.key.width = unit(6, 'pt'),
               legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
               legend.position = c(0.3,0.94)) +
-        annotate('text', x = 1996, y = -275, label = 'Annual SWBM Water Budget', size = 2.5),
+        annotate('text', x = 1996, y = -275, label = 'Annual Soil Zone Budget', size = 2.5),
       vp = vplayout(1,1))
+print(Streamflow_Budget_Annual_Plot_Mm3 +
+        theme(plot.title = element_blank(),
+              axis.title.y = element_text(size = 8),
+              plot.margin = margin(t=5, b=-10,l=3, r=3),
+              legend.key.height = unit(3,'pt'),
+              legend.key.width = unit(6, 'pt'),
+              legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
+              legend.position = c(0.38,0.94)) +
+        annotate('text', x = 1996, y = -900, label = 'Annual Surface Water Budget', size = 2.5),
+      vp = vplayout(2,1))
 print(MODFLOW_Annual_Budget_Plot_Mm3 +
         geom_rect(aes(xmin = 1990.5, xmax = 1992.5, ymin = -149 , ymax = -135), fill = '#ff8282', color = 'black', size = 0.2) +
         geom_rect(aes(xmin = 1993.5, xmax = 1994.5, ymin = -149 , ymax = -135), fill = '#ff8282', color = 'black', size = 0.2) +
@@ -432,12 +566,12 @@ print(MODFLOW_Annual_Budget_Plot_Mm3 +
         geom_rect(aes(xmin = 2010.5, xmax = 2011.5, ymin = -149 , ymax = -135), fill = 'skyblue', color = 'black', size = 0.2) +
         theme(plot.title = element_blank(),
               axis.title.y = element_text(size = 8),
-              plot.margin = margin(t=5, b=-10,l=3, r=3),
+              plot.margin = margin(t=5, b=-10,l=8, r=3),
               legend.key.height = unit(3,'pt'),
               legend.key.width = unit(6, 'pt'),
               legend.text = element_text(size = 6, margin = margin(r=1,l=1, unit = 'pt')),
               legend.position = c(0.4,0.94)) +
-        annotate('text', x = 1996, y = -125, label = 'Annual MODFLOW Water Budget', size = 2.5) +
+        annotate('text', x = 1996, y = -125, label = 'Annual Aquifer Budget', size = 2.5) +
         annotate('text', x = 1991.5, y = -142, label = 'Dry', size = 1.4) +
         annotate('text', x = 1994, y = -142, label = 'Dry', size = 1.4) +
         annotate('text', x = 1997, y = -142, label = 'Wet', size = 1.4) +
@@ -445,7 +579,7 @@ print(MODFLOW_Annual_Budget_Plot_Mm3 +
         annotate('text', x = 2006, y = -142, label = 'Wet', size = 1.4) +
         annotate('text', x = 2008, y = -142, label = 'Dry', size = 1.4) +
         annotate('text', x = 2011, y = -142, label = 'Wet', size = 1.4),
-      vp = vplayout(2,1))
+      vp = vplayout(3,1))
 graphics.off()
 
 ###############################################################################################
@@ -633,11 +767,12 @@ eval(parse(text = paste0("MODFLOW_Water_Budget_",Dry_Avg_Wet_Yrs[i],"_melt = mel
 ###############################################################################################
 #########           COMBINED DRY, AVERAGE, WET YEAR BUDGETS PLOTS          ####################
 ###############################################################################################
-pdf(paste(out_dir,'/Water_Budget_Monthly_Wet_Avg_Dry_Combined.pdf',sep=''),width = 5.5, height = 6.5)
+pdf(paste(out_dir,'/Water_Budget_Monthly_Wet_Avg_Dry_Combined.pdf',sep=''),width = 7.5, height = 6.5)
 grid.newpage()
-pushViewport(viewport(layout = grid.layout(3,2)))
+pushViewport(viewport(layout = grid.layout(3,3)))
 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
 print(SWBM_Budget_Dry_Year_2001_Plot + 
+        scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
         theme(axis.text.x = element_blank(),
               axis.title.y = element_text(size = 6),
               axis.text.y = element_text(size = 6),
@@ -647,10 +782,11 @@ print(SWBM_Budget_Dry_Year_2001_Plot +
               legend.key.height = unit(2.5,'pt'),
               legend.key.width = unit(5, 'pt'),
               legend.text = element_text(size = 5, margin = margin(r=1,l=1, unit = 'pt')),
-              legend.position = c(0.33,0.94)) +
-        annotate('text', x = 2, y = -22, label = 'SWBM\nDry Year\n(2001)', size = 2.4),
+              legend.position = c(0.36,0.94)) +
+        annotate('text', x = 2, y = -28, label = 'Soil Zone\nDry Year\n(2001)', size = 2.4),
       vp = vplayout(1,1))
 print(SWBM_Budget_Average_Year_2010_Plot +
+        scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
         theme(axis.text.x = element_blank(),
               axis.title.y = element_text(size = 6),
               axis.text.y = element_text(size = 6),
@@ -658,7 +794,7 @@ print(SWBM_Budget_Average_Year_2010_Plot +
               plot.title = element_blank(),
               plot.margin = margin(t=0, b=0,l=1, r=-3),
               legend.position = 'none') + 
-        annotate('text', x = 2, y = -22, label = 'SWBM\nAvg Year\n(2010)', size = 2.4),
+        annotate('text', x = 2, y = -28, label = 'Soil Zone\nAvg Year\n(2010)', size = 2.4),
       vp = vplayout(2,1))
 print(SWBM_Budget_Wet_Year_2006_Plot +
         scale_y_continuous(limits = c(-80,80), breaks = seq(-80,80,by = 20), expand = c(0,0)) +
@@ -669,8 +805,45 @@ print(SWBM_Budget_Wet_Year_2006_Plot +
               axis.text.y = element_text(size = 6),
               plot.margin = margin(t=0, b=-12,l=1, r=-3),
               legend.position = 'none') +
-        annotate('text', x = 7, y = -60, label = 'SWBM\nWet Year\n(2006)', size = 2.4),
+        annotate('text', x = 7, y = -60, label = 'Soil Zone\nWet Year\n(2006)', size = 2.4),
       vp = vplayout(3,1))
+print(Streamflow_Budget_Dry_2001_Plot_Mm3 + 
+        scale_y_continuous(limits = c(-100,100), breaks = seq(-100,100,by = 25), expand = c(0,0)) +
+        theme(axis.title.y = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_text(size = 6),
+              axis.ticks = element_line(size = 0.25),
+              plot.title = element_blank(),
+              plot.margin = margin(t=5, b=0,l=7, r=1),
+              legend.key.height = unit(2.5,'pt'),
+              legend.key.width = unit(5, 'pt'),
+              legend.text = element_text(size = 5, margin = margin(r=1,l=1, unit = 'pt')),
+              legend.position = c(0.48,0.94)) +
+        annotate('text', x = 9, y = -70, label = 'Surface Water\nDry Year\n(2001)', size = 2.4),
+      vp = vplayout(1,2))
+print(Streamflow_Budget_Avg_2010_Plot_Mm3 +
+        scale_y_continuous(limits = c(-100,100), breaks = seq(-100,100,by = 25), expand = c(0,0)) +
+        theme(axis.title.y = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_text(size = 6),
+              axis.ticks = element_line(size = 0.25),
+              plot.title = element_blank(),
+              plot.margin = margin(t=0, b=0,l=7, r=1),
+              legend.position = 'none') + 
+        annotate('text', x = 9, y = -70, label = 'Surface Water\nAvg Year\n(2010)', size = 2.4),
+      vp = vplayout(2,2))
+print(Streamflow_Budget_Wet_2006_Plot_Mm3 +
+        scale_y_continuous(limits = c(-200,200), breaks = seq(-200,200,by = 50), expand = c(0,0)) +
+        #coord_cartesian(ylim=c(-30,30)) +
+        #scale_y_continuous(limits = c(-30,30), breaks = seq(-30,30,by = 10), expand = c(0,0)) +
+        theme(axis.title.y = element_blank(),
+              axis.text.y = element_text(size = 6),
+              axis.ticks = element_line(size = 0.25),
+              plot.title = element_blank(),
+              plot.margin = margin(t=0, b=-12,l=7, r=1),
+              legend.position = 'none') + 
+        annotate('text', x = 9, y = -150, label = 'Surface Water\nWet Year\n(2006)', size = 2.4),
+      vp = vplayout(3,2))
 print(MODFLOW_Budget_Dry_Year_2001_Plot + 
         scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,by = 10), expand = c(0,0)) +
         theme(axis.title.y = element_blank(),
@@ -682,9 +855,9 @@ print(MODFLOW_Budget_Dry_Year_2001_Plot +
               legend.key.height = unit(2.5,'pt'),
               legend.key.width = unit(5, 'pt'),
               legend.text = element_text(size = 5, margin = margin(r=1,l=1, unit = 'pt')),
-              legend.position = c(0.45,0.94)) +
-        annotate('text', x = 2, y = -15, label = 'MODFLOW\nDry Year\n(2001)', size = 2.4),
-      vp = vplayout(1,2))
+              legend.position = c(0.5,0.94)) +
+        annotate('text', x = 2, y = -15, label = 'Aquifer\nDry Year\n(2001)', size = 2.4),
+      vp = vplayout(1,3))
 print(MODFLOW_Budget_Average_Year_2010_Plot +
         scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,by = 10), expand = c(0,0)) +
         theme(axis.title.y = element_blank(),
@@ -694,8 +867,8 @@ print(MODFLOW_Budget_Average_Year_2010_Plot +
               plot.title = element_blank(),
               plot.margin = margin(t=0, b=0,l=7, r=1),
               legend.position = 'none') + 
-        annotate('text', x = 2, y = -15, label = 'MODFLOW\nAvg Year\n(2010)', size = 2.4),
-      vp = vplayout(2,2))
+        annotate('text', x = 2, y = -15, label = 'Aquifer\nAvg Year\n(2010)', size = 2.4),
+      vp = vplayout(2,3))
 print(MODFLOW_Budget_Wet_Year_2006_Plot +
         scale_y_continuous(limits = c(-50,50), breaks = seq(-50,50,by = 25), expand = c(0,0)) +
         #coord_cartesian(ylim=c(-30,30)) +
@@ -706,8 +879,8 @@ print(MODFLOW_Budget_Wet_Year_2006_Plot +
               plot.title = element_blank(),
               plot.margin = margin(t=0, b=-12,l=7, r=1),
               legend.position = 'none') + 
-        annotate('text', x = 7, y = -38, label = 'MODFLOW\nWet Year\n(2006)', size = 2.4),
-      vp = vplayout(3,2))
+        annotate('text', x = 7, y = -38, label = 'Aquifer\nWet Year\n(2006)', size = 2.4),
+      vp = vplayout(3,3))
 graphics.off()
 
 ##############################################################################################
@@ -1003,7 +1176,7 @@ if (COMPARE_MAR_BUDGET==TRUE){
       scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,by = 5), expand = c(0,0)) +
       xlab('') +
       ylab('Volume (TAF)') +
-      ggtitle('SWBM Annual Water Budget Difference: MAR') +
+      ggtitle('Soil Zone Annual Budget Difference: MAR') +
       scale_fill_manual(values = SWBM_colors)+
       theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_rect(color = 'black', fill = NA),
@@ -1045,7 +1218,7 @@ if (COMPARE_MAR_BUDGET==TRUE){
       scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,by = 5), expand = c(0,0)) +
       xlab('') +
       ylab('Volume (TAF)') +
-      ggtitle('MODFLOW Annual Water Budget Difference: MAR') +
+      ggtitle('Aquifer Annual Budget Difference: MAR') +
       scale_fill_manual(values = MODFLOW_colors)+
       theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_rect(color = 'black', fill = NA),
@@ -1088,7 +1261,7 @@ if (COMPARE_ILR_BUDGET==TRUE){
       scale_y_continuous(limits = c(-25,25), breaks = seq(-25,25,by = 5), expand = c(0,0)) +
       xlab('') +
       ylab(bquote('Volume ('*Mm^3*')')) +
-      ggtitle('SWBM Annual Water Budget Difference: ILR') +
+      ggtitle('Soil Zone Annual Budget Difference: ILR') +
       scale_fill_manual(values = SWBM_colors)+
       theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_rect(color = 'black', fill = NA),
@@ -1130,7 +1303,7 @@ if (COMPARE_ILR_BUDGET==TRUE){
       scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,by = 10), expand = c(0,0)) +
       xlab('') +
       ylab('Volume (TAF)') +
-      ggtitle('MODFLOW Annual Water Budget Difference: ILR') +
+      ggtitle('Aquifer Annual Budget Difference: ILR') +
       scale_fill_manual(values = MODFLOW_colors)+
       theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_rect(color = 'black', fill = NA),
@@ -1173,7 +1346,7 @@ if (COMPARE_MAR_ILR_BUDGET==TRUE){
       #scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,by = 10), expand = c(0,0)) +
       xlab('') +
       ylab(bquote('Volume ('*Mm^3*')')) +
-      ggtitle('SWBM Annual Water Budget Difference: MAR_ILR') +
+      ggtitle('Soil Zone Annual Budget Difference: MAR_ILR') +
       scale_fill_manual(values = SWBM_colors)+
       theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_rect(color = 'black', fill = NA),
@@ -1215,7 +1388,7 @@ if (COMPARE_MAR_ILR_BUDGET==TRUE){
       scale_y_continuous(limits = c(-30,30), breaks = seq(-30,30,by = 10), expand = c(0,0)) +
       xlab('') +
       ylab('Volume (TAF)') +
-      ggtitle('MODFLOW Annual Water Budget Difference: MAR_ILR') +
+      ggtitle('Aquifer Annual Budget Difference: MAR_ILR') +
       scale_fill_manual(values = MODFLOW_colors)+
       theme(legend.title=element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
             panel.background = element_rect(color = 'black', fill = NA),
