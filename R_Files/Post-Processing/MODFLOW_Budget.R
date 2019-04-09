@@ -128,11 +128,11 @@ MODFLOW_Budget = function(filename, mf_bud_terms, suffix){
     Cumulative_Mass_Balance_percent_diff <<- Cumulative_Mass_Balance_percent_diff
     SP_Mass_Balance_percent_diff <<- SP_Mass_Balance_percent_diff
     TS_Mass_Balance_percent_diff <<- TS_Mass_Balance_percent_diff
-    MODFLOW_Budget_Monthly <<- MODFLOW_Budget_Monthly
+    return(MODFLOW_Budget_Monthly)
   } else {
     eval(parse(text = paste0('Cumulative_Mass_Balance_percent_diff_',suffix,' <<- Cumulative_Mass_Balance_percent_diff')))
     eval(parse(text = paste0('SP_Mass_Balance_percent_diff_',suffix,' <<- SP_Mass_Balance_percent_diff')))
     eval(parse(text = paste0('TS_Mass_Balance_percent_diff_',suffix,' <<- TS_Mass_Balance_percent_diff')))
-    eval(parse(text = paste0('MODFLOW_Budget_Monthly_',suffix,' <<- MODFLOW_Budget_Monthly')))
+    return(MODFLOW_Budget_Monthly)
   }
 }
