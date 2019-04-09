@@ -334,7 +334,7 @@ end subroutine monthly_pumping
     write(92,'(i4,2119g12.5)')im, monthly%irrigation      
     write(93,'(i4,2119g12.5)')im, monthly%evapotrasp                   
     write(94,'(i4,2119g12.5)')im, monthly%recharge        
-    write(95,'(i4,2119g12.5)')im, daily%moisture             
+    write(95,'(i4,2119g12.5)')im, daily%moisture             ! daily value used because that is the state of the field at the end of the month 
     write(96,'(i4,2119g12.5)')im, monthly%actualET        
     write(97,'(i4,2119g12.5)')im, monthly%deficiency                           
     write(120,'(i4,2119i4)')im, monthly%ET_active        
@@ -343,7 +343,7 @@ end subroutine monthly_pumping
     write(201,'(i4,2119g12.5)')im, monthly%irrigation_vol 
     write(202,'(i4,2119g12.5)')im, monthly%evapotrasp_vol                  
     write(203,'(i4,2119g12.5)')im, monthly%recharge_vol   
-    write(204,'(i4,2119g12.5)')im, daily%moisture*poly%MF_area           
+    write(204,'(i4,2119g12.5)')im, daily%moisture*poly%MF_area       ! daily value used because that is the state of the field at the end of the month 
     write(205,'(i4,2119g12.5)')im, monthly%actualET_vol                    
     write(206,'(i4,2119g12.5)')im, monthly%deficiency_vol
         
