@@ -6,6 +6,8 @@
 *.DS_Store
 *.pdf
 *.png
+*.csv
+*.hds
 *.dat
 *_par*
 *unirandpar*
