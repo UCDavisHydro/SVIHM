@@ -3,6 +3,7 @@
 #mf_bud_terms is an array of strings that contains the different budget terms contained in the listing file
 #suffix is an optional string tag added to saved dataframes for differentiation (e.g., MAR, ILR, etc.)
 MODFLOW_Budget = function(filename, mf_bud_terms, suffix){
+  library(magrittr)
   InputText = readLines(filename)  #Read in text file
   # Extract Convergence Failures
   conv_fail_lines = grep('FAILED TO MEET',InputText)  #find stress periods where convergence failed
@@ -21,7 +22,7 @@ MODFLOW_Budget = function(filename, mf_bud_terms, suffix){
   TOTAL_In_Lines = grep('TOTAL IN =',InputText)
   TOTAL_Out_Lines = grep('TOTAL OUT =',InputText)
   n_budget_entries = length(STORAGE_Lines)
-  mf_bud_terms = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
+  #mf_bud_terms = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
   
   #Extract arrays for cumulative volumes and time step rates for different components of the groundwaterwater budget
   for (i in 1:length(mf_bud_terms)){
@@ -127,11 +128,11 @@ MODFLOW_Budget = function(filename, mf_bud_terms, suffix){
     Cumulative_Mass_Balance_percent_diff <<- Cumulative_Mass_Balance_percent_diff
     SP_Mass_Balance_percent_diff <<- SP_Mass_Balance_percent_diff
     TS_Mass_Balance_percent_diff <<- TS_Mass_Balance_percent_diff
-    MODFLOW_Budget_Monthly <<- MODFLOW_Budget_Monthly
+    return(MODFLOW_Budget_Monthly)
   } else {
     eval(parse(text = paste0('Cumulative_Mass_Balance_percent_diff_',suffix,' <<- Cumulative_Mass_Balance_percent_diff')))
     eval(parse(text = paste0('SP_Mass_Balance_percent_diff_',suffix,' <<- SP_Mass_Balance_percent_diff')))
     eval(parse(text = paste0('TS_Mass_Balance_percent_diff_',suffix,' <<- TS_Mass_Balance_percent_diff')))
-    eval(parse(text = paste0('MODFLOW_Budget_Monthly_',suffix,' <<- MODFLOW_Budget_Monthly')))
+    return(MODFLOW_Budget_Monthly)
   }
 }
