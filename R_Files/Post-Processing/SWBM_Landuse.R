@@ -1,4 +1,4 @@
-SWBM_output_by_landuse = function(budget_terms, landuse_cats, header_names){
+SWBM_Landuse = function(budget_terms, landuse_cats, header_names){
   filename = paste0('monthly_',budget_terms,'_by_luse.dat')
   landuse_area_m2 = read.table('landuse_area_m2.dat',header = T) # import monthly landuse areas
   names(landuse_area_m2) = c('Month',landuse_cats, 'Water' )
@@ -77,7 +77,7 @@ SWBM_output_by_landuse = function(budget_terms, landuse_cats, header_names){
                                                                recharge = t(subset(SWBM_recharge_Mm3,rownames(SWBM_recharge_Mm3)== rownames(SWBM_recharge_Mm3)[",i,"])),
                                                                deficiency = t(subset(SWBM_deficiency_Mm3,rownames(SWBM_deficiency_Mm3)== rownames(SWBM_deficiency_Mm3)[",i,"])),
                                                                area = round(colMeans(subset(landuse_area_m2,select = landuse_cats))/1E6,2))")))
-    eval(parse(text = paste0("colnames(SWBM_LU_",rownames(SWBM_landuse_Mm3)[i],"_Mm3) = c(header_names,'Area (Mm^3)*')")))
+    eval(parse(text = paste0("colnames(SWBM_LU_",rownames(SWBM_landuse_Mm3)[i],"_Mm3) = c(header_names,'Area (Mm^2)*')")))
     eval(parse(text = paste0("SWBM_LU_",rownames(SWBM_landuse_Mm3)[i],"_Mm3 <<- SWBM_LU_",rownames(SWBM_landuse_Mm3)[i],"_Mm3")))
     
     eval(parse(text = paste0("SWBM_LU_",rownames(SWBM_landuse_m)[i],"_m = data.frame(pET = t(subset(SWBM_pET_m,rownames(SWBM_pET_m)== rownames(SWBM_pET_m)[",i,"])),
@@ -88,7 +88,7 @@ SWBM_output_by_landuse = function(budget_terms, landuse_cats, header_names){
                              recharge = t(subset(SWBM_recharge_m,rownames(SWBM_recharge_m)== rownames(SWBM_recharge_m)[",i,"])),
                              deficiency = t(subset(SWBM_deficiency_m,rownames(SWBM_deficiency_m)== rownames(SWBM_deficiency_m)[",i,"])),
                              area = round(colMeans(subset(landuse_area_m2,select = landuse_cats))/1E6,2))")))
-    eval(parse(text = paste0("colnames(SWBM_LU_",rownames(SWBM_landuse_m)[i],"_m) = c(header_names,'Area (Mm^3)*')")))
+    eval(parse(text = paste0("colnames(SWBM_LU_",rownames(SWBM_landuse_m)[i],"_m) = c(header_names,'Area (Mm^2)*')")))
     eval(parse(text = paste0("SWBM_LU_",rownames(SWBM_landuse_m)[i],"_m <<- SWBM_LU_",rownames(SWBM_landuse_m)[i],"_m")))
     
     eval(parse(text = paste0("SWBM_LU_",rownames(SWBM_landuse_TAF)[i],"_TAF = data.frame(pET = t(subset(SWBM_pET_TAF,rownames(SWBM_pET_TAF)== rownames(SWBM_pET_TAF)[",i,"])),

@@ -20,7 +20,7 @@ graphics_type = 'png'    #output type for graphics, currently pdf or png
 FJ_Basecase_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                         # Import Basecase flow data
                            Flow_m3day = read.table('Streamflow_FJ_SVIHM.dat', skip = 2)[,3],
                            Flow_cfs = read.table('Streamflow_FJ_SVIHM.dat', skip = 2)[,3]*0.000408734569)
-FJ_MAR_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                              # Import MAR flow data
+FJ_MAR_flow = data.frame(#Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                              # Import MAR flow data
                            Flow_m3day = read.table('Streamflow_FJ_SVIHM_MAR.dat', skip = 2)[,3],
                            Flow_cfs = read.table('Streamflow_FJ_SVIHM_MAR.dat', skip = 2)[,3]*0.000408734569)
 FJ_ILR_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                              # Import ILR flow data
@@ -74,6 +74,33 @@ if (COMPARE_MAR_ILR==TRUE){
   MODFLOW_Seg32_Inflows$MAR_ILR = Inflow_Seg32_MAR_ILR
   MODFLOW_Seg32_Inflows$MAR_ILR_diff = Inflow_Seg32_MAR_ILR_diff
   }
+
+pumping_bc = read.table('monthly_groundwater_by_luse.dat', header = T)
+pumping_MAR = read.table('monthly_groundwater_by_luse_MAR.dat', header = T)
+pumping_ILR = read.table('monthly_groundwater_by_luse_ILR.dat', header = T)
+pumping_MAR_ILR = read.table('monthly_groundwater_by_luse_MAR_ILR.dat', header = T)
+
+pumping_bc$Stress_Period = rep(seq(1991,2011),each = 12)
+pumping_MAR$Stress_Period = rep(seq(1991,2011),each = 12)
+pumping_ILR$Stress_Period = rep(seq(1991,2011),each = 12)
+pumping_MAR_ILR$Stress_Period = rep(seq(1991,2011),each = 12)
+
+pumping_bc = aggregate(.~Stress_Period, pumping_bc, FUN = sum)
+pumping_bc = rowSums(pumping_bc[,-1])*0.000000810714
+pumping_MAR = aggregate(.~Stress_Period, pumping_MAR, FUN = sum)
+pumping_MAR = rowSums(pumping_MAR[,-1])*0.000000810714
+pumping_ILR = aggregate(.~Stress_Period, pumping_ILR, FUN = sum)
+pumping_ILR = rowSums(pumping_ILR[,-1])*0.000000810714
+pumping_MAR_ILR = aggregate(.~Stress_Period, pumping_MAR_ILR, FUN = sum)
+pumping_MAR_ILR = rowSums(pumping_MAR_ILR[,-1])*0.000000810714
+
+MAR_pumping_diff = pumping_bc - pumping_MAR
+ILR_GW_Reduction = data.frame(Year=seq(1991,2011),
+                              Reduction_TAF = (pumping_bc - pumping_ILR),
+                              Reduction_pct = (pumping_bc - pumping_ILR)/pumping_bc*100)
+
+MAR_ILR_pumping_diff = pumping_bc - pumping_MAR_ILR
+
 
 #############################################################################################
 ##########################             DATA PROCESSING             ##########################
@@ -279,7 +306,7 @@ MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MA
                       ymax = MAR_difference_cfs+MAR_difference_cfs_SD, group = 1), width = 0.25) +
     geom_point(aes(x = seq(1,12), y = MAR_difference_cfs, group = 1),size = 1.5) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = Flow_Diff_Monthly_Avg$Date) +
-    scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
+    scale_y_continuous(limits = c(-35,35), breaks = seq(-35,35,by = 10), expand = c(0,0)) +
     theme(panel.background = element_blank(),
           panel.border = element_rect(fill=NA, color = 'black'),
           axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
@@ -299,7 +326,7 @@ MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MA
                       ymax = ILR_difference_cfs+ILR_difference_cfs_SD, group = 1), width = 0.25) +
     geom_point(aes(x = seq(1,12), y = ILR_difference_cfs, group = 1),size = 1.5) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = Flow_Diff_Monthly_Avg$Date) +
-    scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
+    scale_y_continuous(limits = c(-35,35), breaks = seq(-35,35,by = 10), expand = c(0,0)) +
     theme(panel.background = element_blank(),
           panel.border = element_rect(fill=NA, color = 'black'),
           axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
@@ -320,7 +347,7 @@ MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MA
     geom_errorbar(aes(x = seq(1,12), ymin = MAR_ILR_difference_cfs-MAR_ILR_difference_cfs_SD, 
                       ymax = MAR_ILR_difference_cfs+MAR_ILR_difference_cfs_SD, group = 1), width = 0.25) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = Flow_Diff_Monthly_Avg$Date) +
-    scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
+    scale_y_continuous(limits = c(-35,35), breaks = seq(-35,35,by = 10), expand = c(0,0)) +
     theme(panel.background = element_blank(),
           panel.border = element_rect(fill=NA, color = 'black'),
           axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
@@ -344,7 +371,7 @@ Flow_Diff_SP_Dry_Avg_Wet$Date = format(Flow_Diff_SP_Dry_Avg_Wet$Date, '%m')
    geom_hline(yintercept = 0) +
    geom_line(size = 1) +
    geom_point(size = 1.5) +
-   scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
+   scale_y_continuous(limits = c(-30,30), breaks = seq(-30,30,by = 10), expand = c(0,0)) +
    scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = format(seq(as.Date("2001/1/1"), by = "month", length.out = 12),'%b')) +
    scale_color_manual(values = c('red','black','blue')) +
    theme(panel.background = element_blank(),
@@ -364,7 +391,7 @@ Flow_Diff_SP_Dry_Avg_Wet$Date = format(Flow_Diff_SP_Dry_Avg_Wet$Date, '%m')
     geom_hline(yintercept = 0) +
     geom_line(size = 1) +
     geom_point(size = 1.5) +
-    scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
+    scale_y_continuous(limits = c(-30,30), breaks = seq(-30,30,by = 10), expand = c(0,0)) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = format(seq(as.Date("2001/1/1"), by = "month", length.out = 12),'%b')) +
     scale_color_manual(values = c('red','black','blue')) +
     theme(panel.background = element_blank(),
@@ -384,7 +411,7 @@ Flow_Diff_SP_Dry_Avg_Wet$Date = format(Flow_Diff_SP_Dry_Avg_Wet$Date, '%m')
     geom_hline(yintercept = 0) +
     geom_line(size = 1) +
     geom_point(size = 1.5) +
-    scale_y_continuous(limits = c(-40,40), breaks = seq(-40,40,by = 10), expand = c(0,0)) +
+    scale_y_continuous(limits = c(-30,30), breaks = seq(-30,30,by = 10), expand = c(0,0)) +
     scale_x_continuous(limits = c(0.5,12.5), breaks = seq(1,12,by = 1), expand = c(0,0), labels = format(seq(as.Date("2001/1/1"), by = "month", length.out = 12),'%b')) +
     scale_color_manual(values = c('red','black','blue')) +
     theme(panel.background = element_blank(),
@@ -447,6 +474,52 @@ print(MAR_ILR_Monthly_Avg_Plot +
 print(MAR_ILR_Dry_Avg_Wet_Diff_Plot +
         ylab(''),
       vp = vplayout(1,2))
+graphics.off()
+
+ILR_Pumping_Reduction_Vol_Plot = ggplot(ILR_GW_Reduction, aes(x=Year, y = Reduction_TAF)) + 
+  geom_line() +
+  ylab('Volume (TAF)')+
+  ggtitle('ILR Groundwater Pumping Reduction') +
+  scale_x_continuous(limits = c(1990.5,2011.5), breaks = seq(1991,2011, by = 2), expand = c(0,0)) +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,by = 2), expand = c(0,0)) +
+  theme(panel.background = element_blank(),
+        panel.border = element_rect(fill=NA, color = 'black'),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.ticks = element_line(size = 0.2),
+        plot.title = element_text(hjust = 0.5, size = 10),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 12),
+        legend.key = element_blank(),
+        legend.title = element_blank(),
+        legend.position = c(0.80,0.15),
+        legend.background = element_blank())
+
+ILR_Pumping_Reduction_Pct_Plot = ggplot(ILR_GW_Reduction, aes(x=Year, y = Reduction_pct)) + 
+  geom_line() +
+  ylab('Percent')+
+  ggtitle('ILR Groundwater Pumping Reduction') +
+  scale_x_continuous(limits = c(1990.5,2011.5), breaks = seq(1991,2011, by = 2), expand = c(0,0)) +
+  scale_y_continuous(limits = c(0,20), breaks = seq(0,20,by = 5), expand = c(0,0)) +
+  theme(panel.background = element_blank(),
+        panel.border = element_rect(fill=NA, color = 'black'),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.ticks = element_line(size = 0.2),
+        plot.title = element_text(hjust = 0.5, size = 10),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 12),
+        legend.key = element_blank(),
+        legend.title = element_blank(),
+        legend.position = c(0.80,0.15),
+        legend.background = element_blank())
+
+png('ILR_Pumping_Reductions.png', width = 7, height = 3, units = 'in', res = 600 )
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(1,2)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+print(ILR_Pumping_Reduction_Vol_Plot, vp = vplayout(1,1))
+print(ILR_Pumping_Reduction_Pct_Plot, vp = vplayout(1,2))
 graphics.off()
 
 
