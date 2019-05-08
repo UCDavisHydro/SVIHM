@@ -1,0 +1,106 @@
+BEGIN Options Keywords
+  Verbose = 3
+END Options
+ 
+BEGIN UCODE_Control_Data Keywords
+  ModelName = SVIHM
+  ModelLengthUnits = m
+  ModelTimeUnits = d
+  Sensitivities = True
+  Prediction = True
+  Optimize = False
+  Linearity = False
+  LinearityAdv = No
+  SOSSurface = False
+  CreateInitFiles = False
+  DataExchange = True
+END UCODE_Control_Data
+ 
+BEGIN Reg_GN_Controls Keywords
+  TolSOSC = 0.01
+  MaxIter = 30
+END Reg_GN_Controls
+ 
+BEGIN Model_Command_Lines Keywords
+  Command = ./Run_SVIHM.sh
+    Purpose = Forward
+    CommandID = ForwardModel
+END Model_Command_Lines
+ 
+BEGIN Parameter_Groups Files
+ SVIHM.pargrp
+END Parameter_Groups
+ 
+BEGIN Parameter_Data Files
+ SVIHM_postcal_sensitivity.param1
+END Parameter_Data
+
+BEGIN Prediction_Groups Files
+ SVIHM.predgrp
+END Prediction_Groups
+ 
+BEGIN PREDICTION_DATA FILES
+ SVIHM.flowpred
+END PREDICTION_DATA
+ 
+BEGIN Observation_Groups Files
+ SVIHM.obsgrp
+END Observation_Groups
+ 
+BEGIN Observation_Data Files
+ SVIHM.flowobs
+ SVIHM.headobs
+END Observation_Data
+
+BEGIN Model_Input_Files Keywords
+  ModInFile = general_inputs.txt
+    TemplateFile = SVIHM_SWBM_General_Inputs.jtf
+  ModInFile = irr_eff.txt
+    TemplateFile = SVIHM_SWBM_Irr_Effs.jtf
+  ModInFile = crop_coeff_mult.txt
+    TemplateFile = SVIHM_SWBM_Crop_Coeff_Mults.jtf     
+  ModInFile = SVIHM.pvl
+    TemplateFile = SVIHM_PVAL.jtf
+  ModInFile = SVIHM.sfr
+    TemplateFile = SVIHM_SFR.jtf
+END Model_Input_Files
+ 
+BEGIN Model_Output_Files Keywords
+  ModOutFile = Streamflow_FJ_SVIHM.dat
+    InstructionFile = Streamflow_FJ_SVIHM.dat.jif
+    Category = Obs
+  ModOutFile = Streamflow_BY_SVIHM.dat
+    InstructionFile = Streamflow_BY_SVIHM.dat.jif
+    Category = Obs
+  ModOutFile =  Streamflow_AS_SVIHM.dat
+    InstructionFile = Streamflow_AS_SVIHM.dat.jif
+    Category = Obs
+  ModOutFile = Streamflow_LS_SVIHM.dat
+    InstructionFile = Streamflow_LS_SVIHM.dat.jif
+    Category = Obs
+  ModOutFile = HobData_SVIHM.dat
+    InstructionFile = HobData_SVIHM.dat.jif
+    Category = Obs
+  ModOutFile = Streamflow_Global.dat
+    InstructionFile = Streamflow_Global.dat.jif
+    Category = Pred
+
+END Model_Output_Files
+ 
+BEGIN Parallel_Control Keywords
+  Parallel = True
+  OPERATINGSYSTEM = Linux
+END Parallel_Control
+ 
+BEGIN Parallel_Runners Table
+  NROW=7 NCOL=3 COLUMNLABELS
+  RunnerName RunnerDir RunTime
+  Runner1 ./Runner1/ 100000
+  Runner2 ./Runner2/ 100000
+  Runner3 ./Runner3/ 100000
+  Runner4 ./Runner4/ 100000
+  Runner5 ./Runner5/ 100000
+  Runner6 ./Runner6/ 100000
+  Runner7 ./Runner7/ 100000
+END Parallel_Runners
+ 
