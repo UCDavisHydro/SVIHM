@@ -3,6 +3,7 @@
 
 library(lubridate)
 library(stringr)
+library(dplyr)
 #Rules:
 ## dates in R are treated as YYYY-MM-DD for convenience. Dates in the model input files are DD-MM-YYYY.
 
@@ -19,9 +20,9 @@ if(model_whole_water_years)
 {start_month = "10"; start_day = "01"; end_month = "09"; end_day = "30"} 
 if(!model_whole_water_years) {print("please define month and day for start and end of model run period")}
 
-model_start_date = paste(start_year, start_month, start_day, sep = "-")
-model_end_date = paste(end_year, end_month, end_day, sep = "-")
-model_days = seq(ymd(model_start_date), ymd(model_end_date), "days")
+model_start_date = as.Date(paste(start_year, start_month, start_day, sep = "-"))
+model_end_date = as.Date(paste(end_year, end_month, end_day, sep = "-"))
+model_days = seq(from = model_start_date, to = model_end_date, by = "days")
 
 
 # Filename: kc_alfalfa.txt -------------------------------------------------
@@ -144,20 +145,79 @@ write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
 "http://cdec.water.ca.gov/dynamicapp/req/CSVDataServlet?Stations=CHA&SensorNums=2&dur_code=H&Start=1990-10-01T00%3A00&End=2019-05-20"
 
 #NOAA data
+#daily data ftp site: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/
+#daily data ftp readme: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt
+#daily data documentation: https://www1.ncdc.noaa.gov/pub/data/cdo/documentation/GHCND_documentation.pdf
+
+
+#https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00041316.dly
+#https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00043182.dly
+
 noaa = read.csv("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/update2018notes/noaa_precip_fjn_cal.csv")
 head(noaa)
 noaa$DATE = as.Date(noaa$DATE)
-plot(noaa$DATE, noaa$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
-cal = noaa[noaa$STATION=="USC00041316",]
-fj = noaa[noaa$STATION=="USC00043182",]
 
-plot(cal$DATE, cal$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
+cal = subset(noaa, STATION=="USC00041316" & DATE >= model_start_date & DATE <= model_end_date)
+cal = select(cal, DATE, PRCP)
+fj = subset(noaa, STATION=="USC00043182" & DATE >= model_start_date & DATE <= model_end_date)
+fj = select(fj, DATE, PRCP)
 
-max()
+# # Compare visually
+# # plot(noaa$DATE, noaa$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
+# plot(cal$DATE, cal$PRCP, type = "l", col = "red")
+# lines(fj$DATE, fj$PRCP, #xlim = as.Date(c("1991-10-01","2018-09-01")),
+#      type = "l", col = "blue", add=T)
+
+### COMPARISON TABLE FOR 2 STATIONS
+daily_precip = data.frame(model_days)
+daily_precip = merge(x = daily_precip, y = cal, by.x = "model_days", by.y = "DATE", all=TRUE)
+daily_precip = merge(x = daily_precip, y = fj, by.x = "model_days", by.y = "DATE", all=TRUE)
+colnames(daily_precip)=c("Date","PRCP_mm_cal", "PRCP_mm_fj")
+daily_precip$mean_PRCP = apply(X = daily_precip[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
+
+#isolate the precip data after the end of the original model
+daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
+daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
+
+### HANDLE NAs
+
+#check the NA values
+which(is.na(daily_precip_update$mean_PRCP))
+daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
+#shit that's a huge gap in december 2012. to do: find alternate precip data source for this gap
+#TEMPORARY SOLUTION FOR NOW: 
+#just put the average of all December dates in that window
+# dec 4-30th
+
+#calculate average precip values for that day in december over the whole model record (wy1991+)
+precip_dec = subset(daily_precip, month(Date) == 12 & day(Date) >=4 & day(Date) <=30)
+precip_dec$day = day(precip_dec$Date)
+daily_precip_dec = aggregate(precip_dec$mean_PRCP, by=list(precip_dec$day), FUN=mean, na.rm=T)
+
+#replace NAN values in Dec 2012 with average values over whole record
+daily_precip_update$mean_PRCP[daily_precip_update$Date >= as.Date("2012-12-04") 
+                              & daily_precip_update$Date <= as.Date("2012-12-30")]=daily_precip_dec$x
+
+#set remaining days with NA in both records to 0
+daily_precip_update$mean_PRCP[is.na(daily_precip_update$mean_PRCP)] = 0
 
 
-unique(noaa$STATION)
+### FORMAT AND WRITE PRECIP FILE
+#Format the update to attach to the original precip file
+daily_precip_update=select(daily_precip_update, mean_PRCP, Date)
+daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
+                                 str_pad(month(daily_precip_update$Date), 2, pad="0"),
+                                 year(daily_precip_update$Date), sep = "/")
+daily_precip_update$mean_PRCP = daily_precip_update$mean_PRCP / 1000 #convert to meters
 
+#read in original data (wys 1991-2011)
+daily_precip_orig = read.table("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/input/precip.txt")
+colnames(daily_precip_orig) = colnames(daily_precip_update)
+
+#combine and write as text file
+daily_precip_updated = rbind(daily_precip_orig, daily_precip_update)
+write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 
 # Filename: ref_et.txt ----------------------------------------------------
@@ -166,10 +226,42 @@ unique(noaa$STATION)
 #units? 
 et_dl_may2019 = read.csv("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/update2018notes/spatial_eto_report.csv")
 
+##generate new et record
+et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
+et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
+et = select(et, Date, ETo..mm.day.)
+colnames(et) = c("ETo_mm","Date")
+
+#Update existing record
+#subset update for ET, build update dataframe in same format as original input file
+et_update_allcol = subset(et_dl_may2019, Date >= as.Date("2011-10-01") & Date <= model_end_date)
+ETo_m = et_update_allcol$ETo..mm.day./1000
+et_update = data.frame(ETo_m)
+et_update$ETo_in = et_update$ETo_m * 39.3701 #convert to inches
+et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date), 2, pad="0"),
+                                                  str_pad(month(et_update_allcol$Date), 2, pad="0"),
+                                                  year(et_update_allcol$Date), sep = "/")
+
+#Read in original file
+ref_et_orig = read.table("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/input/ref_et.txt")
+# head(ref_et_orig)
+# plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
+
+#Combine into updated ET record, check for continuity, and write file
+colnames(ref_et_orig) = colnames(et_update)
+ref_et_updated = rbind(ref_et_orig, et_update)
+# plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
+# sum(is.na(ref_et_updated$ETo_m))
+write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
 # Filename: streamflow_input.txt ------------------------------------------
 #To do: build webscraper for latest stream data?
 "https://waterdata.usgs.gov/ca/nwis/dv?cb_00060=on&format=rdb&site_no=11519500&referred_module=sw&period=&begin_date=1941-10-01&end_date=2019-05-19"
 #pull down from server, since it webscraped recently?
+
+#Convert the streamflow regression model to be callable from this script. 
+# Specify end date, I guess. 
 
 
 # SVIHM.dis ---------------------------------------------------------------
