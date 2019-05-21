@@ -53,7 +53,8 @@ preproflow = function(df_daily_mean, Stream_name) {
 ############################################################
 ###########        Import Streamflow Data         ##########
 ############################################################
-FJ_daily_mean = read.table('USGS_11519500_WY_1942_2016.txt', header = TRUE, stringsAsFactors = F)[-4]   #import daily streamflow data
+setwd("C:/Users/ckouba/Git/SVIHM/SVIHM/Streamflow_Regression_Model")
+FJ_daily_mean = read.table('USGS_11519500_WY_1942_2018.txt', header = TRUE, stringsAsFactors = F)[-4]   #import daily streamflow data
 East_Fork_daily_mean = read.table('East_Fork_Scott_River_R_input.txt', header = T, stringsAsFactors = F, sep = '\t')[-4]
 South_Fork_daily_mean = read.table('South_Fork_Scott_River_R_input.txt', header = T, stringsAsFactors = F, sep = '\t')[-4]
 Sugar_daily_mean = read.table('Sugar_Creek_R_input.txt', header = T, stringsAsFactors = F, sep = '\t')[-4]
@@ -249,7 +250,7 @@ tribs_data_post_WY1972 = function(df_monthly_volume, Stream_name) {
 }
 
 for (i in 1:length(Streams)){
-  tribs_data_post_WY1972(df_monthly_volume = eval(parse(text = paste0(Streams[i],'_monthly_cleaned'))), Stream_name = Streams[i])
+  tribs_data_post_WY1972(df_monthly_volume = eval(parse(text = paste0(Streams[i], '_monthly_cleaned'))), Stream_name = Streams[i])
 } 
 
 tribs_regress_post_WY1972 = rbind(East_Fork_tribs_regress_post_WY1972, South_Fork_tribs_regress_post_WY1972, Sugar_tribs_regress_post_WY1972, French_tribs_regress_post_WY1972, Etna_tribs_regress_post_WY1972,
@@ -343,7 +344,7 @@ Crystal_Model_Inputs = data.frame(Month = SVIHM_months,
 #No inflow for Oro Fino Creek and Clark Creek is not currently included in the model
 
 
-WY1991_2011_Streamflow = data.frame(Month = SVIHM_months,
+WY1991_2018_Streamflow = data.frame(Month = SVIHM_months,
                                    East_Fork_Avg_Flow_m3day = East_Fork_Model_Inputs$avg_flow_m3day,
                                    South_Fork_Avg_Flow_m3day = South_Fork_Model_Inputs$avg_flow_m3day,
                                    Sugar_Avg_Flow_m3day = Sugar_Model_Inputs$avg_flow_m3day,
@@ -357,5 +358,5 @@ WY1991_2011_Streamflow = data.frame(Month = SVIHM_months,
                                    Mill_Avg_Flow_m3day = Mill_Model_Inputs$avg_flow_m3day,
                                    Shackleford_Avg_Flow_m3day = Shackleford_Model_Inputs$avg_flow_m3day)
 
-write.table(WY1991_2011_Streamflow,file = 'streamflow_input.txt', append = F, quote = F, row.names = F, col.names = T, sep = '\t')
+write.table(WY1991_2018_Streamflow,file = 'streamflow_input.txt', append = F, quote = F, row.names = F, col.names = T, sep = '\t')
 

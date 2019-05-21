@@ -1,0 +1,3 @@
+.67      ! effective irrigation efficiency for flood (irreff_flood)
+1.02 1.11 ! effective irrigation efficiency on Alfalfa/Grain for wheel line and center pivot (irreff_wl_LU25, irreff_cp_LU25)
+1 0.9 ! effective irrigation efficiency on Pasture for wheel line and center pivot (irreff_wl_LU2, irreff_cp_LU2)
