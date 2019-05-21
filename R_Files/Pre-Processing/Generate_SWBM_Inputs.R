@@ -119,6 +119,7 @@ for(yr in (start_year+1):end_year){
 }
 
 # Build data frame with date formatted for file-writing
+kc_grain_days = round(kc_grain_days, 4)
 kc_grain_df = data.frame(kc_grain_days)
 kc_grain_df$day = paste(str_pad(day(model_days), 2, pad = "0"), 
                           str_pad(month(model_days), 2, pad = "0"), 
@@ -150,8 +151,9 @@ plot(noaa$DATE, noaa$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = 
 cal = noaa[noaa$STATION=="USC00041316",]
 fj = noaa[noaa$STATION=="USC00043182",]
 
-plot(noaa$DATE, noaa$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
+plot(cal$DATE, cal$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
 
+max()
 
 
 unique(noaa$STATION)
@@ -165,7 +167,7 @@ unique(noaa$STATION)
 et_dl_may2019 = read.csv("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/update2018notes/spatial_eto_report.csv")
 
 # Filename: streamflow_input.txt ------------------------------------------
-#webscrape latest stream data?
+#To do: build webscraper for latest stream data?
 "https://waterdata.usgs.gov/ca/nwis/dv?cb_00060=on&format=rdb&site_no=11519500&referred_module=sw&period=&begin_date=1941-10-01&end_date=2019-05-19"
 #pull down from server, since it webscraped recently?
 

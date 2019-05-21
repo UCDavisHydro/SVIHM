@@ -1,11 +1,18 @@
 rm(list=ls())
 library(ggplot2)
-Max_Num_Missing_Days = 3                                                #Maximum number of missing daily flow data before month is removed from the regression
-SVIHM_months = seq(as.Date("1990/10/1"), by = "month", length.out = 252)  #Months during model simulation
-Months_plus_one = seq(as.Date("1990/10/1"), by = "month", length.out = 253)  #Months during model simulation
+
+#Specify end date of model and create date vectors for SVIHM flows output
+end_date = as.Date("2018/9/30")
+SVIHM_months = seq(from = as.Date("1990/10/1"), to = end_date,by = "month")  #Months during model simulation
+Months_plus_one = seq(as.Date("1990/10/1"), by = "month", length.out = length(SVIHM_months)+1)  #Months during model simulation
 NumDays = as.numeric(diff(Months_plus_one))                                  #Numer of days in each simulation month
+
+#Date vectors for regression models
 Pre_WY1973 = seq(as.Date("1940/10/1"), by = "month", length.out = 384)  #Months Prior to WY1973
-Post_WY1972 = seq(as.Date("1972/10/1"), by = "month", length.out = 600)  #Months After WY1972
+Post_WY1972 = seq(from = as.Date("1972/10/1"), to = end_date, by = "month")  #Months After WY1972
+
+Max_Num_Missing_Days = 3                                                #Maximum number of missing daily flow data before month is removed from the regression
+
 ############################################################
 ########     Streamflow Pre-Processing Function     ########
 ############################################################
@@ -54,6 +61,7 @@ preproflow = function(df_daily_mean, Stream_name) {
 ###########        Import Streamflow Data         ##########
 ############################################################
 setwd("C:/Users/ckouba/Git/SVIHM/SVIHM/Streamflow_Regression_Model")
+
 FJ_daily_mean = read.table('USGS_11519500_WY_1942_2018.txt', header = TRUE, stringsAsFactors = F)[-4]   #import daily streamflow data
 East_Fork_daily_mean = read.table('East_Fork_Scott_River_R_input.txt', header = T, stringsAsFactors = F, sep = '\t')[-4]
 South_Fork_daily_mean = read.table('South_Fork_Scott_River_R_input.txt', header = T, stringsAsFactors = F, sep = '\t')[-4]
