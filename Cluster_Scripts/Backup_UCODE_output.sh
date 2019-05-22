@@ -1,0 +1,43 @@
+#!/bin/bash -eu
+
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_1/*.#* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_1/*._* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_1/*.#* ./Results/MAR/
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_1/*._* ./Results/MAR/
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_1/*.#* ./Results/ILR/
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_1/*._* ./Results/ILR/
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_1/*.#* ./Results/MAR_ILR/
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_1/*._* ./Results/MAR_ILR/  
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_2/*.#* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_2/*._* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_2/*.#* ./Results/MAR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_2/*._* ./Results/MAR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_2/*.#* ./Results/ILR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_2/*._* ./Results/ILR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_2/*.#* ./Results/MAR_ILR/  
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_2/*._* ./Results/MAR_ILR/  
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_3/*.#* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_3/*._* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_3/*.#* ./Results/MAR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_3/*._* ./Results/MAR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_3/*.#* ./Results/ILR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_3/*._* ./Results/ILR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_3/*.#* ./Results/MAR_ILR/  
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_3/*._* ./Results/MAR_ILR/  
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_4/*.#* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_4/*._* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_4/*.#* ./Results/MAR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_4/*._* ./Results/MAR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_4/*.#* ./Results/ILR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_4/*._* ./Results/ILR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_4/*.#* ./Results/MAR_ILR/  
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_4/*._* ./Results/MAR_ILR/  
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_5/*.#* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/Basecase/Calibration_5/*._* ./Results/Basecase/
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_5/*.#* ./Results/MAR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR/Calibration_5/*._* ./Results/MAR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_5/*.#* ./Results/ILR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/ILR/Calibration_5/*._* ./Results/ILR/          
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_5/*.#* ./Results/MAR_ILR/  
+cp /aqua/dtolley/UCODE_Linear_Uncert/MAR_ILR/Calibration_5/*._* ./Results/MAR_ILR/  
+
