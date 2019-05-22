@@ -9,6 +9,7 @@ library(dplyr)
 
 
 #Set drive for collecting all SWBM input files
+input_file_table_dir = "C:/Users/ckouba/Git/SVIHM/SVIHM/R_Files/Pre-Processing/Input_File_Generation_Tables"
 SWBM_file_dir = "C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/write_input_files_test_2019.05.19"
 
 #Create date vectors
@@ -246,12 +247,13 @@ et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date
 #Read in original file
 ref_et_orig = read.table("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/input/ref_et.txt")
 # head(ref_et_orig)
-# plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
+ plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
 
 #Combine into updated ET record, check for continuity, and write file
 colnames(ref_et_orig) = colnames(et_update)
 ref_et_updated = rbind(ref_et_orig, et_update)
-# plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
+plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
+
 # sum(is.na(ref_et_updated$ETo_m))
 write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
@@ -271,7 +273,7 @@ write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
 drains_orig = read.csv("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/input/Drains_initial_m3day.txt")
 dim(drains_orig)
 
-drains_vector = rep(0, length(model_months))
+drains_vector = rep(0, length(model_months)+1)
 write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_initial_m3day.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
@@ -279,11 +281,82 @@ write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_m3day.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 
+
+# ** Modflow input files -----------------------------------------------------
+
+strper_data = read.csv(file.path(input_file_table_dir,"stress_period_days.csv"))
+nstr = max(strper_data$stress_period)
+
+
 # SVIHM.dis ---------------------------------------------------------------
 
+ #did this by hand/in excel. to do: code thi sup
 
 
-# SVIHM.obs ---------------------------------------------------------------
+# SVIHM.hob ---------------------------------------------------------------
+
+#To do: add head observations
+
+# SVIHM.drn ---------------------------------------------------------------
+#Script that writes drain package input file for discahrge zone cells in SVIHMv3.1
+
+DZ_Cells = read.csv(file.path(input_file_table_dir,'ET_Cells_Discharge_Zone.txt'))
+Model_Surface = matrix(t(read.table(file.path(input_file_table_dir,'Layer_1_top_z.txt'))),nrow = 440, ncol = 210, byrow = T)
+Elevation = matrix(NaN,length(DZ_Cells$row))
+for (i in 1:length(DZ_Cells$row)){
+  Elevation[i] = Model_Surface[DZ_Cells$row[i],DZ_Cells$column[i]]
+}
+
+Conductance = matrix(10000,length(DZ_Cells$row))
+Layer = matrix(1,length(DZ_Cells$row))
+Drains = cbind(Layer, DZ_Cells$row, DZ_Cells$column, round(Elevation,2), Conductance)
+rep_drains = matrix(-1, 251)   # repeat value of -1 for n-1 Stress periods to resuse drains specified in first stress period
+
+#open drain package file and write the top block
+drain_file_path = file.path(SWBM_file_dir, "SVIHM.drn")
+write('# MODFLOW Drain Package File - Drains applied at land surface within discharge zone',
+      file = drain_file_path, append = F)
+# write('PARAMETER  0  0', file = 'SVIHM.drn', append = T) #MXACTD IDRNCB
+write('        2869        50', file = drain_file_path, append = T) #MXACTD IDRNCB
+for (i in 1:nstr){
+  write(paste('         2869         0                      Stress Period',i), file = drain_file_path, append = T, sep = NA)  #ITMP  NP
+  cat(sprintf(' '), file = drain_file_path, append = T)
+  cat(sprintf("%10i%10i%10i%10.2f%10.3e\n", Drains[,1], Drains[,2],Drains[,3],Drains[,4],Drains[,5]), file = drain_file_path, append = T)
+}
+
+# drain_file <- file(file.path(SWBM_file_dir, "SVIHM.drn"))
+# #close file
+# close(drain_file)
+
+
+
+
+# SVIHM.oc ----------------------------------------------------------------
+
+strper_data = read.csv(file.path(input_file_table_dir,"stress_period_days.csv"))
+
+#define blocks for before and after stress periods
+top_block =   c("  HEAD SAVE UNIT 30","  HEAD PRINT FORMAT 0",
+                "  DRAWDOWN SAVE UNIT 31","  DRAWDOWN PRINT FORMAT 0","  COMPACT BUDGET AUX")
+# after_each_str_per_block =  c("         SAVE HEAD","        SAVE DRAWDOWN","         SAVE BUDGET","        PRINT BUDGET")
+after_each_str_per_block =  c("         SAVE HEAD","         SAVE BUDGET","        PRINT BUDGET")
+
+
+#initialize oc file
+oc_file = top_block
+
+for(i in 1:nstr){
+  nday = strper_data$days_in_month[strper_data$stress_period == i]
+  str_per = rep(i, nday)
+  tstp = 1:nday
+  str_per_block = paste0("  PERIOD ", str_per, "  STEP ",tstp)
+  
+  oc_file = append(oc_file, str_per_block)
+  oc_file = append(oc_file, after_each_str_per_block)
+}
+write.table(oc_file, file = file.path(SWBM_file_dir, "SVIHM.oc"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
 
 
 #SVIHM.rch?
