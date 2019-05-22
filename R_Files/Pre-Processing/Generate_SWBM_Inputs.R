@@ -23,6 +23,7 @@ if(!model_whole_water_years) {print("please define month and day for start and e
 model_start_date = as.Date(paste(start_year, start_month, start_day, sep = "-"))
 model_end_date = as.Date(paste(end_year, end_month, end_day, sep = "-"))
 model_days = seq(from = model_start_date, to = model_end_date, by = "days")
+model_months = seq(from = model_start_date, to = model_end_date, by = "month")
 
 
 # Filename: kc_alfalfa.txt -------------------------------------------------
@@ -262,6 +263,20 @@ write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
 
 #Convert the streamflow regression model to be callable from this script. 
 # Specify end date, I guess. 
+
+
+
+# Filename: Drains_initial_m3day.txt --------------------------------------
+
+drains_orig = read.csv("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/input/Drains_initial_m3day.txt")
+dim(drains_orig)
+
+drains_vector = rep(0, length(model_months))
+write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_initial_m3day.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_m3day.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 
 # SVIHM.dis ---------------------------------------------------------------
