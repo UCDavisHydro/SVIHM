@@ -12,8 +12,8 @@ while true; do
           sbatch --job-name='Cal_3_BC_UCODE' --output='SVIHM_basecase_3_pred_ucode.out' --error='SVIHM_basecase_3_pred_ucode.err'  --nodelist='aqua-c26' --ntasks='1' --cpus-per-task='1' SVIHM_basecase_prediction_3.sbatch 8
           sbatch --job-name='Cal_4_BC_runners' --output='SVIHM_basecase_4_pred_runners.out' --error='SVIHM_basecase_4_pred_runners.err' --nodelist='aqua-c27' --nodes='1' --ntasks='7' --cpus-per-task='1' SVIHM_basecase_prediction_4.sbatch 1 7
           sbatch --job-name='Cal_4_BC_UCODE' --output='SVIHM_basecase_4_pred_ucode.out' --error='SVIHM_basecase_4_pred_ucode.err'  --nodelist='aqua-c27' --ntasks='1' --cpus-per-task='1' SVIHM_basecase_prediction_4.sbatch 8
-          sbatch --job-name='Cal_5_BC_runners' --output='SVIHM_basecase_5_pred_runners.out' --error='SVIHM_basecase_5_pred_runners.err' --nodelist='aqua-c28' --nodes='1' --ntasks='7' --cpus-per-task='1' SVIHM_basecase_prediction_5.sbatch 1 7
-          sbatch --job-name='Cal_5_BC_UCODE' --output='SVIHM_basecase_5_pred_ucode.out' --error='SVIHM_basecase_5_pred_ucode.err'  --nodelist='aqua-c28' --ntasks='1' --cpus-per-task='1' SVIHM_basecase_prediction_5.sbatch 8
+          sbatch --job-name='Cal_5_BC_runners' --output='SVIHM_basecase_5_pred_runners.out' --error='SVIHM_basecase_5_pred_runners.err' --nodelist='aqua-c23' --nodes='1' --ntasks='7' --cpus-per-task='1' SVIHM_basecase_prediction_5.sbatch 1 7
+          sbatch --job-name='Cal_5_BC_UCODE' --output='SVIHM_basecase_5_pred_ucode.out' --error='SVIHM_basecase_5_pred_ucode.err'  --nodelist='aqua-c23' --ntasks='1' --cpus-per-task='1' SVIHM_basecase_prediction_5.sbatch 8
           false;;
         [Nn]* ) exit;;
         * ) echo "Please answer y/n";;
