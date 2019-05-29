@@ -365,7 +365,7 @@
        call monthly_volume_out		   
        call write_MODFLOW_SFR(im, nmonth, nsegs, SFR_Flows, drain_flow)
        call write_SFR_template (im, nmonth, nsegs, SFR_Flows, drain_flow, SFR_Template)   ! Write JTF file for UCODE 
-       call write_MODFLOW_WEL(im,total_n_wells,n_wel_param)       
+       call write_MODFLOW_WEL(im,imonth,total_n_wells,n_wel_param)       
    enddo                  ! End of month loop
    close(84)
    close(60)

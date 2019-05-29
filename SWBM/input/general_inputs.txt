@@ -1,2 +1,2 @@
-2119  167  252  440  210  2 UCODE Basecase
+2119  167  252  440  210  1.4 UCODE Basecase
 ! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR
