@@ -319,15 +319,8 @@
 	       else
 	         call IRRIGATION(ip, imonth, jday, eff_precip)
 	       end if
-	       
-	       
-	       if (ip==26) write(800,*)'Before Recharge call = ',daily(ip)%recharge
 	       call RECHARGE(ip,eff_precip,jday,imonth,moisture_save,MAR_active)
-		     if (ip==26) write(800,*)'after recharge call = ',daily(ip)%recharge
-		     call deficiency_check(ip, imonth, jday)       
-         if (ip==26) write(800,*)'after deficiency check = ',daily(ip)%recharge
-       
-       
+		     call deficiency_check(ip, imonth, jday)
        enddo              ! End of polygon loop
        if (MAR_active) then 
          call MAR(imonth, num_MAR_fields, MAR_fields, max_MAR_field_rate, MAR_vol, eff_precip, jday, moisture_save)
