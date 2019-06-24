@@ -29,3 +29,4 @@ DATA 408 Streamflow_Pred_Loc_3.dat
 DATA 409 Streamflow_Pred_Loc_4.dat
 DATA 410 Streamflow_Pred_Loc_5.dat
 DATA 500 HobData_SVIHM.dat
+Data 501 Reduced_Wells.dat

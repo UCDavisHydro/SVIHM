@@ -2,18 +2,19 @@
 
 rm(list=ls())
 library(ggplot2)
+library(ggthemes)
 library(reshape2)
 library(grid)
 library(magrittr)
+library(ssh)
 
-###########################################################################################
-########################                 USER INPUT                 #######################
-###########################################################################################
+# User Input --------------------------------------------------------------
 UniRandPar = TRUE
 CovRandPar = TRUE
 MAR_Comp = TRUE
 ILR_Comp = TRUE
 MAR_ILR_Comp = TRUE
+Transfer_Files_From_Cluster = FALSE
 
 crit_months = c('Aug','Sep','Oct')   #Critically dry months, used for generating plots
 
@@ -25,9 +26,77 @@ CovRandPar_Basecase_Dir = paste0(getwd(),'/CovRandPar_out/Basecase_Preds/')
 CovRandPar_MAR_Dir = paste0(getwd(),'/CovRandPar_out/MAR_Preds/')
 CovRandPar_ILR_Dir = paste0(getwd(),'/CovRandPar_out/ILR_Preds/')
 CovRandPar_MAR_ILR_Dir = paste0(getwd(),'/CovRandPar_out/MAR_ILR_Preds/')
-###########################################################################################
-######################                READ PREDS UNIFORM               ####################
-###########################################################################################
+
+
+# Check SSWRs -------------------------------------------------------------
+if (Transfer_Files_From_Cluster==TRUE){
+  session <- ssh_connect("dtolley@aqua.lawr.ucdavis.edu")
+  scp_download(session,files = '/aqua/dtolley/unirandpar/basecase/UCODE_UOUT/*',to = './UniRandPar_out/Basecase_UOUT/')
+  scp_download(session,files = '/aqua/dtolley/covrandpar/basecase/UCODE_UOUT/*',to = './CovRandPar_out/Basecase_UOUT/')
+  ssh_disconnect(session)
+}
+
+uni_uout_files = list.files(path = './UniRandPar_out/Basecase_UOUT')
+cov_uout_files = list.files(path = './CovRandPar_out/Basecase_UOUT')
+
+UniRandPar_SSWRs = unlist(lapply(paste0('./UniRandPar_out/Basecase_UOUT/',uni_uout_files), FUN = function(x) read.table(x, header = T, stringsAsFactors = F, skip = 4960, nrows = 1)[7]))
+CovRandPar_SSWRs = unlist(lapply(paste0('./CovRandPar_out/Basecase_UOUT/',cov_uout_files), FUN = function(x) read.table(x, header = T, stringsAsFactors = F, skip = 4960, nrows = 1)[7]))
+
+UniRandPar_SSWRs = data.frame(Param_Set_Num = as.numeric(gsub(x = uni_uout_files, pattern = 'SVIHM_UniRandPar_|.#uout', replacement = '')),
+                   SSWR = unlist(lapply(paste0('./UniRandPar_out/Basecase_UOUT/',uni_uout_files), FUN = function(x) read.table(x, header = T, stringsAsFactors = F, skip = 4960, nrows = 1)[7])))
+CovRandPar_SSWRs = data.frame(Param_Set_Num = rep(UniRandPar_SSWRs$Param_Set_Num[which(UniRandPar_SSWRs$Param_Set_Num<=100)],5),
+                              SSWR = unlist(lapply(paste0('./CovRandPar_out/Basecase_UOUT/',cov_uout_files), FUN = function(x) read.table(x, header = T, stringsAsFactors = F, skip = 4960, nrows = 1)[7])))
+CovRandPar_SSWRs$Calibration = rep(paste0('Cal ',seq(1,5)),each = 100)
+
+length(UniRandPar_SSWRs$SSWR[which(UniRandPar_SSWRs$SSWR>9.66E4*1.1)])
+length(CovRandPar_SSWRs$SSWR[which(CovRandPar_SSWRs$SSWR[1:100]>9.66E4*1.1)])
+length(CovRandPar_SSWRs$SSWR[which(CovRandPar_SSWRs$SSWR[101:200]>9.66E4*1.1)])
+length(CovRandPar_SSWRs$SSWR[which(CovRandPar_SSWRs$SSWR[201:300]>9.66E4*1.1)])
+length(CovRandPar_SSWRs$SSWR[which(CovRandPar_SSWRs$SSWR[301:400]>9.66E4*1.1)])
+length(CovRandPar_SSWRs$SSWR[which(CovRandPar_SSWRs$SSWR[401:500]>9.66E4*1.1)])
+length(CovRandPar_SSWRs$SSWR[which(CovRandPar_SSWRs$SSWR>9.66E4*1.1)])
+
+
+
+
+(UniRandPar_SSWR_plot = ggplot(UniRandPar_SSWRs, aes(x = Param_Set_Num, y = SSWR)) + 
+  geom_point() +
+  ggtitle('Uniform Distribution') +
+    scale_y_continuous(limits = c(8.5E4,1.35E5), breaks = seq(8.5E4,1.35E5,by = 1E4), expand = c(0,0)) +
+  geom_hline(yintercept = 8.9E4, color = 'purple', size = 0.75) + 
+  geom_hline(yintercept = 8.9E4*1.1, color = 'purple', linetype="dashed", size = 0.75) +
+  geom_hline(yintercept = 9.66E4, color = 'goldenrod4', size = 0.75) + 
+  geom_hline(yintercept = 9.66E4*1.1, color = 'goldenrod4', linetype="dashed", size = 0.75) +
+  theme_few() + 
+  theme(plot.title = element_text(hjust = 0.5))
+)
+
+(CovRandPar_SSWR_plot = ggplot(CovRandPar_SSWRs, aes(x = Param_Set_Num, y = SSWR, col = Calibration)) + 
+    geom_point() +
+    ggtitle('Normal Distribution') +
+    scale_color_manual(values = c('Red','Blue','darkgreen','purple','goldenrod4')) +
+    scale_y_continuous(limits = c(8.5E4,1.35E5), breaks = seq(8.5E4,1.35E5,by = 1E4), expand = c(0,0)) +
+    geom_hline(yintercept = 8.9E4, color = 'purple', size = 0.75) + 
+    geom_hline(yintercept = 8.9E4*1.1, color = 'purple', linetype="dashed", size = 0.75) +
+    geom_hline(yintercept = 9.66E4, color = 'goldenrod4', size = 0.75) + 
+    geom_hline(yintercept = 9.66E4*1.1, color = 'goldenrod4', linetype="dashed", size = 0.75) +
+    theme_few() + 
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = c(0.35,0.95),
+          legend.direction = 'horizontal',
+          legend.title = element_blank(),
+          legend.background = element_rect(fill= NA),
+          legend.key = element_rect(fill = NA))
+)
+
+png(filename = 'SSWRs_Uniform_Dist.png', width = 5, height = 4, res = 600, units = 'in')
+print(UniRandPar_SSWR_plot)
+graphics.off()
+png(filename = 'SSWRs_Normal_Dist.png', width = 5, height = 4, res = 600, units = 'in')
+print(CovRandPar_SSWR_plot)
+graphics.off()
+
+# Read Streamflow Prediction Function -------------------------------------
 Flow_Preds = function(pred_dir, scenario, randpartype){  #pred_dir is a directory, scenario and randpartype are strings for labeling output
   if (randpartype=='uni'){
   filenames = list.files(path = pred_dir,pattern = '.dat')
@@ -885,7 +954,8 @@ if(CovRandPar==TRUE){
 ##################             OCTOBER UNIRANDPAR PLOTS                ####################
 ###########################################################################################
 
-pdf(paste0('UniRandPar_Oct_plots.pdf'), width = 13, height = 12)
+#pdf(paste0('UniRandPar_Oct_plots.pdf'), width = 13, height = 12)
+png(paste0('UniRandPar_Oct_plots.png'), width = 8, height = 6, res = 600, units = 'in')
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(4,3)))
 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
@@ -995,7 +1065,8 @@ graphics.off()
 ##################             OCTOBER COVRANDPAR PLOTS                ####################
 ###########################################################################################
 
-pdf(paste0('CovRandPar_Oct_plots.pdf'), width = 17, height = 12)
+#pdf(paste0('CovRandPar_Oct_plots.pdf'), width = 17, height = 12)
+png(paste0('CovRandPar_Oct_plots.png'), width = 8, height = 6, res = 600, units = 'in')
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(4,3)))
 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
@@ -1101,7 +1172,8 @@ graphics.off()
 ##################          MONTHLY UNIRANDPAR VIOLIN PLOTS            ####################
 ###########################################################################################
 
-pdf(paste0('UniRandPar_Monthly_Violin_Plots.pdf'), width = 13, height = 13)
+#pdf(paste0('UniRandPar_Monthly_Violin_Plots.pdf'), width = 13, height = 13)
+png(paste0('UniRandPar_Monthly_Violin_Plots.png'), width = 8, height = 6, res = 600, units = 'in')
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(4,3)))
 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
@@ -1192,7 +1264,8 @@ graphics.off()
 ##################          MONTHLY COVRANDPAR VIOLIN PLOTS            ####################
 ###########################################################################################
 
-pdf(paste0('CovRandPar_Monthly_Violin_Plots.pdf'), width = 22, height = 13)
+#pdf(paste0('CovRandPar_Monthly_Violin_Plots.pdf'), width = 22, height = 13)
+png(paste0('CovRandPar_Monthly_Violin_Plots.png'), width = 8, height = 6, res = 600, units = 'in')
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(4,3)))
 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)

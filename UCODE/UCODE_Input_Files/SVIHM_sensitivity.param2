@@ -37,15 +37,15 @@ BEGIN	Parameter_Data	Table
 	ss7	Ss	5.00E-04	Yes	No	1.00E-06	1.00E-04	Yes
 	ss8	Ss	5.00E-04	Yes	No	1.00E-06	1.00E-04	Yes
 	ss9	Ss	5.00E-04	Yes	No	1.00E-06	1.00E-04	Yes
-	wel5	MFR	20	Yes	No	0.01	1.00E+03	No
-	wel6	MFR	100	Yes	No	0.01	1.00E+03	No
-	wel7	MFR	5	Yes	No	0.01	1.00E+03	No
-	wel8	MFR	60	Yes	No	0.01	1.00E+03	No
-	wel9	MFR	50	Yes	No	0.01	1.00E+03	No
-	wel10	MFR	100	Yes	No	0.01	1.00E+03	No
-	wel11	MFR	10	Yes	No	0.01	1.00E+03	No
-	wel20	Ditches	150	Yes	No	0.01	1.00E+03	No
-	wel21	Ditches	200	Yes	No	0.01	1.00E+03	No
+	MFR5	MFR	20	Yes	No	0.01	1.00E+03	No
+	MFR6	MFR	100	Yes	No	0.01	1.00E+03	No
+	MFR7	MFR	5	Yes	No	0.01	1.00E+03	No
+	MFR8	MFR	60	Yes	No	0.01	1.00E+03	No
+	MFR9	MFR	50	Yes	No	0.01	1.00E+03	No
+	MFR10	MFR	100	Yes	No	0.01	1.00E+03	No
+	MFR11	MFR	10	Yes	No	0.01	1.00E+03	No
+	FRMRSDitch	Ditches	150	Yes	No	0.01	1.00E+03	No
+	SVIDDitch	Ditches	200	Yes	No	0.01	1.00E+03	No
 	bedk1	Streambed_K	0.1	Yes	No	1.00E-07	2	Yes
 	bedk2	Streambed_K	0.1	Yes	No	1.00E-07	2	Yes
 	bedk3	Streambed_K	0.1	Yes	No	1.00E-07	2	Yes
