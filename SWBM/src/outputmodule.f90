@@ -221,60 +221,53 @@ subroutine monthly_pumping(im, jday, total_n_wells)
 
 end subroutine monthly_pumping
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  subroutine write_MODFLOW_WEL(im,total_n_wells,n_wel_param)
+  subroutine write_MODFLOW_WEL(im,imonth,total_n_wells,n_wel_param)
   
-  INTEGER :: im, total_n_wells, n_wel_param, iwell
+  INTEGER :: im, imonth, total_n_wells, n_wel_param, iwell
   
   open(unit=536, file='SVIHM.wel',Access = 'append', status='old')
-  if (im == 1 .and. im .LT. 10) then
-    write(536,*)
-    write(536,'(I10,I10,A28,I2)')total_n_wells, n_wel_param, '               Stress Period',im
-    
-  else if (im .NE. 1 .and. im .LT. 10) then
-  	write(536,'(I10,I10,A28,I2)')total_n_wells, n_wel_param, '               Stress Period',im
-  else if (im .LT. 100) then
-    write(536,'(I10,I10,A28,I3)')total_n_wells, n_wel_param, '               Stress Period',im
-  else 
-  	write(536,'(I10,I10,A28,I4)')total_n_wells, n_wel_param, '               Stress Period',im
+  if (imonth == 1 .or. imonth == 2 .or. imonth == 3 .or. imonth == 4 .or. &                              ! If October-March
+      imonth == 5 .or. imonth == 6) then
+!    write(536,*)
+    write(536,'(I10,I10,A28,I4)')total_n_wells, n_wel_param-2, '               Stress Period',im         ! Only MFR is active, subtract number of ditches represented 
+  else if (imonth == 7 .or. imonth == 8) then                                                            ! If April-May
+!    write(536,*)
+    write(536,'(I10,I10,A28,I4)')total_n_wells, n_wel_param, '               Stress Period',im           ! MFR and Ditches are active, use all WEL parameters
+  else if (imonth == 9 .or. imonth == 10) then                                                           ! If June - July
+!    write(536,*)
+    write(536,'(I10,I10,A28,I4)')total_n_wells, n_wel_param-7, '               Stress Period',im         ! Only Ditches are active, subtract number of MFR segments represented
+  else if (imonth == 11 .or. imonth == 0) then                                                           ! If August-September
+!    write(536,*)
+    write(536,'(I10,I10,A28,I4)')total_n_wells, n_wel_param-9, '               Stress Period',im         ! Only Ditches are active, subtract number of MFR and Ditch segments represented                                              
   end if
-  
-  
   
   do iwell=1,total_n_wells
     write(536,'(3I10,ES15.3)')single_well(iwell)%layer, single_well(iwell)%well_row, &
      single_well(iwell)%well_col, -1*single_well(iwell)%monthly_well_rate
   end do
   
-  if (im .LT. 10) then
-    write(536,'(A12,I1)')'wel5  Stress',im
-    write(536,'(A12,I1)')'wel6  Stress',im
-    write(536,'(A12,I1)')'wel7  Stress',im
-    write(536,'(A12,I1)')'wel8  Stress',im
-    write(536,'(A12,I1)')'wel9  Stress',im
-    write(536,'(A13,I1)')'wel10  Stress',im
-    write(536,'(A13,I1)')'wel11  Stress',im
-    write(536,'(A13,I1)')'wel20  Stress',im
-    write(536,'(A13,I1)')'wel21  Stress',im
-  else if (im .LT. 100) then
-    write(536,'(A12,I2)')'wel5  Stress',im
-    write(536,'(A12,I2)')'wel6  Stress',im
-    write(536,'(A12,I2)')'wel7  Stress',im
-    write(536,'(A12,I2)')'wel8  Stress',im
-    write(536,'(A12,I2)')'wel9  Stress',im
-    write(536,'(A13,I2)')'wel10  Stress',im
-    write(536,'(A13,I2)')'wel11  Stress',im
-    write(536,'(A13,I2)')'wel20  Stress',im
-    write(536,'(A13,I2)')'wel21  Stress',im
-  else 
-    write(536,'(A12,I3)')'wel5  Stress',im
-    write(536,'(A12,I3)')'wel6  Stress',im
-    write(536,'(A12,I3)')'wel7  Stress',im
-    write(536,'(A12,I3)')'wel8  Stress',im
-    write(536,'(A12,I3)')'wel9  Stress',im
-    write(536,'(A13,I3)')'wel10  Stress',im
-    write(536,'(A13,I3)')'wel11  Stress',im
-    write(536,'(A13,I3)')'wel20  Stress',im
-    write(536,'(A13,I3)')'wel21  Stress',im
+  if (imonth == 1 .or. imonth == 2 .or. imonth == 3 .or. imonth == 4 .or. &                              ! If October-March MFR is active
+      imonth == 5 .or. imonth == 6) then                                                           
+    write(536,*)'  MFR5'
+    write(536,*)'  MFR6'
+    write(536,*)'  MFR7'
+    write(536,*)'  MFR8'
+    write(536,*)'  MFR9'
+    write(536,*)'  MFR10'
+    write(536,*)'  MFR11'
+  else if (imonth == 7 .or. imonth == 8) then                                                            ! If April-May MFR and Ditches are active
+    write(536,*)'  MFR5'                                            
+    write(536,*)'  MFR6'
+    write(536,*)'  MFR7'
+    write(536,*)'  MFR8'
+    write(536,*)'  MFR9'
+    write(536,*)'  MFR10'
+    write(536,*)'  MFR11'
+    write(536,*)'  FRMRSDitch'
+    write(536,*)'  SVIDDitch'
+  else if (imonth == 9 .or. imonth == 10) then                                                           ! If June-July ditches are active
+    write(536,*)'  FRMRSDitch'
+    write(536,*)'  SVIDDitch'
   end if
   
   end subroutine  write_MODFLOW_WEL
@@ -471,8 +464,8 @@ end subroutine monthly_pumping
 !       write(84,'(10e14.6)') recharge_matrix      
 !       write(900,*) ttl_rch
 !     end subroutine recharge_out_MODFLOW_w_MAR
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!
+!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
     subroutine convert_length_to_volume
 

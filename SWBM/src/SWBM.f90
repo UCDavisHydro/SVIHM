@@ -353,13 +353,13 @@
        call convert_length_to_volume
        call monthly_out_by_field(im)
        call monthly_pumping(im, jday, total_n_wells)
-		   ! call ET_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells,npoly)
+		   call ET_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells,npoly)
 		   Total_Ref_ET = 0.  ! Reset monthly Average ET
-		   ! call recharge_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix)    
+		   call recharge_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix)
        call monthly_volume_out		   
-       ! call write_MODFLOW_SFR(im, nmonth, nsegs, SFR_Flows, drain_flow)
-       ! call write_SFR_template (im, nmonth, nsegs, SFR_Flows, drain_flow, SFR_Template)   ! Write JTF file for UCODE 
-       ! call write_MODFLOW_WEL(im,total_n_wells,n_wel_param)       
+       call write_MODFLOW_SFR(im, nmonth, nsegs, SFR_Flows, drain_flow)
+       call write_SFR_template (im, nmonth, nsegs, SFR_Flows, drain_flow, SFR_Template)   ! Write JTF file for UCODE 
+       call write_MODFLOW_WEL(im,imonth,total_n_wells,n_wel_param)       
    enddo                  ! End of month loop
    close(84)
    close(60)

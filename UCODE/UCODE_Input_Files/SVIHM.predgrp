@@ -1,5 +1,5 @@
 BEGIN Prediction_Groups Table
-  NROW=12  NCOL=5 COLUMNLABELS
+  NROW=24  NCOL=5 COLUMNLABELS
   GroupName  MeasStatistic  MeasStatFlag  PlotSymbol  UseFlag
   Jan_pred  1.00E-08  VAR  1  yes
   Feb_pred  1.00E-08  VAR  2  yes
@@ -13,4 +13,16 @@ BEGIN Prediction_Groups Table
   Oct_pred  1.00E-08  VAR  10  yes
   Nov_pred  1.00E-08  VAR  11  yes
   Dec_pred  1.00E-08  VAR  12  yes
+  Jan_diff_pred  1.00E-08  VAR  1  yes
+  Feb_diff_pred  1.00E-08  VAR  2  yes
+  Mar_diff_pred  1.00E-08  VAR  3  yes
+  Apr_diff_pred  1.00E-08  VAR  4  yes
+  May_diff_pred  1.00E-08  VAR  5  yes
+  Jun_diff_pred  1.00E-08  VAR  6  yes
+  Jul_diff_pred  1.00E-08  VAR  7  yes
+  Aug_diff_pred  1.00E-08  VAR  8  yes
+  Sep_diff_pred  1.00E-08  VAR  9  yes
+  Oct_diff_pred  1.00E-08  VAR  10  yes
+  Nov_diff_pred  1.00E-08  VAR  11  yes
+  Dec_diff_pred  1.00E-08  VAR  12  yes
 END Prediction_Groups
