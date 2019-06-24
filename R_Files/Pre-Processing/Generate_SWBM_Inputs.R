@@ -286,5 +286,10 @@ write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_m3day.txt"),
 # SVIHM.obs ---------------------------------------------------------------
 
 
+
+# SVIHM.wel template ------------------------------------------------------
+
+
+
 #SVIHM.rch?
 
