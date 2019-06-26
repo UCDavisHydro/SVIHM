@@ -19,6 +19,7 @@ R_Files/Post-Processing/*.pdf
 R_Files/Post-Processing/*.rch
 R_Files/Post-Processing/*.sfr
 R_Files/Post-Processing/*.wel
+R_Files/Post-Processing/*.hob
 R_Files/Post-Processing/*.zone
 R_Files/Post-Processing/*.obs
 R_Files/Post-Processing/*.lst
