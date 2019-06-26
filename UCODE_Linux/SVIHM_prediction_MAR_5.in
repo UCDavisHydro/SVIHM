@@ -6,11 +6,11 @@ BEGIN UCODE_Control_Data Keywords
   ModelName = SVIHM
   ModelLengthUnits = m
   ModelTimeUnits = d
-  Sensitivities = False
-  Optimize = False
-  Linearity = True
+  Sensitivities = True
+  Prediction = True
   LinearityAdv = No
   SOSSurface = False
+  CreateInitFiles = False
   DataExchange = True
 END UCODE_Control_Data
  
@@ -20,28 +20,41 @@ BEGIN Reg_GN_Controls Keywords
 END Reg_GN_Controls
  
 BEGIN Model_Command_Lines Keywords
-  Command = ./Run_SVIHM.sh
-    Purpose = Forward
-    CommandID = ForwardModel
+  Command = ./Run_SVIHM_prediction_MAR.sh
+  Purpose = Forward
+  CommandID = ForwardModel
 END Model_Command_Lines
  
 BEGIN Parameter_Groups Files
- SVIHM.pargrp
+  SVIHM.pargrp
 END Parameter_Groups
  
 BEGIN Parameter_Data Files
- SVIHM_postcal_sensitivity.param3
+  SVIHM_postcal.param5
 END Parameter_Data
- 
-BEGIN Observation_Groups Files
- SVIHM.obsgrp
-END Observation_Groups
- 
-BEGIN Observation_Data Files
- SVIHM.flowobs
- SVIHM.headobs
-END Observation_Data
 
+BEGIN Prediction_Groups Files
+  SVIHM.predgrp
+END Prediction_Groups
+ 
+BEGIN PREDICTION_DATA FILES
+  SVIHM.flowpred_bc
+  SVIHM.flowpred_scen
+END PREDICTION_DATA
+
+BEGIN Derived_Predictions Files
+  SVIHM.flowdiffpred
+END Derived_Predictions 
+ 
+# BEGIN Observation_Groups Files
+#   SVIHM.obsgrp
+# END Observation_Groups
+#  
+# BEGIN Observation_Data Files
+#   SVIHM.flowobs
+#   SVIHM.headobs
+# END Observation_Data
+ 
 BEGIN Model_Input_Files Keywords
   ModInFile = general_inputs.txt
     TemplateFile = SVIHM_SWBM_General_Inputs.jtf
@@ -71,15 +84,21 @@ BEGIN Model_Output_Files Keywords
   ModOutFile = HobData_SVIHM.dat
     InstructionFile = HobData_SVIHM.dat.jif
     Category = Obs
+  ModOutFile = Streamflow_Global_bc.dat
+    InstructionFile = Streamflow_Global_bc.dat.jif
+    Category = Pred
+  ModOutFile = Streamflow_Global_scen.dat
+    InstructionFile = Streamflow_Global_scen.dat.jif
+    Category = Pred
 END Model_Output_Files
  
 BEGIN Parallel_Control Keywords
-  Parallel = False
-  OPERATINGSYSTEM = Linux
+  Parallel = True
+  OPERATINGSYSTEM = Linux  
 END Parallel_Control
  
 BEGIN Parallel_Runners Table
-  NROW=14 NCOL=3 COLUMNLABELS
+  NROW=7 NCOL=3 COLUMNLABELS
   RunnerName RunnerDir RunTime
   Runner1 ./Runner1/ 1200000
   Runner2 ./Runner2/ 1200000
@@ -88,12 +107,5 @@ BEGIN Parallel_Runners Table
   Runner5 ./Runner5/ 1200000
   Runner6 ./Runner6/ 1200000
   Runner7 ./Runner7/ 1200000
-  Runner8 ./Runner8/ 1200000
-  Runner9 ./Runner9/ 1200000
-  Runner10 ./Runner10/ 1200000
-  Runner11 ./Runner11/ 1200000
-  Runner12 ./Runner12/ 1200000
-  Runner13 ./Runner13/ 1200000
-  Runner14 ./Runner14/ 1200000
 END Parallel_Runners
  
