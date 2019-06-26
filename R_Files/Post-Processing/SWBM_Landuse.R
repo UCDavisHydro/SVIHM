@@ -119,7 +119,6 @@ SWBM_Landuse = function(budget_terms, landuse_cats, header_names){
    }else {
       TEXT_FOR_TABLE_HEADER = TEXT_FOR_TABLE_HEADER_standard
    }
-
     table_file = paste0(out_dir,'/Water_Budget_by_Landuse_',text_units[i],'.txt')
     
     eval(parse(text = paste0("write(TEXT_FOR_TABLE_HEADER,sep = '\n', file=table_file, append = F)")))                                  # Header with parameters
@@ -143,55 +142,5 @@ SWBM_Landuse = function(budget_terms, landuse_cats, header_names){
     eval(parse(text = paste0("cat(capture.output(SWBM_LU_Wet_Year_2006_",text_units[i],"), file = table_file, sep = '\n', append = T)")))                  # Basecase Water Budget (AF/yr)
     eval(parse(text = paste0("write('', file=table_file, append = T)")))
     eval(parse(text = paste0("write('* 21 year average for alfalfa and grain, values change following rotation', file=table_file, append = T)")))
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # write(TEXT_FOR_TABLE_HEADER,sep = '\n', file=table_file, append = F)                                  # Header with parameters
-    # write('', file=table_file, append = T)
-    # write(paste0('21 Year Average - ',text_units[i]), file=table_file, append = T)
-    # cat(capture.output(paste0('SWBM_LU_21yr_avg_',text_units[i])), file = table_file, sep = '\n', append = T)              # Basecase Water Budget (in/yr)
-    # write('', file=table_file, append = T)
-    # write('-----------------------------------------------------------------------------------------------', file=table_file, append = T)
-    # write('', file=table_file, append = T)
-    # write(paste0('Dry Year (2001) - ',text_units[i]), file=table_file, append = T)
-    # cat(capture.output(paste0('Dry_Year_2001',text_units[i])), file = table_file, sep = '\n', append = T)              # Basecase Water Budget (in/yr)
-    # write('', file=table_file, append = T)
-    # write('-----------------------------------------------------------------------------------------------', file=table_file, append = T)
-    # write('', file=table_file, append = T)
-    # write(paste0('Average Year (2010) - ',text_units[i]), file=table_file, append = T)
-    # cat(capture.output(paste0('Avg_Year_2010',text_units[i])), file = table_file, sep = '\n', append = T)                  # Basecase Water Budget (AF/yr)
-    # write('', file=table_file, append = T)
-    # write('-----------------------------------------------------------------------------------------------', file=table_file, append = T)
-    # write('', file=table_file, append = T)
-    # write(paste0('Wet Year (2006) - ',text_units[i]), file=table_file, append = T)
-    # cat(capture.output(paste0('Wet_Year_2006',text_units[i])), file = table_file, sep = '\n', append = T)                  # Basecase Water Budget (AF/yr)
-    # write('', file=table_file, append = T)
-    # write('* 21 year average for alfalfa and grain, values change following rotation', file=table_file, append = T)
-    
-    
-    
-    
-    
-    # #-------------------------------------------------------------------------------------------------------------
-    # #-------------------------------------------------------------------------------------------------------------
-    # write(TEXT_FOR_TABLE_HEADER_metric,sep = '\n', file=Sim_Avg_Table_File_metric, append = F)                                  # Header with parameters
-    # write('', file=Sim_Avg_Table_File_metric, append = T)
-    # write('21 Year Average Water Budget - in/yr', file=Sim_Avg_Table_File_metric, append = T)
-    # cat(capture.output(SWBM_LU_21yr_avg_inch), file = Sim_Avg_Table_File_metric, sep = '\n', append = T)              # Basecase Water Budget (in/yr)
-    # write('', file=Sim_Avg_Table_File_metric, append = T)
-    # write('-----------------------------------------------------------------------------------------------', file=Sim_Avg_Table_File_metric, append = T)
-    # write('', file=Sim_Avg_Table_File_metric, append = T)
-    # write('21 Year Average Water Budget - AF/yr', file=Sim_Avg_Table_File_metric, append = T)
-    # cat(capture.output(SWBM_LU_21yr_avg_TAF), file = Sim_Avg_Table_File_metric, sep = '\n', append = T)                  # Basecase Water Budget (AF/yr)
-    # write('', file=Sim_Avg_Table_File_metric, append = T)
-    # write('* 21 year average for alfalfa and grain, values change following rotation', file=Sim_Avg_Table_File_metric, append = T)
-    # 
   }
 }

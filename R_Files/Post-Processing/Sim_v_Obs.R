@@ -13,10 +13,12 @@ gages = c('FJ','AS','BY','LS')
 ###########################################################################################################
 ########################                    USER INPUT                       ##############################
 ###########################################################################################################
-units_cfs = FALSE   #If true, output units will be in cfs. If false output units will be in m^3/day
+units_cfs = TRUE   #If true, output units will be in cfs. If false output units will be in m^3/day
 dir.create(file.path(getwd(),'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
-out_dir = paste0(getwd(),'/Results')
+out_dir = paste0(getwd(),'/Results/')
 options(warn=-1)   # suppress warnings (set to 0 to turn warnings on)
+
+fig_format = 'pdf'   # png, pdf, pdf
 ###########################################################################################################
 ########################                    IMPORT STREAMFLOW                ##############################
 ###########################################################################################################
@@ -128,7 +130,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
         plot.title = element_text(hjust = 0.5)) +
   scale_color_manual(values = c('blue', 'red')) +
   annotate("text", x = as.Date('2001-06-01'), y = 4E4, label = paste('NSE = ',NSE_FJ)))
-# pdf(paste0(out_dir,'/Streamflow_FJ_cfs.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Streamflow_FJ_cfs.pdf'),width = 8, height = 5)
 # FJ_streamflow_plot
 # graphics.off()
 
@@ -142,7 +144,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
   scale_x_continuous(limits = c(1,round(length(FJ_residuals_cfs$Residual),-2)), breaks = seq(0,round(length(FJ_residuals_cfs$Residual),-2),by = 200),expand = c(0.02,0.02)) +
   theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
         plot.title = element_text(hjust = 0.5)))
-# pdf(paste0(out_dir,'/Residuals_FJ_cfs.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Residuals_FJ_cfs.pdf'),width = 8, height = 5)
 # FJ_residuals_plot
 # graphics.off() 
 
@@ -163,7 +165,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
           legend.key = element_rect(fill = NA), legend.background = element_rect(fill = NA),
           plot.title = element_text(hjust = 0.5)) +
     annotate("text", x = as.Date('2010-11-01'), y = 4E4, label = paste('NSE = ',NSE_AS)))
-# pdf(paste0(out_dir,'/Streamflow_AS_cfs.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Streamflow_AS_cfs.pdf'),width = 8, height = 5)
 # AS_streamflow_plot
 # graphics.off()
 
@@ -178,7 +180,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
     scale_x_continuous(limits = c(1,round(length(AS_residuals_cfs$Residual),-2)), breaks = seq(0,round(length(AS_residuals_cfs$Residual),-2),by = 100),expand = c(0.02,0.02)) +
     theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
           plot.title = element_text(hjust = 0.5)))
-# pdf(paste0(out_dir,'/Residuals_AS_cfs.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Residuals_AS_cfs.pdf'),width = 8, height = 5)
 # AS_residuals_plot
 # graphics.off()
   
@@ -200,7 +202,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
         legend.key.height = unit(0.1, 'in'), legend.position = 'none',
         plot.title = element_text(hjust = 0.5)) +
    annotate("text", x = as.Date('2010-11-01'), y = 4E4, label = paste('NSE = ',NSE_BY)))
-# pdf(paste0(out_dir,'/Streamflow_BY_cfs.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Streamflow_BY_cfs.pdf'),width = 8, height = 5)
 # BY_streamflow_plot
 # graphics.off()
 
@@ -215,7 +217,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
     scale_x_continuous(limits = c(1,round(length(BY_residuals_cfs$Residual),-2)), breaks = seq(0,round(length(BY_residuals_cfs$Residual),-2),by = 100),expand = c(0.02,0.02)) +
     theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
           plot.title = element_text(hjust = 0.5)))
-# pdf(paste0(out_dir,'/Residuals_BY_cfs.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Residuals_BY_cfs.pdf'),width = 8, height = 5)
 # BY_residuals_plot
 # graphics.off()
 
@@ -237,7 +239,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
           legend.key.height = unit(0.1, 'in'),
           plot.title = element_text(hjust = 0.5)) +
     annotate("text", x = as.Date('2010-4-01'), y = 4E4, label = paste('NSE = ',NSE_LS)))
-# pdf(paste0(out_dir,'/Streamflow_LS_cfs.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Streamflow_LS_cfs.pdf'),width = 8, height = 5)
 # LS_streamflow_plot
 # graphics.off()
 
@@ -252,7 +254,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
     scale_x_continuous(limits = c(1,length(LS_residuals_cfs$Residual)), breaks = seq(0,length(LS_residuals_cfs$Residual),by = 100),expand = c(0.02,0.02)) +
     theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
           plot.title = element_text(hjust = 0.5)))
-# pdf(paste0(out_dir,'/Residuals_LS_cfs.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Residuals_LS_cfs.pdf'),width = 8, height = 5)
 # LS_residuals_plot
 # graphics.off()
 
@@ -273,7 +275,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
   coord_fixed() +
   annotate('text', x = 2790, y = 3020, label = regress_eqn, size = 3.2) +
   annotate('text', x = 2790, y = 2985, label = R2, parse = T, size = 3.2))
-# pdf(paste0(out_dir,'/Heads_Sim_vs_Observed_ft.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Heads_Sim_vs_Observed_ft.pdf'),width = 8, height = 5)
 # one2one_plot
 # graphics.off()
 
@@ -287,7 +289,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
   ggtitle('Head Residuals') +
   theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
         plot.title = element_text(hjust = 0.5)))
-# pdf(paste0(out_dir,'/Head_Residuals_ft.pdf'),width = 8, height = 5)
+# pdf(paste0(out_dir,'Head_Residuals_ft.pdf'),width = 8, height = 5)
 # head_residuals_plot
 # graphics.off()
 } else {
@@ -313,7 +315,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
             plot.title = element_text(hjust = 0.5)) +
       scale_color_manual(values = c('blue', 'red')) +
       annotate("text", x = as.Date('2001-06-01'), y = 4E7, label = paste('NSE = ',NSE_FJ)))
-  # pdf(paste0(out_dir,'/Streamflow_FJ_m3day.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Streamflow_FJ_m3day.pdf'),width = 8, height = 5)
   # FJ_streamflow_plot
   # graphics.off()
 
@@ -327,7 +329,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
       scale_x_continuous(limits = c(1,round(length(FJ_residuals_m3day$Residual),-2)), breaks = seq(0,round(length(FJ_residuals_m3day$Residual),-2),by = 200),expand = c(0.02,0.02)) +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
             plot.title = element_text(hjust = 0.5)))
-  # pdf(paste0(out_dir,'/Residuals_FJ_m3day.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Residuals_FJ_m3day.pdf'),width = 8, height = 5)
   # FJ_residuals_plot
   # graphics.off()
   
@@ -348,7 +350,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
             legend.key = element_rect(fill = NA), legend.background = element_rect(fill = NA),
             plot.title = element_text(hjust = 0.5)) +
       annotate("text", x = as.Date('2010-11-01'), y = 4E7, label = paste('NSE = ',NSE_AS)))
-  # pdf(paste0(out_dir,'/Streamflow_AS_m3day.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Streamflow_AS_m3day.pdf'),width = 8, height = 5)
   # AS_streamflow_plot
   # graphics.off()
   
@@ -363,7 +365,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
       scale_x_continuous(limits = c(1,round(length(AS_residuals_m3day$Residual),-2)), breaks = seq(0,round(length(AS_residuals_m3day$Residual),-2),by = 100),expand = c(0.02,0.02)) +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
             plot.title = element_text(hjust = 0.5)))
-  # pdf(paste0(out_dir,'/Residuals_AS_m3day.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Residuals_AS_m3day.pdf'),width = 8, height = 5)
   # AS_residuals_plot
   # graphics.off()
   
@@ -385,7 +387,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
             legend.key.height = unit(0.1, 'in'), legend.position = 'none',
             plot.title = element_text(hjust = 0.5)) +
       annotate("text", x = as.Date('2010-11-01'), y = 4E7, label = paste('NSE = ',NSE_BY)))
-  # pdf(paste0(out_dir,'/Streamflow_BY_m3day.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Streamflow_BY_m3day.pdf'),width = 8, height = 5)
   # BY_streamflow_plot
   # graphics.off()
   
@@ -400,7 +402,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
       scale_x_continuous(limits = c(1,round(length(BY_residuals_m3day$Residual),-2)), breaks = seq(0,round(length(BY_residuals_m3day$Residual),-2),by = 100),expand = c(0.02,0.02)) +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
             plot.title = element_text(hjust = 0.5)))
-  # pdf(paste0(out_dir,'/Residuals_BY_m3day.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Residuals_BY_m3day.pdf'),width = 8, height = 5)
   # BY_residuals_plot
   # graphics.off()
   
@@ -422,7 +424,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
             legend.key.height = unit(0.1, 'in'),
             plot.title = element_text(hjust = 0.5)) +
       annotate("text", x = as.Date('2010-4-01'), y = 4E7, label = paste('NSE = ',NSE_LS)))
-  # pdf(paste0(out_dir,'/Streamflow_LS_m3day.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Streamflow_LS_m3day.pdf'),width = 8, height = 5)
   # LS_streamflow_plot
   # graphics.off()
   
@@ -437,7 +439,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
       scale_x_continuous(limits = c(1,length(LS_residuals_m3day$Residual)), breaks = seq(0,length(LS_residuals_m3day$Residual),by = 100),expand = c(0.02,0.02)) +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
             plot.title = element_text(hjust = 0.5)))
-  # pdf(paste0(out_dir,'/Residuals_LS_m3day.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Residuals_LS_m3day.pdf'),width = 8, height = 5)
   # LS_residuals_plot
   # graphics.off()
   
@@ -458,7 +460,7 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
      coord_fixed() +
      annotate('text', x = 850, y = 920, label = regress_eqn, size = 3.2) +
      annotate('text', x = 850, y = 905, label = R2, parse = T, size = 3.2))
-  # pdf(paste0(out_dir,'/Heads_Sim_vs_Observed_m.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Heads_Sim_vs_Observed_m.pdf'),width = 8, height = 5)
   # one2one_plot
   # graphics.off()
   
@@ -472,17 +474,16 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
       ggtitle('Head Residuals') +
       theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
             plot.title = element_text(hjust = 0.5)))
-  # pdf(paste0(out_dir,'/Head_Residuals_m.pdf'),width = 8, height = 5)
+  # pdf(paste0(out_dir,'Head_Residuals_m.pdf'),width = 8, height = 5)
   # head_residuals_plot
   # graphics.off()
 }  
-  ##########################################################################################################
-  ########################                      COMBO PLOTS                   ##############################
-  ##########################################################################################################
+
+# Combo Plots -------------------------------------------------------------
   if (units_cfs == TRUE){
-    pdf(paste0(out_dir,'/Sim_v_Obs_Summary_cfs.pdf'),width = 8.5, height = 11)
+    pdf(paste0(out_dir,'Sim_v_Obs_Summary_cfs.pdf'),width = 8.5, height = 11)
   } else {
-    pdf(paste0(out_dir,'/Sim_v_Obs_Summary_m3day.pdf'),width = 8.5, height = 11)
+    pdf(paste0(out_dir,'Sim_v_Obs_Summary_m3day.pdf'),width = 8.5, height = 11)
   }
   grid.newpage()
   pushViewport(viewport(layout = grid.layout(5,2)))
@@ -500,9 +501,9 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
   graphics.off()
   
   if (units_cfs == TRUE){
-    pdf(paste0(out_dir,'/Sim_v_Obs_Summary_Compact_cfs.pdf'),width = 7.5, height = 7.5)
+    pdf(paste0(out_dir,'Sim_v_Obs_Summary_Compact_cfs.pdf'),width = 7.5, height = 7.5)
   } else {
-    pdf(paste0(out_dir,'/Sim_v_Obs_Summary_Compact_m3day.pdf'),width = 7.5, height = 7.5)
+    pdf(paste0(out_dir,'Sim_v_Obs_Summary_Compact_m3day.pdf'),width = 7.5, height = 7.5)
   }
   grid.newpage()
   pushViewport(viewport(layout = grid.layout(3,2)))
@@ -514,3 +515,39 @@ FJ_cfs_melt = melt(FJ_cfs, id.vars = 'Date')
   print(BY_streamflow_plot, vp = vplayout(2,2))
   print(head_residuals_plot, vp = vplayout(3,2))
   graphics.off()
+  
+  if (units_cfs == TRUE){
+    fig_name = 'Sim_v_Obs_FJ_Flows_Heads_cfs'
+    fig_width = 9.75 
+    fig_height = 6.75
+    if (fig_format == 'jpg'){
+      jpeg(paste0(out_dir,fig_name,'.jpg'), width = fig_width, height = fig_height, units = 'in',  res = 600)
+    } else if (fig_format == 'png'){
+      png(paste0(out_dir,fig_name,'.png'), width = fig_width, height = fig_height, units = 'in',  res = 600)
+    } else if (fig_format == 'pdf'){
+      pdf(paste0(out_dir,fig_name,'.pdf'), width = fig_width, height = fig_height)
+    }
+  } else {
+    fig_name = 'Sim_v_Obs_FJ_Flows_Heads_m3day'
+    fig_width = 9.75 
+    fig_height = 6.75
+    if (fig_format == 'jpg'){
+      jpeg(paste0(out_dir,fig_name,'.jpg'), width = fig_width, height = fig_height, units = 'in',  res = 600)
+    } else if (fig_format == 'png'){
+      png(paste0(out_dir,fig_name,'.png'), width = fig_width, height = fig_height, units = 'in',  res = 600)
+    } else if (fig_format == 'pdf'){
+      pdf(paste0(out_dir,fig_name,'.pdf'), width = fig_width, height = fig_height)
+    }
+  }
+  grid.newpage()
+  pushViewport(viewport(layout = grid.layout(2,2)))
+  vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+  print(FJ_streamflow_plot, vp = vplayout(1,1:2))
+  print(one2one_plot, vp = vplayout(2,1))
+  print(head_residuals_plot, vp = vplayout(2,2))
+  graphics.off()
+  
+
+# Well Hydrographs --------------------------------------------------------
+
+  

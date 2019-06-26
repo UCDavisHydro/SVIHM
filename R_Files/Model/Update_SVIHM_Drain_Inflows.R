@@ -1,8 +1,14 @@
 rm(list=ls())  #Clear workspace
+args = commandArgs(trailingOnly=TRUE)
+
+# test if there is at least one argument: if not, return an error
+if (length(args)==0) {
+  stop("Filename argument must be supplied (LST file)\n", call.=FALSE)
+} 
 nstress = 252
 StartingMonths = seq(as.Date("1990/10/1"), by = "month", length.out = 253)
 num_days = diff(as.numeric(StartingMonths))
-LST_Name = list.files(pattern = 'lst')
+LST_Name = args[1]
 InputText = readLines(LST_Name)  #Read in text file
 
 # Extract Convergence Failures
@@ -58,3 +64,8 @@ DRAINS_Flux_net_monthly_avg = DRAINS_SP_Vol_net / TS
 DRAINS_SP_rate = (DRAINS_SP_Vol_net/num_days)*-1
 
 write.table(DRAINS_SP_rate, file = 'Drains_m3day.txt', row.names = F, quote = F, col.names = 'Drain flow rate (m^3)')
+if (exists('DRAINS_SP_rate')){
+  print('Update of drain flow input file SUCCEEDED')
+} else {
+  print('Update of drain flow input file FAILED')
+}

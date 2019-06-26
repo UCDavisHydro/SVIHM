@@ -10,6 +10,8 @@ filename = 'SVIHM.hds'   #Name of binary head file
 No_FLow_Val = 9999       #Value of no flow cells
 output_dir = 'Results/'  #Output directory
 
+Monitoring_Well_Hydrographs = TRUE
+
 # Read Heads --------------------------------------------------------------
 fid = file(filename, "rb")
 bytes = 0                                     #Bytes counter
