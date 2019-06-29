@@ -45,6 +45,8 @@ num_stress_periods = length(model_months)
 # No_Flow_SVIHM.txt
 # polygons_table.txt
 # Recharge_Zones_SVIHM.txt
+#  well_list_by_polygon.txt
+#  well_summary.txt 
 
 
 #  Drains_m3day.txt and Drains_initial_m3day.txt --------------------------------------
@@ -58,6 +60,7 @@ write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_m3day.txt"),
 
 #  general_inputs.txt ------------------------------------------------
 
+#Update number of stress periods
 gen_inputs = c(paste0("2119  167  ", num_stress_periods, "  440  210  1.4 UCODE Basecase"),
 "! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR")
 write.table(gen_inputs, file = file.path(SWBM_file_dir, "general_inputs.txt"),
@@ -80,7 +83,7 @@ kc_alf_days[(month(model_days) < growing_season_start_month) |
               (month(model_days) == growing_season_end_month & day(model_days) > growing_season_end_day)
             ] = kc_alf_dormant
 
-#Pad with 0s to match FORTRAN format
+#Pad single-digit month, day values with 0s (e.g. "2" becomes "02"), then concatenate date strings
 kc_alfalfa_df = data.frame(kc_alf_days)
 kc_alfalfa_df$day = paste(str_pad(day(model_days), 2, pad = "0"), 
                           str_pad(month(model_days), 2, pad = "0"), 
@@ -108,6 +111,7 @@ kc_pas_days[(month(model_days) < growing_season_start_month) |
               (month(model_days) == growing_season_end_month & day(model_days) > growing_season_end_day)
             ] = kc_pas_dormant
 
+#Pad single-digit month, day values with 0s (e.g. "2" becomes "02"), then concatenate date strings
 kc_pasture_df = data.frame(kc_pas_days)
 kc_pasture_df$day = paste(str_pad(day(model_days), 2, pad = "0"), 
                           str_pad(month(model_days), 2, pad = "0"), 
@@ -159,6 +163,7 @@ for(yr in (start_year+1):end_year){
 # Build data frame with date formatted for file-writing
 kc_grain_days = round(kc_grain_days, 4)
 kc_grain_df = data.frame(kc_grain_days)
+#Pad single-digit month, day values with 0s (e.g. "2" becomes "02"), then concatenate date strings
 kc_grain_df$day = paste(str_pad(day(model_days), 2, pad = "0"), 
                           str_pad(month(model_days), 2, pad = "0"), 
                           year(model_days), sep = "/")
@@ -170,13 +175,6 @@ write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
 # #Check overall Kc sums. checks out. 
 # sum(as.numeric(as.character(test$V1)), na.rm=T)
 # sum(kc_grain_df$kc_grain_days[model_days < as.Date("2011-10-01")])
-
-
-#  No_Flow_SVIHM.txt -------------------------------------------------
-
-
-
-#  polygons_table.txt ------------------------------------------------
 
 
 #  precip.txt ----------------------------------------------------
@@ -302,11 +300,10 @@ write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
 
 
 #  SFR_PEST_TPL.txt --------------------------------------------------
-
-
+# TO DO: figure out these calibration files
 
 #  SFR_UCODE_JTF.txt -------------------------------------------------
-
+# TO DO: figure out these calibration files
 
 
 #  streamflow_input.txt ------------------------------------------
@@ -330,21 +327,13 @@ write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
 #  SVIHM_WEL_template.txt --------------------------------------------
 
 
-
-#  well_list_by_polygon.txt ------------------------------------------
-
-
-
-#  well_summary.txt --------------------------------------------------
-
-
 #.#############################################################################
 # ### MODFLOW INPUTS ------------------------------------------------
 
 # SVIHM.drn ---------------------------------------------------------------
 
+#to do: make this reference new file structure
 
-NSP = 252
 setwd('C:/Users/dtolley/Scott_Valley/Modeling/100m_Grid/SVIHMv3.1/Flooding_Fix_No_ET_Drains/')
 
 DZ_Cells = read.table('C:/Users/dtolley/Scott_Valley/Modeling/100m_Grid/SVIHMv3.1/ET_Cells_Discharge_Zone.txt', header = T, sep = ',')
@@ -360,10 +349,10 @@ rep_drains = matrix(-1, 251)   # repeat value of -1 for n-1 Stress periods to re
 write('# MODFLOW Drain Package File - Drains applied at land surface within discharge zone',file = 'SVIHM.drn', append = F)
 # write('PARAMETER  0  0', file = 'SVIHMv3.1.drn', append = T) #MXACTD IDRNCB
 write('        2869        50', file = 'SVIHMv3.1.drn', append = T) #MXACTD IDRNCB
-for (i in 1:NSP){
+for (i in 1:num_stress_periods){
   write(paste('         2869         0                      Stress Period',i), file = 'SVIHM.drn', append = T, sep = NA)  #ITMP  NP
   cat(sprintf(' '), file = 'SVIHM.drn', append = T)
-  cat(sprintf("%10i%10i%10i%10.2f%10.3e\n", Drains[,1], Drains[,2],Drains[,3],Drains[,4],Drains[,5]), file = 'SVIHM.drn', append = T)
+  cat(sprintf("%10i%10i%10i%10.2f%10.3e/n", Drains[,1], Drains[,2],Drains[,3],Drains[,4],Drains[,5]), file = 'SVIHM.drn', append = T)
 }
 
 
@@ -376,9 +365,8 @@ for (i in 1:NSP){
 
 
 
-# SVIHM.wel template ------------------------------------------------------
-
-
-
 #SVIHM.rch?
 
+
+setwd("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/input")
+list.files()
