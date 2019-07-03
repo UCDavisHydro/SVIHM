@@ -25,7 +25,7 @@ if(isRStudio == FALSE){
 
 Stream_Regression_dir = file.path(proj_dir, "Streamflow_Regression_Model")
 SWBM_file_dir = file.path(proj_dir, "SWBM")
-MF_file_dir = file.path(proj_dir, "MODFLOW")
+MF_file_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
 
 
 #SET MODEL RUN DATES
@@ -42,6 +42,10 @@ model_start_date = as.Date(paste(start_year, start_month, start_day, sep = "-"))
 model_end_date = as.Date(paste(end_year, end_month, end_day, sep = "-"))
 model_days = seq(from = model_start_date, to = model_end_date, by = "days")
 model_months = seq(from = model_start_date, to = model_end_date, by = "month")
+# Calculate number of days (time steps) in each month (stress period)
+model_end_date_plus_one = as.Date(paste(end_year, as.numeric(end_month)+1, end_day, sep = "-"))
+model_months_plus_one = seq(from = model_start_date, to = model_end_date_plus_one, by = "month")
+num_days = diff(model_months_plus_one)
 
 num_stress_periods = length(model_months)
 
@@ -322,15 +326,14 @@ write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
 
 
 #  streamflow_input.txt ------------------------------------------
+
 # To update, EITHER: 
 # a) Update Fort Jones gauge record is Streamflow_Regression_Model folder, OR
 # b) build webscraper for latest stream data?
 "https://waterdata.usgs.gov/ca/nwis/dv?cb_00060=on&format=rdb&site_no=11519500&referred_module=sw&period=&begin_date=1941-10-01&end_date=2019-05-19"
 #pull down from server, since it webscraped recently?
+#THEN: change the Fort Jones USGS file reference in the Regression script.
 
-#Convert the streamflow regression model to be callable from this script. 
-# Specify end date, I guess.
-#Set working drive
 setwd(Stream_Regression_dir)
 source(file.path(Stream_Regression_dir,'SVIHM_Streamflow_Regression_Model.R'))
 generate_streamflow_input_txt(end_date = as.Date("2018/9/30"))
@@ -359,8 +362,19 @@ generate_streamflow_input_txt(end_date = as.Date("2018/9/30"))
 
 # SVIHM.dis ---------------------------------------------------------------
 
+#Requires a file SVIHM.dis in position in the MF_file_dir.
 
+#Update the number of stress periods in the header
+#Update the number of time steps in each stress period at end of file (dataset 7)
+dis_text = readLines(con = file.path(MF_file_dir, "SVIHM.dis"), n = -1)
+start_of_dataset7 = which(dis_text == "  31  31  1  TR")[1] #Locate first line of data set 7 (specifying Oct 1990)
+dataset_7 = paste0("  ", num_days, "  ", num_days, "  1  TR")
 
+dis_text_updated = c(dis_text[1], 
+                     paste0(" 2  440  210  ", num_stress_periods,"  4  2"),
+                     dis_text[4:start_of_dataset7-1], #really puzzled why a 4-index calls line 3 in this, but this works
+                     dataset_7)
+writeLines(dis_text_updated, con = file.path(MF_file_dir, "SVIHM.dis"))
 
 # SVIHM.drn ---------------------------------------------------------------
 
