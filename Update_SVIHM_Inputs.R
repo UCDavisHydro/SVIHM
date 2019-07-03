@@ -1,5 +1,6 @@
 #Generate input files for SWBM
 #Goal: Use this R script to generate ALL the text files that go into the SWBM. 
+#This script must be in the outer SVIHM directory to access all the other files (Streamflow Regression, SWBM, MODFLOW)
 
 library(lubridate)
 library(stringr)
@@ -12,22 +13,19 @@ library(dplyr)
 
 
 #Set drive for collecting all SWBM input files and SVIHM modflow files
-
-SWBM_file_dir = "C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/write_input_files_test_2019.06.25"
-MF_file_dir = "C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/write_input_files_test_2019.05.19"
-#to do: make this standardized
-
 isRStudio <- Sys.getenv("RSTUDIO") == "1"
 if(isRStudio == TRUE){
   library(rstudioapi)
-  stream_regress_dir <- dirname(getActiveDocumentContext()$path) 
-  setwd(stream_regress_dir )
+  proj_dir <- dirname(getActiveDocumentContext()$path)
 }
 if(isRStudio == FALSE){
   library(here)
-  contour_dir <- dirname(here::here("SVIHM_Streamflow_Regression_Model.R"))
-  setwd(stream_regress_dir)
+  proj_dir <- dirname(here::here("SVIHM_Streamflow_Regression_Model.R"))
 }
+
+Stream_Regression_dir = file.path(proj_dir, "Streamflow_Regression_Model")
+SWBM_file_dir = file.path(proj_dir, "SWBM")
+MF_file_dir = file.path(proj_dir, "MODFLOW")
 
 
 #SET MODEL RUN DATES
@@ -324,17 +322,20 @@ write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
 
 
 #  streamflow_input.txt ------------------------------------------
-# EITHER: 
+# To update, EITHER: 
 # a) Update Fort Jones gauge record is Streamflow_Regression_Model folder, OR
 # b) build webscraper for latest stream data?
 "https://waterdata.usgs.gov/ca/nwis/dv?cb_00060=on&format=rdb&site_no=11519500&referred_module=sw&period=&begin_date=1941-10-01&end_date=2019-05-19"
 #pull down from server, since it webscraped recently?
 
 #Convert the streamflow regression model to be callable from this script. 
-# Specify end date, I guess. 
-source('C:/Users/ckouba/Git/SVIHM/SVIHM/Streamflow_Regression_Model/SVIHM_Streamflow_Regression_Model.R')
+# Specify end date, I guess.
+#Set working drive
+setwd(Stream_Regression_dir)
+source(file.path(Stream_Regression_dir,'SVIHM_Streamflow_Regression_Model.R'))
+generate_streamflow_input_txt(end_date = as.Date("2018/9/30"))
 
-generate_streamflow_input_txt()
+#To do: Copy streamflow_input.txt to the SWBM inputs file.
 
 
 #  SVIHM_ETS_template.txt --------------------------------------------
