@@ -1,5 +1,5 @@
-#Generate input files for SWBM
-#Goal: Use this R script to generate ALL the text files that go into the SWBM. 
+#Generate input files for SVIHM
+#Goal: Use this R script to generate ALL the text files that go into the SWBM and the SVIHM modflow model. 
 #This script must be in the outer SVIHM directory to access all the other files (Streamflow Regression, SWBM, MODFLOW)
 
 library(lubridate)
@@ -356,8 +356,10 @@ generate_streamflow_input_txt(end_date = as.Date("2018/9/30"))
 #.#############################################################################
 # ### MODFLOW INPUTS ------------------------------------------------
 
+#Copy files that don't change if the time period gets extended 
+# SVIHM.bas
+# SVIHM.gag
 
-# SVIHM.bas ---------------------------------------------------------------
 
 
 
@@ -382,8 +384,8 @@ writeLines(dis_text_updated, con = file.path(MF_file_dir, "SVIHM.dis"))
 setwd(time_indep_dir)
 
 #Assign an elevation, conductance and layer for every cell in the Discharge Zone
-DZ_Cells = read.table(file.path(time_indep_dir,"drn_ET_Cells_Discharge_Zone.txt"), header = T, sep = ",")
-Model_Surface = matrix(t(read.table(file.path(time_indep_dir,'drn_Layer_1_top_z.txt'))),
+DZ_Cells = read.table(file.path(time_indep_dir,"Reference_files","drn_ET_Cells_Discharge_Zone.txt"), header = T, sep = ",")
+Model_Surface = matrix(t(read.table(file.path(time_indep_dir,"Reference_files",'drn_Layer_1_top_z.txt'))),
                        nrow = 440, ncol = 210, byrow = T)
 Elevation = matrix(NaN,length(DZ_Cells$row))
 for (i in 1:length(DZ_Cells$row)){
@@ -410,17 +412,58 @@ for (i in 1:num_stress_periods){
   write("     DZ                         ", file = 'SVIHM.drn', append = T)
 }
 
-# CURRENT TO DO ITEM: MAKE THE DRAIN OUTPUT WORK
-# Currently spits out an extra space for each line after the first in the DZ definition. does this matter
+# Currently spits out an extra space for each line after the first in the DZ definition. does this matter??
 
-
-# SVIHM.gag ---------------------------------------------------------------
 
 
 
 # SVIHM.hob ---------------------------------------------------------------
 
+#Currently, hacking in a hard-coded contour drive on my local computer. non-transferrable.
+#To do: convert the data cleaning script into a utility. 
+# store wl data and this data-cleaning utility script in the model folders.
+# make it callable from this input-generating script.
+# OR: pull it down from the damn data base eventually!
 
+# To do: match DWR_1 values with casgem IDs
+# to do: add more wells to the hob file. need to locate grid cell and offset. 
+
+# Get a cleaned water level dataframe. Use same process as for contours (not hydrographs)
+source('C:/Users/ckouba/Git/Contours/02_clean_data.R')
+wl = clean_data_for_contours(CASGEM = TRUE, VMP = TRUE, WDL = FALSE, CGWL = TRUE, 
+                                   contours = TRUE, hydrographs = FALSE)
+#to do: check - can I trust the "basin" designation on here? Maybe assign that with a spatial join in the cleaning script
+#Retain just the water level obs from Scott Valley in the model period
+wl = wl[wl$basin == "Scott River Valley" & wl$date >= model_start_date & wl$date <= model_end_date,]
+num_wl_obs = dim(wl)[1] # Calculate number of observations for preamble
+well_ids = unique(wl$local_well_number)
+
+#Write preamblefor .hob file
+setwd(MF_file_dir)
+preamble = c('# MODFLOW2000 Head Observation File','# Groundwater Vistas also writes drawdown targets here',
+paste0('  ',num_wl_obs,'  0  0 500 -999'), '  1.0  1.0')
+
+write(preamble, file = 'SVIHM.hob', append = F)
+write('',file = 'SVIHM.drn', append = T)
+
+#Read in existing .hob info file
+hob_info = read.table(file.path(time_indep_dir,"Reference_files","hob_wells.txt"), header = F, skip = 5)
+colnames(hob_info) = c('OBSNAM', 'LAYER', 'ROW', 'COLUMN', 'IREFSP', 'TOFFSET', 'ROFF', 'COFF', 'HOBS',
+                       'STATISTIC', 'STAT-FLAG', 'PLOT-SYMBOL')
+
+for(obs_loc in hob_info$OBSNAM){
+  # write the top line for each well - copy from the hob_info table
+  # RECALCULATE how many observations there are and overwrite that ("IREFSP" neg values)
+  
+  # write up the observations for each well
+  # convert sample date to stress period and time fofset
+  #Convert wse from feet to meters
+  #attach a bunch of 1s as flags
+}
+
+wl_ids = aggregate(wl$wse, by = list(wl$local_well_number, wl$casgem_id), FUN = length)
+wl_local_ids = aggregate(wl$wse, by = list(wl$local_well_number), FUN = length)
+  
 
 # SVIHM.nam ---------------------------------------------------------------
 
