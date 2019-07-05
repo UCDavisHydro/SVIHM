@@ -24,6 +24,7 @@ if(isRStudio == FALSE){
 }
 
 Stream_Regression_dir = file.path(proj_dir, "Streamflow_Regression_Model")
+time_indep_dir = file.path(proj_dir, "SVIHM_Input_Files", "time_independent_input_files")
 SWBM_file_dir = file.path(proj_dir, "SWBM")
 MF_file_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
 
@@ -378,12 +379,12 @@ writeLines(dis_text_updated, con = file.path(MF_file_dir, "SVIHM.dis"))
 
 # SVIHM.drn ---------------------------------------------------------------
 
-#to do: make this reference new file structure
+setwd(time_indep_dir)
 
-setwd('C:/Users/dtolley/Scott_Valley/Modeling/100m_Grid/SVIHMv3.1/Flooding_Fix_No_ET_Drains/')
-
-DZ_Cells = read.table('C:/Users/dtolley/Scott_Valley/Modeling/100m_Grid/SVIHMv3.1/ET_Cells_Discharge_Zone.txt', header = T, sep = ',')
-Model_Surface = matrix(t(read.table('../Layer_1_top_z.txt')),nrow = 440, ncol = 210, byrow = T)
+#Assign an elevation, conductance and layer for every cell in the Discharge Zone
+DZ_Cells = read.table(file.path(time_indep_dir,"drn_ET_Cells_Discharge_Zone.txt"), header = T, sep = ",")
+Model_Surface = matrix(t(read.table(file.path(time_indep_dir,'drn_Layer_1_top_z.txt'))),
+                       nrow = 440, ncol = 210, byrow = T)
 Elevation = matrix(NaN,length(DZ_Cells$row))
 for (i in 1:length(DZ_Cells$row)){
   Elevation[i] = Model_Surface[DZ_Cells$row[i],DZ_Cells$column[i]]
@@ -391,17 +392,26 @@ for (i in 1:length(DZ_Cells$row)){
 Conductance = matrix(10000,length(DZ_Cells$row))
 Layer = matrix(1,length(DZ_Cells$row))
 Drains = cbind(Layer, DZ_Cells$row, DZ_Cells$column, round(Elevation,2), Conductance)
-rep_drains = matrix(-1, 251)   # repeat value of -1 for n-1 Stress periods to resuse drains specified in first stress period
+rep_drains = matrix(-1, num_stress_periods-1)   # repeat value of -1 for n-1 Stress periods to resuse drains specified in first stress period
+
+setwd(MF_file_dir)
+#Write preamble
 write('# MODFLOW Drain Package File - Drains applied at land surface within discharge zone',file = 'SVIHM.drn', append = F)
-# write('PARAMETER  0  0', file = 'SVIHMv3.1.drn', append = T) #MXACTD IDRNCB
-write('        2869        50', file = 'SVIHMv3.1.drn', append = T) #MXACTD IDRNCB
+write('PARAMETER    1  2869
+        2869        50   AUX IFACE
+DZ   DRN    1  2869',file = 'SVIHM.drn', append = T)
+
+#Define DZ - layer, row, column, elevation, and conductance for each cell with a drain in it
+cat(sprintf("%10i%10i%10i%10.2f%10.3e\n", Drains[,1], Drains[,2],Drains[,3],Drains[,4],Drains[,5]), file = 'SVIHM.drn', append = T)
+
+#Specify DZ for each stress period
 for (i in 1:num_stress_periods){
-  write(paste('         2869         0                      Stress Period',i), file = 'SVIHM.drn', append = T, sep = NA)  #ITMP  NP
-  cat(sprintf(' '), file = 'SVIHM.drn', append = T)
-  cat(sprintf("%10i%10i%10i%10.2f%10.3e/n", Drains[,1], Drains[,2],Drains[,3],Drains[,4],Drains[,5]), file = 'SVIHM.drn', append = T)
+  write(paste("     0          1          Stress Period", i), file = 'SVIHM.drn', append = T)
+  write("     DZ                         ", file = 'SVIHM.drn', append = T)
 }
 
-
+# CURRENT TO DO ITEM: MAKE THE DRAIN OUTPUT WORK
+# Currently spits out an extra space for each line after the first in the DZ definition. does this matter
 
 
 # SVIHM.gag ---------------------------------------------------------------
