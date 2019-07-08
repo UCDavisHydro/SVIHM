@@ -428,6 +428,7 @@ for (i in 1:num_stress_periods){
 # To do: match DWR_1 values with casgem IDs
 # to do: add more wells to the hob file. need to locate grid cell and offset. 
 #to do: check - can I trust the "basin" designation on here? Maybe assign that with a spatial join in the cleaning script
+# to do: what's up with the A4_1 measurements? Don't show up in the database but are in the old hob file
 
 ### 1) Get a cleaned water level dataframe. Use same cleaning protocol as for contours
 source('C:/Users/ckouba/Git/Contours/02_clean_data.R')
@@ -450,39 +451,44 @@ colnames(hob_info) = c('OBSNAM', 'LAYER', 'ROW', 'COLUMN', 'IREFSP', 'TOFFSET', 
 
 ### 5) For each observation point, write a) topline of well info and b) details for each observation
 for(i in 1:length(hob_info$OBSNAM)){
-  #### 5a) Calculate how many observations are present for each well ("IREFSP" neg values in Dataset 6?)
+  #### 5a) Info for each well location
+  ##### 5a1) Calculate number of observations for an individual well loc ("IREFSP" neg values in Dataset 3)
   obs_loc = hob_info$OBSNAM[i]
   IREFSP = sum(wl$local_well_number == obs_loc, na.rm=T) #calculate number of measurements for this well
-  #### 5b) Update IREFSP and write topline (info for each well location)
+  if(IREFSP < 1){next} #skip it if there's no observations for this well name. It's currently happening for A4_1 and the DWR wells.
+  
+  #### 5a2) Update IREFSP and write topline (info for each well location)
   topline = paste(as.character(hob_info[i,1]), hob_info[i,2], hob_info[i,3], hob_info[i,4],
                   -1*IREFSP, format(hob_info[i,6],nsmall = 1), format(hob_info[i,7],nsmall = 6), 
                   format(hob_info[i,8],nsmall = 6), format(hob_info[i,9],nsmall = 6), 
                   format(hob_info[i,10],nsmall = 6), hob_info[i,11], hob_info[i,12], sep = "  ")
   write(topline, file = 'SVIHM.hob', append = T)
   
-  #### 5c) write up the observations for each well
-  ##### 5c1) Create unique observation ids 
+  #### 5a3) Write "1" to signify hydraulic heads = obs in Data Set 5
+  write("  1", file = 'SVIHM.hob', append = T)
+  
+  #### 5b) write up the observations for each well
+  ##### 5b1) Create unique observation ids 
   wl_subset = wl[wl$local_well_number == obs_loc & !is.na(wl$local_well_number),]
   obs_id_num = 1:IREFSP
   obs_id = paste0(obs_loc, obs_id_num)
-  ##### 5c2) convert sample date to stress period and time offset
+  ##### 5b2) convert sample date to stress period and time offset
+  dates = wl_subset$date
   samp_years = year(dates)
   samp_months = month(dates)
   stress_periods = (samp_years - year(model_start_date))*12 + samp_months - (month(model_start_date)-1)
   offset_days = day(dates)
-  ##### 5c3) Convert wse from feet to meters
+  ##### 5b3) Convert wse from feet to meters
   meters_asl = 0.30480 * wl_subset$wse
-  #### 5c4) Write the vectors into the file. Attach a bunch of 1s as Modflow flags
+  #### 5b4) Write the vectors into the file. Attach a bunch of 1s as Modflow flags
   cat(sprintf("%12s%12i%12.6f%12.6f%12.6f%12.6f%8i%8i\n", 
               obs_id, stress_periods, offset_days, meters_asl,
               rep(1, IREFSP), rep(1, IREFSP), rep(1, IREFSP), rep(1, IREFSP)), file = 'SVIHM.hob', append = T)
-#CURRENT TO DO ITEM: DEBUG SPRINTF FUNCTION
-    
 }
 
 
 # SVIHM.nam ---------------------------------------------------------------
-
+#If any changes are desired to this file they will probably need to be updated by hand.
 
 
 # SVIHM.nwt ---------------------------------------------------------------
