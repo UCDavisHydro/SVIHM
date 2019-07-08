@@ -359,7 +359,7 @@ generate_streamflow_input_txt(end_date = as.Date("2018/9/30"))
 #Copy files that don't change if the time period gets extended 
 # SVIHM.bas
 # SVIHM.gag
-
+# SVIHM.nwt
 
 
 
@@ -491,12 +491,22 @@ for(i in 1:length(hob_info$OBSNAM)){
 #If any changes are desired to this file they will probably need to be updated by hand.
 
 
-# SVIHM.nwt ---------------------------------------------------------------
-
-
-
 # SVIHM.obs ---------------------------------------------------------------
 
+setwd(MF_file_dir)
+preamble = c("  HEAD SAVE UNIT 30", "  HEAD PRINT FORMAT 0", "  DRAWDOWN SAVE UNIT 31", 
+             "  DRAWDOWN PRINT FORMAT 0", "  COMPACT BUDGET AUX")
+write(preamble, file = 'SVIHM.oc', append = F)
+
+for(i in 1:num_stress_periods){
+  period_label = paste0("PERIOD ",i,"  STEP ")
+  ndays = as.numeric(num_days[i])
+  stress_period_block = paste0(rep(period_label, ndays), 1:ndays)
+  write(stress_period_block, file = 'SVIHM.oc', append = T)
+  
+  stress_end_block = c("     SAVE HEAD", "     SAVE DRAWDOWN", "     SAVE BUDGET", "     PRINT BUDGET")
+  write(stress_end_block, file = 'SVIHM.oc', append = T)
+}
 
 # SVIHM.oc ----------------------------------------------------------------
 
