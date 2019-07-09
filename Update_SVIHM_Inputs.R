@@ -9,24 +9,29 @@ library(dplyr)
 ## dates in R are treated as YYYY-MM-DD for convenience. Dates in the model input files are DD-MM-YYYY.
 
 
-# SET VARIABLES -----------------------------------------------------------
+
+# SETUP -------------------------------------------------------------------
 
 
-#Set drive for collecting all SWBM input files and SVIHM modflow files
+# 1) Set drives for collecting all SWBM input files and SVIHM modflow files
+
+# 1a) Set project directory. 
+#This code allows it to automatically detect the location of this R script.
 isRStudio <- Sys.getenv("RSTUDIO") == "1"
-if(isRStudio == TRUE){
-  library(rstudioapi)
-  proj_dir <- dirname(getActiveDocumentContext()$path)
-}
-if(isRStudio == FALSE){
-  library(here)
-  proj_dir <- dirname(here::here("SVIHM_Streamflow_Regression_Model.R"))
-}
+if(isRStudio == TRUE){ library(rstudioapi); proj_dir <- dirname(getActiveDocumentContext()$path)}
+if(isRStudio == FALSE){ library(here); proj_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
 
+# 1b) Set directories for data used in update and output file locations
+
+## Data used in update
 Stream_Regression_dir = file.path(proj_dir, "Streamflow_Regression_Model")
 time_indep_dir = file.path(proj_dir, "SVIHM_Input_Files", "time_independent_input_files")
-SWBM_file_dir = file.path(proj_dir, "SWBM")
-MF_file_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
+ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
+## Directory used to archive the input files for each scenario
+model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
+## Directories for running the scenarios (files copied at end of script)
+SWBM_file_dir = file.path(proj_dir, "SWBM", "up2018")
+MF_file_dir = file.path(proj_dir, "MODFLOW","up2018")
 
 
 #SET MODEL RUN DATES
@@ -46,14 +51,13 @@ model_months = seq(from = model_start_date, to = model_end_date, by = "month")
 # Calculate number of days (time steps) in each month (stress period)
 model_end_date_plus_one = as.Date(paste(end_year, as.numeric(end_month)+1, end_day, sep = "-"))
 model_months_plus_one = seq(from = model_start_date, to = model_end_date_plus_one, by = "month")
-num_days = diff(model_months_plus_one)
+num_days = diff(model_months_plus_one) #number of days in each stress period/month
 
 num_stress_periods = length(model_months)
 
 
 #.#############################################################################
-# ### SWBM INPUTS ------------------------------------------------
-#.###########################################################################
+#### SWBM INPUTS ------------------------------------------------
 
 # Copy files that don't change if the time period gets extended 
 
@@ -65,8 +69,33 @@ num_stress_periods = length(model_months)
 # No_Flow_SVIHM.txt
 # polygons_table.txt
 # Recharge_Zones_SVIHM.txt
-#  well_list_by_polygon.txt
-#  well_summary.txt 
+# well_list_by_polygon.txt
+# well_summary.txt
+
+copy_these_files = c("crop_coeff_mult.txt", "daily_out.txt", "ET_Cells_DZ.txt", "irr_eff.txt", "MAR_Fields.txt",
+                     "No_Flow_SVIHM.txt", "polygons_table.txt", "Recharge_Zones_SVIHM.txt", 
+                     "well_list_by_polygon.txt", "well_summary.txt")
+
+setwd(time_indep_dir)
+file.copy(copy_these_files, SWBM_file_dir)
+
+
+
+# CALIBRATION FILES -------------------------------------------------------
+
+# TO DO: figure out these calibration files. They feed into the SWBM.
+ # SFR_PEST_TPL.txt
+ # SFR_UCODE_JTF.txt
+ # SVIHM_ETS_template.txt
+ # SVIHM_SFR_template.txt
+ # SVIHM_WEL_template.txt
+
+ 
+copy_these_files = c("SFR_PEST_TPL.txt", "SFR_UCODE_JTF.txt", "SVIHM_ETS_template.txt", 
+                     "SVIHM_SFR_template.txt", 'SVIHM_WEL_template.txt')
+
+setwd(time_indep_dir)
+file.copy(copy_these_files, SWBM_file_dir)
 
 
 #  Drains_m3day.txt and Drains_initial_m3day.txt --------------------------------------
@@ -215,14 +244,14 @@ write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
 #https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00041316.dly
 #https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00043182.dly
 
-noaa = read.csv("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/update2018notes/noaa_precip_fjn_cal.csv")
-head(noaa)
+
+noaa = read.csv(file.path(ref_data_dir,"noaa_precip_fjn_cal.csv"))
 noaa$DATE = as.Date(noaa$DATE)
 
 cal = subset(noaa, STATION=="USC00041316" & DATE >= model_start_date & DATE <= model_end_date)
-cal = select(cal, DATE, PRCP)
+cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
 fj = subset(noaa, STATION=="USC00043182" & DATE >= model_start_date & DATE <= model_end_date)
-fj = select(fj, DATE, PRCP)
+fj = data.frame(DATE = fj$DATE, PRCP = fj$PRCP)
 
 # # Compare visually
 # # plot(noaa$DATE, noaa$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
@@ -243,9 +272,9 @@ daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
 
 ### HANDLE NAs
 
-#check the NA values
-which(is.na(daily_precip_update$mean_PRCP))
-daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
+# #check the NA values
+# which(is.na(daily_precip_update$mean_PRCP))
+# daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
 #shit that's a huge gap in december 2012. to do: find alternate precip data source for this gap
 #TEMPORARY SOLUTION FOR NOW: 
 #just put the average of all December dates in that window
@@ -266,14 +295,14 @@ daily_precip_update$mean_PRCP[is.na(daily_precip_update$mean_PRCP)] = 0
 
 ### FORMAT AND WRITE PRECIP FILE
 #Format the update to attach to the original precip file
-daily_precip_update=select(daily_precip_update, mean_PRCP, Date)
+daily_precip_update=data.frame(mean_PRCP = daily_precip_update$mean_PRCP, Date = daily_precip_update$Date)
 daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
                                  str_pad(month(daily_precip_update$Date), 2, pad="0"),
                                  year(daily_precip_update$Date), sep = "/")
 daily_precip_update$mean_PRCP = daily_precip_update$mean_PRCP / 1000 #convert to meters
 
 #read in original data (wys 1991-2011)
-daily_precip_orig = read.table("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/input/precip.txt")
+daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
 colnames(daily_precip_orig) = colnames(daily_precip_update)
 
 #combine and write as text file
@@ -287,13 +316,12 @@ write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
 
 #to do: webscrape cimis? (login?)
 #units? 
-et_dl_may2019 = read.csv("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/update2018notes/spatial_eto_report.csv")
+et_dl_may2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report.csv"))
 
 ##generate new et record
 et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
 et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
-et = select(et, Date, ETo..mm.day.)
-colnames(et) = c("ETo_mm","Date")
+et = data.frame(Date = et$Date, ETo_mm = et$ETo..mm.day.)
 
 #Update existing record
 #subset update for ET, build update dataframe in same format as original input file
@@ -306,7 +334,7 @@ et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date
                                                   year(et_update_allcol$Date), sep = "/")
 
 #Read in original file
-ref_et_orig = read.table("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/input/ref_et.txt")
+ref_et_orig = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
 # head(ref_et_orig)
 # plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
 
@@ -317,13 +345,6 @@ ref_et_updated = rbind(ref_et_orig, et_update)
 # sum(is.na(ref_et_updated$ETo_m))
 write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
-
-
-#  SFR_PEST_TPL.txt --------------------------------------------------
-# TO DO: figure out these calibration files
-
-#  SFR_UCODE_JTF.txt -------------------------------------------------
-# TO DO: figure out these calibration files
 
 
 #  streamflow_input.txt ------------------------------------------
@@ -339,19 +360,13 @@ setwd(Stream_Regression_dir)
 source(file.path(Stream_Regression_dir,'SVIHM_Streamflow_Regression_Model.R'))
 generate_streamflow_input_txt(end_date = as.Date("2018/9/30"))
 
-#To do: Copy streamflow_input.txt to the SWBM inputs file.
+file.copy('streamflow_input.txt', SWBM_file_dir)
 
 
-#  SVIHM_ETS_template.txt --------------------------------------------
+# OPERATOR: RUN SWBM ------------------------------------------------------
 
-
-
-#  SVIHM_SFR_template.txt -------------------------------------------
-
-
-
-#  SVIHM_WEL_template.txt --------------------------------------------
-
+#After it is done running, copy the files written by SWBM into the modflow directory.
+copy_these_files = c("SVIHM.wel","SVIHM.sfr", "SVIHM.ets", "SVIHM.rch")
 
 #.#############################################################################
 # ### MODFLOW INPUTS ------------------------------------------------
@@ -359,21 +374,34 @@ generate_streamflow_input_txt(end_date = as.Date("2018/9/30"))
 #Copy files that don't change if the time period gets extended 
 # SVIHM.bas
 # SVIHM.gag
+# SVIHM.nam
 # SVIHM.nwt
+# SVIHM.pvl
+# SVIHM.upw
+# SVIHM.zone
+# Starting_Heads_L1.txt
+# Starting_Heads_L2.txt
 
+copy_these_files = c("SVIHM.bas", "SVIHM.gag", "SVIHM.nam", "SVIHM.nwt", "SVIHM.pvl", "SVIHM.upw","SVIHM.zone",
+                     "Starting_Heads_L1.txt", "Starting_Heads_L2.txt")
+
+setwd(time_indep_dir)
+file.copy(copy_these_files, MF_file_dir)
 
 
 # SVIHM.dis ---------------------------------------------------------------
 
-#Requires a file SVIHM.dis in position in the MF_file_dir.
+#Requires a file SVIHM.dis in position in the reference folder.
 
-#Update the number of stress periods in the header
-#Update the number of time steps in each stress period at end of file (dataset 7)
-dis_text = readLines(con = file.path(MF_file_dir, "SVIHM.dis"), n = -1)
-start_of_dataset7 = which(dis_text == "  31  31  1  TR")[1] #Locate first line of data set 7 (specifying Oct 1990)
-dataset_7 = paste0("  ", num_days, "  ", num_days, "  1  TR")
+# 1) Update the number of stress periods in the header
+dis_text = readLines(con = file.path(ref_data_dir, "SVIHM_dis_reference.txt"), n = -1)
 
-dis_text_updated = c(dis_text[1], 
+#2) Update/extend the list of time steps in each stress period at end of file (dataset 7)
+start_of_dataset7 = which(dis_text == "  31  31  1  TR")[1] #Locate first line of dataset 7 (specifying Oct 1990)
+dataset_7 = paste0("  ", num_days, "  ", num_days, "  1  TR") #Create new dataset 7 using updated model period
+
+# 3) Put the .dis file text back together and write to file.
+dis_text_updated = c(dis_text[1],  #First line of .dis file
                      paste0(" 2  440  210  ", num_stress_periods,"  4  2"),
                      dis_text[4:start_of_dataset7-1], #really puzzled why a 4-index calls line 3 in this, but this works
                      dataset_7)
@@ -384,8 +412,8 @@ writeLines(dis_text_updated, con = file.path(MF_file_dir, "SVIHM.dis"))
 setwd(time_indep_dir)
 
 #Assign an elevation, conductance and layer for every cell in the Discharge Zone
-DZ_Cells = read.table(file.path(time_indep_dir,"Reference_files","drn_ET_Cells_Discharge_Zone.txt"), header = T, sep = ",")
-Model_Surface = matrix(t(read.table(file.path(time_indep_dir,"Reference_files",'drn_Layer_1_top_z.txt'))),
+DZ_Cells = read.table(file.path(ref_data_dir,"drn_ET_Cells_Discharge_Zone.txt"), header = T, sep = ",")
+Model_Surface = matrix(t(read.table(file.path(ref_data_dir,'drn_Layer_1_top_z.txt'))),
                        nrow = 440, ncol = 210, byrow = T)
 Elevation = matrix(NaN,length(DZ_Cells$row))
 for (i in 1:length(DZ_Cells$row)){
@@ -418,6 +446,7 @@ for (i in 1:num_stress_periods){
 
 
 # SVIHM.hob ---------------------------------------------------------------
+#Head Observation Package
 
 #Currently, hacking in a hard-coded contour drive on my local computer. non-transferrable.
 #To do: convert the data cleaning script into a utility. 
@@ -446,7 +475,7 @@ setwd(MF_file_dir)
 write(preamble, file = 'SVIHM.hob', append = F)
 
 ### 4) Read in existing .hob info file
-hob_info = read.table(file.path(time_indep_dir,"Reference_files","hob_wells.txt"), header = F, skip = 4)
+hob_info = read.table(file.path(ref_data_dir,"hob_wells.txt"), header = F, skip = 4)
 colnames(hob_info) = c('OBSNAM', 'LAYER', 'ROW', 'COLUMN', 'IREFSP', 'TOFFSET', 'ROFF', 'COFF', 'HOBS', 'STATISTIC', 'STAT-FLAG', 'PLOT-SYMBOL')
 
 ### 5) For each observation point, write a) topline of well info and b) details for each observation
@@ -487,12 +516,11 @@ for(i in 1:length(hob_info$OBSNAM)){
 }
 
 
-# SVIHM.nam ---------------------------------------------------------------
-#If any changes are desired to this file they will probably need to be updated by hand.
-
-
 # SVIHM.obs ---------------------------------------------------------------
 
+
+# SVIHM.oc ----------------------------------------------------------------
+# Output control package
 setwd(MF_file_dir)
 preamble = c("  HEAD SAVE UNIT 30", "  HEAD PRINT FORMAT 0", "  DRAWDOWN SAVE UNIT 31", 
              "  DRAWDOWN PRINT FORMAT 0", "  COMPACT BUDGET AUX")
@@ -507,37 +535,4 @@ for(i in 1:num_stress_periods){
   stress_end_block = c("     SAVE HEAD", "     SAVE DRAWDOWN", "     SAVE BUDGET", "     PRINT BUDGET")
   write(stress_end_block, file = 'SVIHM.oc', append = T)
 }
-
-# SVIHM.oc ----------------------------------------------------------------
-
-
-
-# SVIHM.pvl ---------------------------------------------------------------
-
-
-
-# SVIHM.upw ---------------------------------------------------------------
-
-
-
-
-# SVIHM.zone --------------------------------------------------------------
-
-
-
-# SVIHM_bc.nam ------------------------------------------------------------
-
-
-
-# SVIHM_scen.nam ----------------------------------------------------------
-
-
-
-# Starting_Heads_L1.txt ---------------------------------------------------
-
-
-
-# Starting_Heads_L2.txt ---------------------------------------------------
-
-
 
