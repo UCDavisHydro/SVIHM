@@ -367,6 +367,8 @@ file.copy('streamflow_input.txt', SWBM_file_dir)
 
 #After it is done running, copy the files written by SWBM into the modflow directory.
 copy_these_files = c("SVIHM.wel","SVIHM.sfr", "SVIHM.ets", "SVIHM.rch")
+setwd(SWBM_file_dir)
+file.copy(copy_these_files, MF_file_dir)
 
 #.#############################################################################
 # ### MODFLOW INPUTS ------------------------------------------------
@@ -458,6 +460,8 @@ for (i in 1:num_stress_periods){
 # to do: add more wells to the hob file. need to locate grid cell and offset. 
 #to do: check - can I trust the "basin" designation on here? Maybe assign that with a spatial join in the cleaning script
 # to do: what's up with the A4_1 measurements? Don't show up in the database but are in the old hob file
+
+#Current project: TROUBLESHOOT HOB file
 
 ### 1) Get a cleaned water level dataframe. Use same cleaning protocol as for contours
 source('C:/Users/ckouba/Git/Contours/02_clean_data.R')
