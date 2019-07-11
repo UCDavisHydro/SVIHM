@@ -512,7 +512,7 @@ for(i in 1:length(hob_info$OBSNAM)){
   stress_periods = (samp_years - year(model_start_date))*12 + samp_months - (month(model_start_date)-1)
   offset_days = day(dates)
   ##### 5b3) Convert wse from feet to meters
-  meters_asl = 0.30480 * wl_subset$wse
+  meters_asl = 0.3048006096012 * wl_subset$wse
   #### 5b4) Write the vectors into the file. Attach a bunch of 1s as Modflow flags
   cat(sprintf("%12s%12i%12.6f%12.6f%12.6f%12.6f%8i%8i\n", 
               obs_id, stress_periods, offset_days, meters_asl,
