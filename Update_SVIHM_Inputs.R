@@ -457,9 +457,8 @@ for (i in 1:num_stress_periods){
 # OR: pull it down from the damn data base eventually!
 
 # To do: match DWR_1 values with casgem IDs
-# to do: add more wells to the hob file. need to locate grid cell and offset. 
+### TO DO: Join additional wells to the model grid and add their well loc. info to reference hob_info table.
 #to do: check - can I trust the "basin" designation on here? Maybe assign that with a spatial join in the cleaning script
-# to do: what's up with the A4_1 measurements? Don't show up in the database but are in the old hob file
 
 #Current project: TROUBLESHOOT HOB file
 
@@ -467,20 +466,26 @@ for (i in 1:num_stress_periods){
 source('C:/Users/ckouba/Git/Contours/02_clean_data.R')
 wl = clean_data_for_contours(CASGEM = TRUE, VMP = TRUE, WDL = FALSE, CGWL = TRUE, contours = TRUE, hydrographs = FALSE)
 
-### 2) Retain just the water level obs from Scott Valley in the model period
-wl = wl[wl$basin == "Scott River Valley" & !is.na(wl$wse) & wl$date >= model_start_date & wl$date <= model_end_date,]
+### 2) Read in existing .hob info file (well location information)
+hob_info = read.table(file.path(ref_data_dir,"hob_wells.txt"), header = F, skip = 4)
+colnames(hob_info) = c('OBSNAM', 'LAYER', 'ROW', 'COLUMN', 'IREFSP', 'TOFFSET', 'ROFF', 'COFF', 'HOBS', 'STATISTIC', 'STAT-FLAG', 'PLOT-SYMBOL')
+#Make A4_1 match the name in the water level file (A41)
 wl$local_well_number = as.character(wl$local_well_number)
+wl$local_well_number[wl$local_well_number == "A41"] = "A4_1"
 
-### 3) Update total number of well observations and write preamble for .hob file.
+### 3) Retain just the water level obs (no NAs) from Scott Valley in the model period
+### TEMPORARY: retain just the ones that have hob_info.
+### TO DO: Join additional wells to the model grid and add their well loc. info to reference hob_info table.
+wl = wl[wl$basin == "Scott River Valley" & !is.na(wl$wse) & wl$local_well_number %in% hob_info$OBSNAM &
+          wl$date >= model_start_date & wl$date <= model_end_date,]
+
+### 4) Update total number of well observations and write preamble for .hob file.
 num_wl_obs = dim(wl)[1] # Calculate number of observations for preamble
 preamble = c('# MODFLOW2000 Head Observation File','# Groundwater Vistas also writes drawdown targets here',
 paste0('  ',num_wl_obs,'  0  0 500 -999'), '  1.0  1.0')
 setwd(MF_file_dir)
 write(preamble, file = 'SVIHM.hob', append = F)
 
-### 4) Read in existing .hob info file
-hob_info = read.table(file.path(ref_data_dir,"hob_wells.txt"), header = F, skip = 4)
-colnames(hob_info) = c('OBSNAM', 'LAYER', 'ROW', 'COLUMN', 'IREFSP', 'TOFFSET', 'ROFF', 'COFF', 'HOBS', 'STATISTIC', 'STAT-FLAG', 'PLOT-SYMBOL')
 
 ### 5) For each observation point, write a) topline of well info and b) details for each observation
 for(i in 1:length(hob_info$OBSNAM)){
@@ -539,4 +544,11 @@ for(i in 1:num_stress_periods){
   stress_end_block = c("     SAVE HEAD", "     SAVE DRAWDOWN", "     SAVE BUDGET", "     PRINT BUDGET")
   write(stress_end_block, file = 'SVIHM.oc', append = T)
 }
+
+
+
+# Scratch work ------------------------------------------------------------
+
+#plot DWR_1 through 5
+wells = read.table ("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/up2018/well_summary.txt")
 
