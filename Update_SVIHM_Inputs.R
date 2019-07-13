@@ -451,27 +451,34 @@ for (i in 1:num_stress_periods){
 #Head Observation Package
 
 #Currently, hacking in a hard-coded contour drive on my local computer. non-transferrable.
-#To do: convert the data cleaning script into a utility. 
-# store wl data and this data-cleaning utility script in the model folders.
-# make it callable from this input-generating script.
-# OR: pull it down from the damn data base eventually!
-
-# To do: match DWR_1 values with casgem IDs
+#To do: pull wl down from the damn data base eventually!
 ### TO DO: Join additional wells to the model grid and add their well loc. info to reference hob_info table.
-#to do: check - can I trust the "basin" designation on here? Maybe assign that with a spatial join in the cleaning script
-
-#Current project: TROUBLESHOOT HOB file
 
 ### 1) Get a cleaned water level dataframe. Use same cleaning protocol as for contours
-source('C:/Users/ckouba/Git/Contours/02_clean_data.R')
-wl = clean_data_for_contours(CASGEM = TRUE, VMP = TRUE, WDL = FALSE, CGWL = TRUE, contours = TRUE, hydrographs = FALSE)
-
-### 2) Read in existing .hob info file (well location information)
-hob_info = read.table(file.path(ref_data_dir,"hob_wells.txt"), header = F, skip = 4)
-colnames(hob_info) = c('OBSNAM', 'LAYER', 'ROW', 'COLUMN', 'IREFSP', 'TOFFSET', 'ROFF', 'COFF', 'HOBS', 'STATISTIC', 'STAT-FLAG', 'PLOT-SYMBOL')
-#Make A4_1 match the name in the water level file (A41)
+source('C:/Users/ckouba/Git/Contours/02_clean_data_casgem_scraping.R')
+wl_cleaned = clean_data_for_contours(CASGEM = TRUE, VMP = TRUE, WDL = FALSE, CGWL = FALSE, contours = TRUE, hydrographs = FALSE)
+wl = wl_cleaned
+# Clean for SVIHM 
+#### 1a) Make A4_1 match the name in the water level file (A41). (This avoids confusion on unique WL observation IDs in modflow.)
 wl$local_well_number = as.character(wl$local_well_number)
 wl$local_well_number[wl$local_well_number == "A41"] = "A4_1"
+
+#### 1b) Convert longer DWR well names (in the WL file) to the abbreviations in SVIHM hob_info table
+mon_info = read.csv( file.path(ref_data_dir, "Monitoring_Wells_Names.csv"))
+dwr_in_model_short_names = c("DWR_1","DWR_2","DWR_3","DWR_4","DWR_5")
+dwr_in_model_long_names = as.character(mon_info$Well_ID_2[mon_info$Well_ID %in% dwr_in_model_short_names])
+# Select based on State Well Number (SWN), which is listed as the local well number in the VMP data. 
+# CASGEM "local well number" is sometimes the SWN but in the cases of DWR_1 and DWR_3 is an unrelated abbreviation.
+replaceables = unique(wl$state_well_number[wl$state_well_number %in% dwr_in_model_long_names])
+replaceables_selector = wl$state_well_number %in% replaceables
+#Replace local well numbers of replaceables with the abbreviations (DWR_1 etc) of replaceable SWNs
+wl$local_well_number[replaceables_selector] = 
+  as.character(mon_info$Well_ID[match(wl$state_well_number[replaceables_selector],mon_info$Well_ID_2)])
+
+### 2) Read in  .hob info file (well location information)
+hob_info = read.table(file.path(ref_data_dir,"hob_wells.txt"), header = F, skip = 4)
+colnames(hob_info) = c('OBSNAM', 'LAYER', 'ROW', 'COLUMN', 'IREFSP', 'TOFFSET', 'ROFF', 'COFF', 'HOBS', 'STATISTIC', 'STAT-FLAG', 'PLOT-SYMBOL')
+
 
 ### 3) Retain just the water level obs (no NAs) from Scott Valley in the model period
 ### TEMPORARY: retain just the ones that have hob_info.
@@ -517,7 +524,7 @@ for(i in 1:length(hob_info$OBSNAM)){
   stress_periods = (samp_years - year(model_start_date))*12 + samp_months - (month(model_start_date)-1)
   offset_days = day(dates)
   ##### 5b3) Convert wse from feet to meters
-  meters_asl = 0.3048006096012 * wl_subset$wse
+  meters_asl = 0.3048 * wl_subset$wse #0.3048006096012 * wl_subset$wse
   #### 5b4) Write the vectors into the file. Attach a bunch of 1s as Modflow flags
   cat(sprintf("%12s%12i%12.6f%12.6f%12.6f%12.6f%8i%8i\n", 
               obs_id, stress_periods, offset_days, meters_asl,
@@ -550,5 +557,21 @@ for(i in 1:num_stress_periods){
 # Scratch work ------------------------------------------------------------
 
 #plot DWR_1 through 5
-wells = read.table ("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/up2018/well_summary.txt")
+wells = read.table ("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/up2018/well_summary.txt", header = T)
+head(wells)
+
+library(raster)
+library(maptools)
+mon = shapefile("C:/Users/ckouba/Documents/UCD/SiskiyouSGMA/Data_Exploration/Scott_Legacy_GIS/Monitoring_Wells_All.shp")
+
+dwr_names = c("DWR_1","DWR_2","DWR_3","DWR_4","DWR_5")
+dwr_in = mon[mon$Well_ID %in% dwr_names,]
+dwr_not_in = mon[mon$In_SVIHM == "No",]
+plot(mon)
+plot(dwr_in, pch = 19, col = "blue", add=T)
+plot(dwr_not_in, pch = 19, col = "red", add=T)
+pointLabel(dwr_in@coords, labels = dwr_in$Well_ID)
+
+pointLabel(dwr_not_in@coords, labels = dwr_in$Well_ID_2)
+write.csv(mon@data, file.path(ref_data_dir, "Monitoring_Wells_Names.csv"), row.names = F)
 
