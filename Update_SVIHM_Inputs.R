@@ -100,11 +100,11 @@ file.copy(copy_these_files, SWBM_file_dir)
 
 #  Drains_m3day.txt and Drains_initial_m3day.txt --------------------------------------
 
-drains_vector = rep(0, num_stress_periods)
+drains_vector = c("#Initial Drain Flow", rep(0, num_stress_periods))
 
-write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_initial_m3day.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_m3day.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_initial_m3day.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 #  general_inputs.txt ------------------------------------------------
