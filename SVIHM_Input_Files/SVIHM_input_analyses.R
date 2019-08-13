@@ -114,7 +114,246 @@ daily_precip$water_year = year(daily_precip$Date)
 daily_precip$water_year[month(daily_precip$Date) > 9] = daily_precip$water_year[month(daily_precip$Date) > 9]+1
 
 
-# _make monthly_precip ----------------------------------------------------
+
+
+
+# _stitch orig and update together ----------------------------------------
+
+
+
+#isolate the precip data after the end of the original model
+daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
+daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
+
+### HANDLE NAs
+
+# #check the NA values
+# which(is.na(daily_precip_update$mean_PRCP))
+# daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
+#shit that's a huge gap in december 2012. to do: find alternate precip data source for this gap
+#TEMPORARY SOLUTION FOR NOW: 
+#just put the average of all December dates in that window
+# dec 4-30th
+
+#calculate average precip values for that day in december over the whole model record (wy1991+)
+precip_dec = subset(daily_precip, month(Date) == 12 & day(Date) >=4 & day(Date) <=30)
+precip_dec$day = day(precip_dec$Date)
+daily_precip_dec = aggregate(precip_dec$mean_PRCP, by=list(precip_dec$day), FUN=mean, na.rm=T)
+
+#replace NAN values in Dec 2012 with average values over whole record
+daily_precip_update$mean_PRCP[daily_precip_update$Date >= as.Date("2012-12-04") 
+                              & daily_precip_update$Date <= as.Date("2012-12-30")]=daily_precip_dec$x
+
+#set remaining days with NA in both records to 0
+daily_precip_update$mean_PRCP[is.na(daily_precip_update$mean_PRCP)] = 0
+
+
+### FORMAT AND WRITE PRECIP FILE
+#Format the update to attach to the original precip file
+daily_precip_update=data.frame(mean_PRCP = daily_precip_update$mean_PRCP, Date = daily_precip_update$Date)
+daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
+                                 str_pad(month(daily_precip_update$Date), 2, pad="0"),
+                                 year(daily_precip_update$Date), sep = "/")
+daily_precip_update$mean_PRCP = daily_precip_update$mean_PRCP / 1000 #convert to meters
+
+
+# Visual comparison (over time)
+par(mfrow = c(2,2))
+plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$PRCP_mm_cal, type = "l", main = "Original minus Cal", xlab = "Date", ylab = "mm precip")
+plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$PRCP_mm_fj, type = "l", main = "Original minus FJ", xlab = "Date", ylab = "mm precip")
+plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$mean_PRCP, type = "l", main = "Original minus Cal, FJ mean", xlab = "Date", ylab = "mm precip")
+
+
+# Visual comparison (1:1 line)
+par(mfrow = c(2,2))
+plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_cal, pch = 18, main = "Original vs Cal", xlab = "orig", ylab = "mm precip")
+abline(0,1, col = "red", lwd = 2)
+plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
+abline(0,1, col = "red", lwd = 2)
+plot(daily_precip$PRCP_mm_orig, daily_precip$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
+abline(0,1, col = "red", lwd = 2)
+plot(daily_precip$PRCP_mm_cal, daily_precip$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
+abline(0,1, col = "red", lwd = 2)
+
+
+plot(daily_precip$Date, daily_precip$PRCP_mm_fj, type = "l", main = "Fort Jones station", xlab = "Date", ylab = "mm precip")
+
+plot(daily_precip$Date, daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal, type = "l", 
+     main = "Fort Jones minus Callahan", xlab = "Date", ylab = "mm precip")
+
+#Histogram of differences between Callahan and FJ
+hist(daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal, breaks = seq(-80,90,5))
+nonzero_diffs = daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal; nonzero_diffs = nonzero_diffs[abs(nonzero_diffs)>5]
+hist(nonzero_diffs,breaks = seq(-80,90,5), main = "Num. days with Cal-FJ difference of >5 mm", xlab = "mm difference, Cal-FJ")
+
+
+#combine and write as text file
+daily_precip_updated = rbind(daily_precip_orig, daily_precip_update)
+write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
+
+
+
+
+
+# Precip: How many days are 0 ppt? ----------------------------------------
+
+
+precip_for_tab = daily_precip[daily_precip$Date >= model_start_date & daily_precip$Date <= "2011-09-30",]
+
+num_nas = apply(precip_for_tab[2:6], MARGIN = 2, function(x) sum(is.na(x)))
+num_0s = apply(precip_for_tab[2:6], MARGIN = 2, function(x) sum(x==0, na.rm=T))
+num_gt0 = apply(precip_for_tab[2:6], MARGIN = 2, function(x) sum(x>0, na.rm=T))
+
+p_tab = data.frame( num_nas, num_0s, num_gt0)
+
+total_days = as.numeric(unique(p_tab[1]+p_tab[2]+p_tab[3]))
+p_tab$perc_0 = round(p_tab$num_0s / total_days, 2)*100
+p_tab$perc_na = round(p_tab$num_nas / total_days, 2)*100
+p_tab$perc_gt0 = round(p_tab$num_gt0 / total_days, 2)*100
+p_tab$gt0_div_0 = round(p_tab$num_gt0 / p_tab$num_0s, 2) 
+p_tab$num0_div_gt0 = round(p_tab$num_0s / p_tab$num_gt0, 2) 
+
+# checks out; adds up to dimensions of 32415 records
+
+# Precip: regression to fill gaps -----------------------------------------
+
+#step 1: make daily precip table
+library(MASS)
+library(ISLR)
+
+
+station_id_table = data.frame(abbrev = c("cal", "fj", "et", "gv"),
+                              station = c("USC00041316", "USC00043182", "USC00042899", "USC00043614"),
+                              col_num = c(1,2,3,4) + 1)
+
+#make list of regressions (Y, X or Xes)
+# for each month
+# for FJ and Cal (Ys)
+# for FJ, Cal, ET, and GV (Xs)
+## But not combinations of X?
+# Then, rank each month-Y combo according to correlation coeff
+
+#Initialize table of model coefficients
+months = 1:12
+ys = c("fj", "cal")
+xs = c("fj", "cal", "gv", "et")
+# 
+model_coeff = expand.grid(months = months, Y_var = ys, X_var = xs)
+model_coeff = model_coeff[as.character(model_coeff$Y_var) != as.character(model_coeff$X_var),]
+#Add model parameter columns
+model_coeff$intercept=NA; model_coeff$coeff_m=NA; model_coeff$r2=NA
+
+for(mnth in months)
+for(y in ys){
+  for(x in xs){
+    if(y == x){next} #no need for autoregression
+    #Find the output table row
+    model_coeff_index = which(model_coeff$months==mnth & model_coeff$X_var==x & model_coeff$Y_var==y)
+    #Find the daily precip column number for X and Y stations
+    col_num_x = station_id_table$col_num[station_id_table$abbrev == x]
+    col_num_y = station_id_table$col_num[station_id_table$abbrev == y]
+    #Declare X and Y in daily precip
+    X = daily_precip[month(daily_precip$Date) == mnth, col_num_x]
+    Y = daily_precip[month(daily_precip$Date) == mnth, col_num_y]
+    # 
+    model_name = paste(y, "on", x, "in", month.abb[mnth] )
+    model = lm(Y~X)
+    model_coeff[model_coeff_index, 4:5] = coef(model)
+    model_coeff$r2[model_coeff_index] = summary(model)$r.sq
+  }
+}
+
+# use regressions to generate filled-in precip records for FJ and Cal
+p_record = daily_precip[daily_precip$Date >= model_start_date & daily_precip$Date <= model_end_date,]
+
+p_record$fj_interp = p_record$PRCP_mm_fj
+for(i in 1:length(p_record$fj_interp)){
+  if(is.na(p_record$fj_interp[i])){
+    # figure out what case this is ()
+    #find the coefs for the best regression for fj
+    coefs = model_coeff[model_coeff$Y_var == "fj" & model_coeff$months == month(p_record$Date[i]), ]
+    
+    i_best = which.max(coefs$r2)
+    i_worst = which.min(coefs$r2)
+    i_2ndbest = setdiff(1:3, c(i_best, i_worst))
+    
+    x_best = coefs$X_var[i_best]
+    col_best = station_id_table$col_num[station_id_table$abbrev == x_best]
+    x_2ndbest = coefs$X_var[i_2ndbest]
+    col_2ndbest = station_id_table$col_num[station_id_table$abbrev == x_2ndbest]
+    x_worst = coefs$X_var[i_worst]
+    col_worst = station_id_table$col_num[station_id_table$abbrev == x_worst]
+    
+    #predict the rainfall
+    if(!is.na(p_record[i,col_best])){
+      p_record$fj_interp[i] =  coefs$intercept[i_best] + p_record[i,col_best] * coefs$coeff_m[i_best]
+    } else if(!is.na(p_record[i,col_2ndbest])) {
+      p_record$fj_interp[i] =  coefs$intercept[i_2ndbest] + p_record[i,col_2ndbest] * coefs$coeff_m[i_2ndbest]
+    } else if(!is.na(p_record[i,col_worst])){
+      p_record$fj_interp[i] =  coefs$intercept[i_worst] + p_record[i,col_worst] * coefs$coeff_m[i_worst]
+    }
+    
+  }
+}
+
+
+# ET ----------------------------------------------------------------------
+
+#to do: webscrape cimis? (login?)
+#units? 
+et_dl_may2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report.csv"))
+
+##generate new et record
+et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
+et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
+et = data.frame(Date = et$Date, ETo_mm = et$ETo..mm.day.)
+
+#Update existing record
+#subset update for ET, build update dataframe in same format as original input file
+et_update_allcol = subset(et_dl_may2019, Date >= as.Date("2011-10-01") & Date <= model_end_date)
+ETo_m = et_update_allcol$ETo..mm.day./1000
+et_update = data.frame(ETo_m)
+et_update$ETo_in = et_update$ETo_m * 39.3701 #convert to inches
+et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date), 2, pad="0"),
+                                               str_pad(month(et_update_allcol$Date), 2, pad="0"),
+                                               year(et_update_allcol$Date), sep = "/")
+
+#Read in original file
+ref_et_orig = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
+# head(ref_et_orig)
+# plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
+
+#Combine into updated ET record, check for continuity, and write file
+colnames(ref_et_orig) = colnames(et_update)
+ref_et_updated = rbind(ref_et_orig, et_update)
+# plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
+# sum(is.na(ref_et_updated$ETo_m))
+write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
+
+# SWBM overview plot ------------------------------------------------------
+
+# first: run the subfunctions in eci273_scenario_plotting.
+
+#Read in SWBM scenario outputs: monthly water budget 
+setwd("C:/Users/Claire/Documents/GitHub/SVIHM/SWBM/up2018")
+monthly_water_budget_hist = read.table("monthly_water_budget.dat", header = TRUE)
+mwb_hist = monthly_water_budget_hist
+
+plot_water_budget_overview(mwb_hist, "Historical")
+
+
+
+
+# scratchwork -------------------------------------------------------------
+
+
+# _make monthly_precip 
 
 #Test 1: Don't remove NA
 monthly_precip1 = aggregate(daily_precip$PRCP_mm_orig, by = list(daily_precip$month_day1), FUN=sum)
@@ -148,14 +387,14 @@ colnames(monthly_precip3) = c("Month", "PRCP_mm_orig", "PRCP_mm_fj", "PRCP_mm_ca
 monthly_precip3$mean_PRCP = apply(X = monthly_precip3[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
 
 
-# _make yearly_precip -----------------------------------------------------
+# _make yearly_precip 
 
 
 #Calculate yearly average
 yearly_precip = aggregate(daily_precip$PRCP_mm_orig, by = list(daily_precip$water_year), FUN = sum)
 
 
-# _visual comparison -------------------------------------------------------
+# _visual comparison 
 
 
 
@@ -255,187 +494,3 @@ plot(monthly_precip$Month, monthly_precip$PRCP_mm_orig-monthly_precip$mean_PRCP,
 #By forgetting to remove NA values I think I must have stumbled on what they
 #used to make the precip data.
 #
-
-
-
-
-
-# _stitch orig and update together ----------------------------------------
-
-
-
-#isolate the precip data after the end of the original model
-daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
-daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
-
-### HANDLE NAs
-
-# #check the NA values
-# which(is.na(daily_precip_update$mean_PRCP))
-# daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
-#shit that's a huge gap in december 2012. to do: find alternate precip data source for this gap
-#TEMPORARY SOLUTION FOR NOW: 
-#just put the average of all December dates in that window
-# dec 4-30th
-
-#calculate average precip values for that day in december over the whole model record (wy1991+)
-precip_dec = subset(daily_precip, month(Date) == 12 & day(Date) >=4 & day(Date) <=30)
-precip_dec$day = day(precip_dec$Date)
-daily_precip_dec = aggregate(precip_dec$mean_PRCP, by=list(precip_dec$day), FUN=mean, na.rm=T)
-
-#replace NAN values in Dec 2012 with average values over whole record
-daily_precip_update$mean_PRCP[daily_precip_update$Date >= as.Date("2012-12-04") 
-                              & daily_precip_update$Date <= as.Date("2012-12-30")]=daily_precip_dec$x
-
-#set remaining days with NA in both records to 0
-daily_precip_update$mean_PRCP[is.na(daily_precip_update$mean_PRCP)] = 0
-
-
-### FORMAT AND WRITE PRECIP FILE
-#Format the update to attach to the original precip file
-daily_precip_update=data.frame(mean_PRCP = daily_precip_update$mean_PRCP, Date = daily_precip_update$Date)
-daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
-                                 str_pad(month(daily_precip_update$Date), 2, pad="0"),
-                                 year(daily_precip_update$Date), sep = "/")
-daily_precip_update$mean_PRCP = daily_precip_update$mean_PRCP / 1000 #convert to meters
-
-
-# Visual comparison (over time)
-par(mfrow = c(2,2))
-plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$PRCP_mm_cal, type = "l", main = "Original minus Cal", xlab = "Date", ylab = "mm precip")
-plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$PRCP_mm_fj, type = "l", main = "Original minus FJ", xlab = "Date", ylab = "mm precip")
-plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$mean_PRCP, type = "l", main = "Original minus Cal, FJ mean", xlab = "Date", ylab = "mm precip")
-
-
-# Visual comparison (1:1 line)
-par(mfrow = c(2,2))
-plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_cal, pch = 18, main = "Original vs Cal", xlab = "orig", ylab = "mm precip")
-abline(0,1, col = "red", lwd = 2)
-plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
-abline(0,1, col = "red", lwd = 2)
-plot(daily_precip$PRCP_mm_orig, daily_precip$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
-abline(0,1, col = "red", lwd = 2)
-plot(daily_precip$PRCP_mm_cal, daily_precip$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
-abline(0,1, col = "red", lwd = 2)
-
-
-plot(daily_precip$Date, daily_precip$PRCP_mm_fj, type = "l", main = "Fort Jones station", xlab = "Date", ylab = "mm precip")
-
-plot(daily_precip$Date, daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal, type = "l", 
-     main = "Fort Jones minus Callahan", xlab = "Date", ylab = "mm precip")
-
-#Histogram of differences between Callahan and FJ
-hist(daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal, breaks = seq(-80,90,5))
-nonzero_diffs = daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal; nonzero_diffs = nonzero_diffs[abs(nonzero_diffs)>5]
-hist(nonzero_diffs,breaks = seq(-80,90,5), main = "Num. days with Cal-FJ difference of >5 mm", xlab = "mm difference, Cal-FJ")
-
-
-#combine and write as text file
-daily_precip_updated = rbind(daily_precip_orig, daily_precip_update)
-write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
-
-
-
-
-
-
-
-# Precip: How many days are 0 ppt? ----------------------------------------
-
-num_nas = apply(daily_precip[2:6], MARGIN = 2, function(x) sum(is.na(x)))
-num_0s = apply(daily_precip[2:6], MARGIN = 2, function(x) sum(x==0, na.rm=T))
-num_gt0 = apply(daily_precip[2:6], MARGIN = 2, function(x) sum(x>0, na.rm=T))
-
-p_tab = data.frame( num_nas, num_0s, num_gt0)
-
-total_days = as.numeric(unique(p_tab[1]+p_tab[2]+p_tab[3]))
-p_tab$perc_0 = round(p_tab$num_0s / total_days, 2)*100
-p_tab$perc_na = round(p_tab$num_nas / total_days, 2)*100
-p_tab$perc_gt0 = round(p_tab$num_gt0 / total_days, 2)*100
-
-# checks out; adds up to dimensions of 32415 records
-
-# Precip: regression to fill gaps -----------------------------------------
-
-#step 1: make daily precip table
-library(MASS)
-library(ISLR)
-
-
-station_id_table = data.frame(abbrev = c("cal", "fj", "et", "gv"),
-                              station = c("USC00041316", "USC00043182", "USC00042899", "USC00043614"),
-                              col_num = c(1,2,3,4) + 1)
-
-#make list of regressions (Y, X or Xes)
-# for each month
-# for FJ and Cal (Ys)
-# for FJ, Cal, ET, and GV (Xs)
-## But not combinations of X?
-# Then, rank each month-Y combo according to correlation coeff
-
-for(mnth in 1:12)
-for(y in c("fj", "cal")){
-  for(x in c("fj", "cal", "gv", "et")){
-    if(y == x){next}
-    col_num_x = station_id_table$col_num[station_id_table$abbrev == x]
-    col_num_y = station_id_table$col_num[station_id_table$abbrev == y]
-    
-    # station_y = station_id_table$station[station_id_table$abbrev == y]
-    # station_x = station_id_table$station[station_id_table$abbrev == x]
-    X = daily_precip[month(daily_precip$Date) == mnth, col_num_x]
-    Y = daily_precip[month(daily_precip$Date) == mnth, col_num_y]
-    
-    model_name = paste(y, "on", x, "in", month.abb[mnth] )
-    model = lm(Y~X)
-    coef(lm.fit)
-  }
-}
-
-
-# ET ----------------------------------------------------------------------
-
-#to do: webscrape cimis? (login?)
-#units? 
-et_dl_may2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report.csv"))
-
-##generate new et record
-et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
-et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
-et = data.frame(Date = et$Date, ETo_mm = et$ETo..mm.day.)
-
-#Update existing record
-#subset update for ET, build update dataframe in same format as original input file
-et_update_allcol = subset(et_dl_may2019, Date >= as.Date("2011-10-01") & Date <= model_end_date)
-ETo_m = et_update_allcol$ETo..mm.day./1000
-et_update = data.frame(ETo_m)
-et_update$ETo_in = et_update$ETo_m * 39.3701 #convert to inches
-et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date), 2, pad="0"),
-                                               str_pad(month(et_update_allcol$Date), 2, pad="0"),
-                                               year(et_update_allcol$Date), sep = "/")
-
-#Read in original file
-ref_et_orig = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
-# head(ref_et_orig)
-# plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
-
-#Combine into updated ET record, check for continuity, and write file
-colnames(ref_et_orig) = colnames(et_update)
-ref_et_updated = rbind(ref_et_orig, et_update)
-# plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
-# sum(is.na(ref_et_updated$ETo_m))
-write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
-
-
-
-# SWBM overview plot ------------------------------------------------------
-
-# first: run the subfunctions in eci273_scenario_plotting.
-
-#Read in SWBM scenario outputs: monthly water budget 
-setwd("C:/Users/Claire/Documents/GitHub/SVIHM/SWBM/up2018")
-monthly_water_budget_hist = read.table("monthly_water_budget.dat", header = TRUE)
-mwb_hist = monthly_water_budget_hist
-
-plot_water_budget_overview(mwb_hist, "Historical")
