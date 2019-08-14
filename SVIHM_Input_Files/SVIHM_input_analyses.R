@@ -436,6 +436,10 @@ write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
 # ET ----------------------------------------------------------------------
 
 #to do: webscrape cimis? (login?)
+# to do: explore date range of spatial cimis
+# to do: create daily and aggregatated refET inputs
+# to do: run SWBM with both daily and aggregated refET
+
 #units? 
 et_dl_may2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report.csv"))
 
