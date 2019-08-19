@@ -30,8 +30,8 @@ ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
 ## Directory used to archive the input files for each scenario
 model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
 ## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(proj_dir, "SWBM", "up2018")
-MF_file_dir = file.path(proj_dir, "MODFLOW","up2018")
+SWBM_file_dir = file.path(proj_dir, "SWBM", "up2018_b")
+MF_file_dir = file.path(proj_dir, "MODFLOW","up2018_b")
 
 
 #SET MODEL RUN DATES
@@ -358,7 +358,7 @@ write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
 
 setwd(Stream_Regression_dir)
 source(file.path(Stream_Regression_dir,'SVIHM_Streamflow_Regression_Model.R'))
-generate_streamflow_input_txt(end_date = as.Date("2018/9/30"))
+generate_streamflow_input_txt(end_date = model_end_date)
 
 file.copy('streamflow_input.txt', SWBM_file_dir)
 
