@@ -8,6 +8,7 @@
 library(stringr)
 library(lubridate)
 library(dplyr)
+library(Matrix)
 
 # 1) Set drives for collecting all SWBM input files and SVIHM modflow files
 
@@ -25,6 +26,7 @@ time_indep_dir = file.path(proj_dir, "SVIHM_Input_Files", "time_independent_inpu
 ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
 ## Directory used to archive the input files for each scenario
 model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
+scenario_dev_dir = file.path(proj_dir, "SVIHM_Input_Files", "Scenario_Development")
 ## Directories for running the scenarios (files copied at end of script)
 SWBM_file_dir = file.path(proj_dir, "SWBM", "up2018")
 MF_file_dir = file.path(proj_dir, "MODFLOW","up2018")
@@ -51,13 +53,39 @@ num_days = diff(model_months_plus_one) #number of days in each stress period/mon
 
 num_stress_periods = length(model_months)
 
-#station abbreviation, number in the NOAA dataset, and column number in the daily_precip table
-station_id_table = data.frame(abbrev = c("cal", "fj", "et", "gv"),
-                              station = c("USC00041316", "USC00043182", "USC00042899", "USC00043614"),
-                              col_num = c(1,2,3,4) + 1)
 
 
 # Subfunctions ------------------------------------------------------------
+
+make_station_table = function(){
+  #station abbreviation, number in the NOAA dataset, and column number in the daily_precip table
+  # station_table = data.frame(abbrev = c("cal", "fj", "et", "gv"),
+  #                               station = c("USC00041316", "USC00043182", "USC00042899", "USC00043614"),
+  #                               col_num = c(1,2,3,4) + 1)
+  station_table = data.frame(abbrev = c("cal", "fj", "et", "gv","yr", "y2"),
+                             station = c("USC00041316", "USC00043182", "USC00042899", "USC00043614","USC00049866","US1CASK0005"),
+                             col_num = c(1,2,3,4,5,6) + 1,
+                             lat = NA, lon = NA)
+  
+  #Assign coordinates to Station Locations from NOAA data
+  for(i in 1:dim(station_table)[1]){
+    station = station_table$station[i]
+    station_table$lat[i] = unique(wx$LATITUDE[wx$STATION==station])
+    station_table$lon[i] = unique(wx$LONGITUDE[wx$STATION==station])
+  }
+  coordinates(station_table) = ~lon + lat
+  
+  #Use coordinates to calculate distance between all the stations
+  station_dist = pointDistance(station_table, lonlat=T,  allpairs = T)
+  #Make the matrix easier to query later
+  station_dist = as.matrix(forceSymmetric(station_dist, uplo = "L"))
+  diag(station_dist) = NA
+  station_dist = as.data.frame(station_dist)
+  rownames(station_dist) = station_table$abbrev; colnames(station_dist) = station_table$abbrev
+  
+  
+  return(list(station_table, station_dist))
+}
 
 make_daily_precip = function(wx_table,
                              record_start_date = as.Date("1943-01-01"), 
@@ -76,6 +104,7 @@ make_daily_precip = function(wx_table,
   et =data.frame(DATE = et$DATE, PRCP = et$PRCP)
   gv = subset(noaa, STATION == "USC00043614" & DATE >= record_start_date & DATE <= record_end_date)
   gv =data.frame(DATE = gv$DATE, PRCP = gv$PRCP)
+
 
   #read in original data (wys 1991-2011)
   daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
@@ -104,10 +133,62 @@ make_daily_precip = function(wx_table,
   return(daily_precip)
 }
 
+make_daily_precip_extended_stations = function(wx_table,
+                             record_start_date = as.Date("1943-01-01"), 
+                             record_end_date = model_end_date){
+  record_days = seq(from = record_start_date, to = record_end_date, by = "days")
+  
+  
+  #Subset data into stations
+  noaa=wx_table
+  cal = subset(noaa, STATION=="USC00041316" & DATE >= record_start_date & DATE <= record_end_date)
+  cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
+  fj = subset(noaa, STATION=="USC00043182" & DATE >= record_start_date & DATE <= record_end_date)
+  fj = data.frame(DATE = fj$DATE, PRCP = fj$PRCP)
+  et = subset(noaa, STATION == "USC00042899" & DATE >= record_start_date & DATE <= record_end_date)
+  et =data.frame(DATE = et$DATE, PRCP = et$PRCP)
+  gv = subset(noaa, STATION == "USC00043614" & DATE >= record_start_date & DATE <= record_end_date)
+  gv =data.frame(DATE = gv$DATE, PRCP = gv$PRCP)
+  yr = subset(noaa, STATION == "USC00049866" & DATE >= record_start_date & DATE <= record_end_date)
+  yr =data.frame(DATE = yr$DATE, PRCP = yr$PRCP) 
+  y2 = subset(noaa, STATION == "US1CASK0005" & DATE >= record_start_date & DATE <= record_end_date)
+  y2 =data.frame(DATE = y2$DATE, PRCP = y2$PRCP) 
+  
+  
+  #read in original data (wys 1991-2011)
+  daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
+  colnames(daily_precip_orig) = c("PRCP", "Date")
+  daily_precip_orig$Date = as.Date(daily_precip_orig$Date, format = "%d/%m/%Y")
+  daily_precip_orig$PRCP = daily_precip_orig$PRCP*1000
+  
+  
+  ### COMPARISON TABLE FOR 2 STATIONS AND ORIG DATA
+  daily_precip = data.frame(record_days)
+  daily_precip = merge(x = daily_precip, y = cal, by.x = "record_days", by.y = "DATE", all=TRUE)
+  daily_precip = merge(x = daily_precip, y = fj, by.x = "record_days", by.y = "DATE", all=TRUE)
+  daily_precip = merge(x = daily_precip, y = et, by.x = "record_days", by.y = "DATE", all=TRUE)
+  daily_precip = merge(x = daily_precip, y = gv, by.x = "record_days", by.y = "DATE", all=TRUE)
+  daily_precip = merge(x = daily_precip, y = yr, by.x = "record_days", by.y = "DATE", all=TRUE)
+  daily_precip = merge(x = daily_precip, y = y2, by.x = "record_days", by.y = "DATE", all=TRUE)
+  daily_precip = merge(x = daily_precip, y = daily_precip_orig, by.x = "record_days", by.y = "Date", all=TRUE)
+  colnames(daily_precip)=c("Date","PRCP_mm_cal", "PRCP_mm_fj","PRCP_mm_et","PRCP_mm_gv",
+                           "PRCP_mm_yr", "PRCP_mm_y2","PRCP_mm_orig")
+  
+  # Compare original data to FJ-Cal mean
+  daily_precip$mean_PRCP_fjcal = apply(X = daily_precip[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
+  
+  #Add aggregation columns
+  daily_precip$month_day1 = floor_date(daily_precip$Date, "month")
+  daily_precip$water_year = year(daily_precip$Date)
+  daily_precip$water_year[month(daily_precip$Date) > 9] = daily_precip$water_year[month(daily_precip$Date) > 9]+1
+  
+  return(daily_precip)
+}
+
 make_model_coeffs_table = function(months = 1:12, 
                                    daily_precip = daily_precip,
                                    ys = c("fj", "cal"), 
-                                   xs = c("fj", "cal", "gv", "et")){  
+                                   xs = c("fj", "cal", "gv", "et", "yr", "y2")){  
   
   model_coeff = expand.grid(months = months, Y_var = ys, X_var = xs)
   #take out matching combinations (e.g. x = fj, y = fj)
@@ -122,13 +203,17 @@ make_model_coeffs_table = function(months = 1:12,
         #Find the output table row
         model_coeff_index = which(model_coeff$months==mnth & model_coeff$X_var==x & model_coeff$Y_var==y)
         #Find the daily precip column number for X and Y stations
-        col_num_x = station_id_table$col_num[station_id_table$abbrev == x]
-        col_num_y = station_id_table$col_num[station_id_table$abbrev == y]
+        col_num_x = station_table$col_num[station_table$abbrev == x]
+        col_num_y = station_table$col_num[station_table$abbrev == y]
         #Declare X and Y in daily precip
         X = daily_precip[month(daily_precip$Date) == mnth, col_num_x]
         Y = daily_precip[month(daily_precip$Date) == mnth, col_num_y]
         # 
         model_name = paste(y, "on", x, "in", month.abb[mnth] )
+        
+        #check to see if there are 0 matching pairs
+        if(sum(!is.na(X) & !is.na(Y))==0){next}
+        
         model = lm(Y~ 0 + X)
         if(length(coef(model)) ==2){model_coeff[model_coeff_index, 4:5] = coef(model)}
         if(length(coef(model)) ==1){
@@ -143,8 +228,8 @@ fill_fj_cal_gaps_regression_table = function(model_coeff,
                                              daily_precip = daily_precip,
                                              start_date = model_start_date,
                                              end_date = model_end_date){
-
-    #make list of regressions (Y, X or Xes)
+  
+  #make list of regressions (Y, X or Xes)
   # for each month
   # for FJ and Cal (Ys)
   # for FJ, Cal, ET, and GV (Xs)
@@ -152,7 +237,7 @@ fill_fj_cal_gaps_regression_table = function(model_coeff,
   # Then, rank each month-Y combo according to correlation coeff
   
   #Initialize table of model coefficients
-
+  
   
   # use regressions to generate filled-in precip records for FJ and Cal
   p_record = daily_precip[daily_precip$Date >= start_date & daily_precip$Date <= end_date,]
@@ -162,29 +247,25 @@ fill_fj_cal_gaps_regression_table = function(model_coeff,
   for(i in 1:length(p_record$fj_interp)){
     if(is.na(p_record$fj_interp[i])){
       # figure out what case this is ()
-      #find the coefs for the best regression for fj
+      #find the appropriate regression coefficients for this month of fj data
       coefs = model_coeff[model_coeff$Y_var == "fj" & model_coeff$months == month(p_record$Date[i]), ]
+      index_of_ranks = rev(order(coefs$r2)) # test the regressions in order of best R2 to worst
       
-      i_best = which.max(coefs$r2)
-      i_worst = which.min(coefs$r2)
-      i_2ndbest = setdiff(1:3, c(i_best, i_worst))
-      
-      x_best = coefs$X_var[i_best]
-      col_best = station_id_table$col_num[station_id_table$abbrev == x_best]
-      x_2ndbest = coefs$X_var[i_2ndbest]
-      col_2ndbest = station_id_table$col_num[station_id_table$abbrev == x_2ndbest]
-      x_worst = coefs$X_var[i_worst]
-      col_worst = station_id_table$col_num[station_id_table$abbrev == x_worst]
-      
-      #predict the rainfall
-      if(!is.na(p_record[i,col_best])){
-        p_record$fj_interp[i] =  coefs$intercept[i_best] + p_record[i,col_best] * coefs$coeff_m[i_best]
-      } else if(!is.na(p_record[i,col_2ndbest])) {
-        p_record$fj_interp[i] =  coefs$intercept[i_2ndbest] + p_record[i,col_2ndbest] * coefs$coeff_m[i_2ndbest]
-      } else if(!is.na(p_record[i,col_worst])){
-        p_record$fj_interp[i] =  coefs$intercept[i_worst] + p_record[i,col_worst] * coefs$coeff_m[i_worst]
+      #Predict rainfall
+      for(j in 1:length(index_of_ranks)){
+        if(is.na(p_record$fj_interp[i])){ #If this daily value didn't get filled by a previous calc in this for loop
+          # Use coef matrix to assign X variable station for the regression, based on ranked R^2
+          coef_index = index_of_ranks[j] 
+          coef_x = coefs$X_var[coef_index] 
+          daily_precip_column_num = station_table$col_num[station_table$abbrev == coef_x]
+          # If there's data for that X variable, use it to predict rainfall at FJ for that day
+          if(!is.na(p_record[i,daily_precip_column_num])){
+            p_record$fj_interp[i] =  coefs$intercept[coef_index] + (p_record[i, daily_precip_column_num] * coefs$coeff_m[coef_index])
+          }
+          #If there's no data for the best-ranked variable, it will go back to the beginning of the for loop and try again with other stations
+        }
       }
-      
+
     }
   }
   
@@ -193,27 +274,23 @@ fill_fj_cal_gaps_regression_table = function(model_coeff,
   for(i in 1:length(p_record$cal_interp)){
     if(is.na(p_record$cal_interp[i])){
       # figure out what case this is ()
-      #find the coefs for the best regression for cal
+      #find the appropriate regression coefficients for this month of Cal data
       coefs = model_coeff[model_coeff$Y_var == "cal" & model_coeff$months == month(p_record$Date[i]), ]
+      index_of_ranks = rev(order(coefs$r2)) # test the regressions in order of best R2 to worst
       
-      i_best = which.max(coefs$r2)
-      i_worst = which.min(coefs$r2)
-      i_2ndbest = setdiff(1:3, c(i_best, i_worst))
-      
-      x_best = coefs$X_var[i_best]
-      col_best = station_id_table$col_num[station_id_table$abbrev == x_best]
-      x_2ndbest = coefs$X_var[i_2ndbest]
-      col_2ndbest = station_id_table$col_num[station_id_table$abbrev == x_2ndbest]
-      x_worst = coefs$X_var[i_worst]
-      col_worst = station_id_table$col_num[station_id_table$abbrev == x_worst]
-      
-      #predict the rainfall
-      if(!is.na(p_record[i,col_best])){
-        p_record$cal_interp[i] =  coefs$intercept[i_best] + p_record[i,col_best] * coefs$coeff_m[i_best]
-      } else if(!is.na(p_record[i,col_2ndbest])) {
-        p_record$cal_interp[i] =  coefs$intercept[i_2ndbest] + p_record[i,col_2ndbest] * coefs$coeff_m[i_2ndbest]
-      } else if(!is.na(p_record[i,col_worst])){
-        p_record$cal_interp[i] =  coefs$intercept[i_worst] + p_record[i,col_worst] * coefs$coeff_m[i_worst]
+      #Predict rainfall
+      for(j in 1:length(index_of_ranks)){
+        if(is.na(p_record$cal_interp[i])){ #If this daily value didn't get filled by a previous calc in this for loop
+          # Use coef matrix to assign X variable station for the regression, based on ranked R^2
+          coef_index = index_of_ranks[j] 
+          coef_x = coefs$X_var[coef_index] 
+          daily_precip_column_num = station_table$col_num[station_table$abbrev == coef_x]
+          # If there's data for that X variable, use it to predict rainfall at cal for that day
+          if(!is.na(p_record[i,daily_precip_column_num])){
+            p_record$cal_interp[i] =  coefs$intercept[coef_index] + (p_record[i, daily_precip_column_num] * coefs$coeff_m[coef_index])
+          }
+          #If there's no data for the best-ranked variable, it will go back to the beginning of the for loop and try again with other stations
+        }
       }
       
     }
@@ -221,43 +298,107 @@ fill_fj_cal_gaps_regression_table = function(model_coeff,
   return(p_record)
 }
 
+fill_fj_cal_gaps_distance = function(station_dist = station_dist,  
+                                             daily_precip = daily_precip,
+                                             start_date = model_start_date,
+                                             end_date = model_end_date){
+  
+  # use regressions to generate filled-in precip records for FJ and Cal
+  p_record = daily_precip[daily_precip$Date >= start_date & daily_precip$Date <= end_date,]
+  
+  #Fill in gaps in FJ
+  p_record$fj_interp = p_record$PRCP_mm_fj
+  p_record$cal_interp = p_record$PRCP_mm_cal
+  colnums = range(station_table$col_num)
+
+  #Fill in gaps in FJ
+  for(i in 1:length(p_record$fj_interp)){
+    if(is.na(p_record$fj_interp[i])){
+      
+      dist = station_dist$fj #reset each time
+      available = !(is.na(p_record[i, colnums[1]:colnums[2]]))
+      dist[!available]=NA
+
+      closest_index = which.min(dist)
+      closest_colnum = station_table$col_num[closest_index]
+      
+      p_record$fj_interp[i] = p_record[i, closest_colnum]
+      }
+    }
+      
+  #Fill in gaps in Cal
+  for(i in 1:length(p_record$cal_interp)){
+    if(is.na(p_record$cal_interp[i])){
+      
+      dist = station_dist$cal #reset each time
+      available = !(is.na(p_record[i, colnums[1]:colnums[2]]))
+      dist[!available]=NA
+      
+      closest_index = which.min(dist)
+      closest_colnum = station_table$col_num[closest_index]
+      
+      p_record$cal_interp[i] = p_record[i, closest_colnum]
+    }
+  }
+
+  return(p_record)
+}
 
 
-# Precip ------------------------------------------------------------------
+
+# Precip (Regression) ------------------------------------------------------------------
 
 # Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
 rm(list = ls()[!(ls() %in% c("wx")) ]) #Remove all variables other than the weather dataframe
 # Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
 
-daily_precip_regression = make_daily_precip(wx_table = wx,
+station_info = make_station_table()
+station_table = station_info[[1]]
+station_dist = station_info[[2]]
+
+daily_precip_regression = make_daily_precip_extended_stations(wx_table = wx,
                   record_start_date = as.Date("1943-10-01"), 
                   record_end_date = as.Date("2011-09-30"))
 
 model_coeff = make_model_coeffs_table(months = 1:12, 
                                       daily_precip = daily_precip_regression,
                                       ys = c("fj", "cal"), 
-                                      xs = c("fj", "cal", "gv", "et"))
+                                      xs = c(c("fj", "cal", "gv", "et", "yr", "y2")))
 
-daily_precip_p_record = make_daily_precip(wx_table = wx,
+daily_precip_p_record = make_daily_precip_extended_stations(wx_table = wx,
                                             record_start_date = model_start_date, 
                                             record_end_date = model_end_date)
 
-p_record = fill_fj_cal_gaps_regression_table(model_coeff=model_coeff, 
+p_record_regress = fill_fj_cal_gaps_regression_table(model_coeff=model_coeff, 
                                              daily_precip = daily_precip_p_record,
                                              start_date = model_start_date, 
                                              end_date = model_end_date)
 
+p_record_dist = fill_fj_cal_gaps_distance(station_dist = station_dist, 
+                                     daily_precip = daily_precip_p_record,
+                                     start_date = model_start_date, 
+                                     end_date = model_end_date)
+
+
 # average interp-fj and interp-cal records and compare to original
-p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
+p_record_dist$interp_cal_fj_mean =  apply(X = dplyr::select(p_record_dist, fj_interp, cal_interp), 
                                      MARGIN = 1, FUN = mean, na.rm=T)
 
+p_record_regress$interp_cal_fj_mean =  apply(X = dplyr::select(p_record_regress, fj_interp, cal_interp), 
+                                          MARGIN = 1, FUN = mean, na.rm=T)
 # to do: December 2012 NAs. CURRENT ACTION
 # FROM STATIONFINDER: https://www.ncdc.noaa.gov/cdo-web/datatools/findstation
-USR0000CQUA # Quartz Valley station. Temp only. 
+# USR0000CQUA # Quartz Valley station. Temp only. 
 
-USC00049866 # Yreka station
-US1CASK0005 # secondary yreka station
-# which has better match?
+
+#station abbreviation, number in the NOAA dataset, and column number in the daily_precip table
+
+
+
+
+# USC00049866 # Yreka station
+# US1CASK0005 # secondary yreka station
+# which has better match?  Both have dec 2012 data
 
 # combine original precip and new regressed gap-filled fj-cal average
 p_record$stitched = p_record$PRCP_mm_orig
@@ -295,26 +436,73 @@ plot(p_record$Date, p_record$interp_cal_fj_mean, type = "l", ylim = c(0, 120))
 
 # _exceedance curves ------------------------------------------------------
 
-legend_labels = c("Callahan", "Fort Jones","Greenview", 
+legend_labels = c("Callahan", "Fort Jones","Greenview", "Yreka", "Yreka NW",
                   "Original 91-11", "Cal-FJ Mean",
-                  "Gap-filled Callahan", "Gap-filled Fort Jones",
+                   "Gap-filled Fort Jones", "Gap-filled Callahan",
                   "Gap-filled Cal-FJ Mean")
 #initialize plot
-plot(x = NA, y = NA, xlim = c(0.6, 1), ylim = c(0, 120), xlab = "Exceedance probabylity", ylab = "log daily precip, mm")
+par(mfrow = c(1,1))
+plot(x = NA, y = NA, xlim = c(0.6, 1), ylim = c(-2.1, 5), xlab = "Exceedance probability", ylab = "log daily precip, mm")
 
 col_names = colnames(p_record)[!(colnames(p_record) %in% c("Date","month_day1", "water_year", "PRCP_mm_et"))]
 for(i in 1:length(col_names)){
+  i=i+1
   col_name = col_names[i]
   record = select(p_record, col_name)
-  record = record[!is.na(record)]
+  record = log(record[!is.na(record)])
   record_exceedance = (record[order(record)])
   t = length(record_exceedance)
   lines(x = (1:t)/t, y = record_exceedance, type = "l", col = i, main = col_name)#,
-       # xlab = "Exceedance probabylity", ylab = "log daily precip, mm")
+       # xlab = "Exceedance probability", ylab = "log daily precip, mm")
 }
 legend(x = "topleft", legend = legend_labels, cex = 0.8, lwd = rep(1, length(col_names)), col = 1:length(col_names))
 
 
+
+
+# _visualize regression relationships --------------------------------------
+
+par(mfrow = c(3,4))
+
+months = 1:12; ys = c("fj", "cal"); xs = c("fj", "cal", "gv", #"et",
+                                           "yr", "y2")
+
+plotter = expand.grid(months = months, Y_var = ys, X_var = xs)
+# plotter = expand.grid(Y_var = ys, X_var = xs)
+#take out matching combinations (e.g. x = fj, y = fj)
+plotter = plotter[as.character(plotter$Y_var) != as.character(plotter$X_var),]
+
+for(i in 1:dim(plotter)[1]){
+  mnth = as.numeric(plotter$month[i])
+  y_abbrev = as.character(plotter$Y_var[i])
+  x_abbrev = as.character(plotter$X_var[i])
+  
+  y_record = p_record[month(p_record$Date) == mnth, 
+                      station_table$col_num[station_table$abbrev == y_abbrev]]
+  x_record = p_record[month(p_record$Date) == mnth,
+                      station_table$col_num[station_table$abbrev == x_abbrev]]
+  
+  plot(x_record, y_record, xlab = x_abbrev, ylab = y_abbrev, main = mnth)
+  abline(0,1, col = "red")
+}
+
+
+
+# _visualize distance vs regression method --------------------------------
+par(mfrow = c(3,1))
+plot(p_record_regress$interp_cal_fj_mean, p_record_dist$interp_cal_fj_mean)
+cor(p_record_regress$interp_cal_fj_mean, p_record_dist$interp_cal_fj_mean, use="pairwise.complete.obs") # 0.91
+plot(p_record_regress$PRCP_mm_orig, p_record_regress$interp_cal_fj_mean)
+plot(p_record_dist$PRCP_mm_orig, p_record_dist$interp_cal_fj_mean)
+
+plot(p_record_regress$Date,p_record_regress$PRCP_mm_orig, type = "l")
+plot(p_record_regress$Date,p_record_regress$interp_cal_fj_mean, type = "l")
+plot(p_record_dist$Date,p_record_dist$interp_cal_fj_mean, type = "l")
+
+tot_reg = sum(p_record_regress$interp_cal_fj_mean, na.rm=T)
+tot_dist = sum(p_record_dist$interp_cal_fj_mean, na.rm=T)
+
+tot_dist / tot_reg # the distance one yields about 9.5% more overall. Probably because Etna is close to both Cal and FJ.
 
 # _histograms -------------------------------------------------------------
 
@@ -331,7 +519,7 @@ col_names = colnames(p_record)[!(colnames(p_record) %in% c("Date","month_day1", 
 for(i in 1:length(col_names)){
   col_name = col_names[i]
   record = select(p_record, col_name)
-  record = (record[!is.na(record)])
+  record = log(record[!is.na(record)])
   hist(record, main = col_name, col = i,
        freq = F)#, xlim = c(-2.5, 6), ylim = c(0, 0.4))
   abline(v = mean(record), lty = 2)
@@ -383,48 +571,50 @@ hist(log10(p_record$interp_cal_fj_mean), xlab = "log10 of Interp FJ-Cal daily pr
 # _stitch orig and update together ----------------------------------------
 
 
-# 
-# #isolate the precip data after the end of the original model
-# daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
-# daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
-# 
-# ### HANDLE NAs
-# 
-# # #check the NA values
-# # which(is.na(daily_precip_update$mean_PRCP))
-# # daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
-# #shit that's a huge gap in december 2012. to do: find alternate precip data source for this gap
-# #TEMPORARY SOLUTION FOR NOW: 
-# #just put the average of all December dates in that window
-# # dec 4-30th
-# 
-# #calculate average precip values for that day in december over the whole model record (wy1991+)
-# precip_dec = subset(daily_precip, month(Date) == 12 & day(Date) >=4 & day(Date) <=30)
-# precip_dec$day = day(precip_dec$Date)
-# daily_precip_dec = aggregate(precip_dec$mean_PRCP, by=list(precip_dec$day), FUN=mean, na.rm=T)
-# 
-# #replace NAN values in Dec 2012 with average values over whole record
-# daily_precip_update$mean_PRCP[daily_precip_update$Date >= as.Date("2012-12-04") 
-#                               & daily_precip_update$Date <= as.Date("2012-12-30")]=daily_precip_dec$x
-# 
-# #set remaining days with NA in both records to 0
-# daily_precip_update$mean_PRCP[is.na(daily_precip_update$mean_PRCP)] = 0
-# 
-# 
-# ### FORMAT AND WRITE PRECIP FILE
-# #Format the update to attach to the original precip file
-# daily_precip_update=data.frame(mean_PRCP = daily_precip_update$mean_PRCP, Date = daily_precip_update$Date)
-# daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
-#                                  str_pad(month(daily_precip_update$Date), 2, pad="0"),
-#                                  year(daily_precip_update$Date), sep = "/")
-# daily_precip_update$mean_PRCP = daily_precip_update$mean_PRCP / 1000 #convert to meters
-# 
+#read in original data (wys 1991-2011)
+daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
+colnames(daily_precip_orig) = c("PRCP", "Date")
+
+#Format the update to attach to the original precip file
+p_record = p_record_regress
+daily_precip_update=data.frame(PRCP = p_record$interp_cal_fj_mean, Date = p_record$Date)
+daily_precip_update = daily_precip_update[daily_precip_update$Date > as.Date("2011-09-30"),]
+daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
+                                 str_pad(month(daily_precip_update$Date), 2, pad="0"),
+                                 year(daily_precip_update$Date), sep = "/")
+daily_precip_update$PRCP = daily_precip_update$PRCP / 1000 #convert to meters
 
 
 #combine and write as text file
 daily_precip_updated = rbind(daily_precip_orig, daily_precip_update)
-write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
+write.table(daily_precip_updated, file = file.path(scenario_dev_dir, "precip_regressed.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
+
+# Precip (geography) ------------------------------------------------------
+
+# Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
+rm(list = ls()[!(ls() %in% c("wx")) ]) #Remove all variables other than the weather dataframe
+# Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
+
+
+station_info = make_station_table()
+station_table = station_info[[1]]; station_dist = station_info[[2]]
+
+daily_precip_p_record = make_daily_precip_extended_stations(wx_table = wx,
+                                                            record_start_date = model_start_date, 
+                                                            record_end_date = model_end_date)
+
+p_record = fill_fj_cal_gaps_distance(station_dist = station_dist, 
+                                             daily_precip = daily_precip_p_record,
+                                             start_date = model_start_date, 
+                                             end_date = model_end_date)
+
+# average interp-fj and interp-cal records and compare to original
+p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
+                                     MARGIN = 1, FUN = mean, na.rm=T)
+
 
 
 # ET ----------------------------------------------------------------------
@@ -675,7 +865,7 @@ et_input_1 = data.frame(ETo_m = round(et_stitched_1$ETo_mm /1000, 9), #convert t
 et_input_1$Date = paste(str_pad(day(et_input_1$Date), 2, pad="0"),
                                                str_pad(month(et_input_1$Date), 2, pad="0"),
                                                year(et_input_1$Date), sep = "/")
-write.table(et_input_1, file = file.path(SWBM_file_dir, "ref_et_daily.txt"),
+write.table(et_input_1, file = file.path(scenario_dev_dir, "ref_et_daily.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 et_input_2 = data.frame(ETo_m = et_stitched_2$ETo_mm /1000, 
@@ -684,7 +874,7 @@ et_input_2 = data.frame(ETo_m = et_stitched_2$ETo_mm /1000,
 et_input_2$Date = paste(str_pad(day(et_input_2$Date), 2, pad="0"),
                         str_pad(month(et_input_2$Date), 2, pad="0"),
                         year(et_input_2$Date), sep = "/")
-write.table(et_input_2, file = file.path(SWBM_file_dir, "ref_et_monthly.txt"),
+write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 # SWBM overview plot ------------------------------------------------------
