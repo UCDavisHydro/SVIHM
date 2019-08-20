@@ -8,7 +8,7 @@ library(dplyr)
 #Rules:
 ## dates in R are treated as YYYY-MM-DD for convenience. Dates in the model input files are DD-MM-YYYY.
 
-
+rm(list = ls())
 
 # SETUP -------------------------------------------------------------------
 
@@ -30,8 +30,8 @@ ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
 ## Directory used to archive the input files for each scenario
 model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
 ## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(proj_dir, "SWBM", "hist")
-MF_file_dir = file.path(proj_dir, "MODFLOW","hist")
+SWBM_file_dir = file.path(proj_dir, "SWBM", "pvar_c30")
+MF_file_dir = file.path(proj_dir, "MODFLOW","pvar_c30")
 
 
 #SET MODEL RUN DATES
@@ -248,7 +248,7 @@ write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
 # To update, EITHER: 
 # a) Update Fort Jones gauge record is Streamflow_Regression_Model folder, OR
 # b) build webscraper for latest stream data?
-"https://waterdata.usgs.gov/ca/nwis/dv?cb_00060=on&format=rdb&site_no=11519500&referred_module=sw&period=&begin_date=1941-10-01&end_date=2019-05-19"
+# "https://waterdata.usgs.gov/ca/nwis/dv?cb_00060=on&format=rdb&site_no=11519500&referred_module=sw&period=&begin_date=1941-10-01&end_date=2019-05-19"
 #pull down from server, since it webscraped recently?
 #THEN: change the Fort Jones USGS file reference in the Regression script.
 

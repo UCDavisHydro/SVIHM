@@ -29,4 +29,13 @@ R_Files/Post-Processing/Results
 MODFLOW/up2018
 MODFLOW/orig_1991_2011
 SWBM/hist
+SWBM/pvar_a03
+SWBM/pvar_a03
+SWBM/pvar_a03
+SWBM/pvar_b70
+SWBM/pvar_b80
+SWBM/pvar_b90
+SWBM/pvar_c10
+SWBM/pvar_c20
+SWBM/pvar_c30
 SWBM/scenario_archive

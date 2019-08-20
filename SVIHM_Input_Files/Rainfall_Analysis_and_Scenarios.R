@@ -12,6 +12,7 @@ proj_dir = dirname(dirname(getActiveDocumentContext()$path ))
 scenario_dir = file.path(proj_dir,"SVIHM_Input_Files", "Scenario_Development")
 ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
 pdf_dir = file.path(proj_dir,"SVIHM_Input_Files","Scenario_Development")#,"comparison_pdfs")
+swbm_dir = file.path(proj_dir, "SWBM")
 
 #Read in water year type table (Sacramento Valley Water Index)
 # See also Deas analysis saying that Scott Valley water year type tracks sac valley
@@ -84,7 +85,7 @@ plot_by_wy_type = function(Y, rs_bounds=c(0.1,0.9)){
   wys = unique(Y$wy)
   
   #Read in water year type and color-coding information
-  setwd(proj_dir)
+  setwd(ref_data_dir)
   wy_type_table = read.csv("sac_valley_wyi.csv", fileEncoding="UTF-8-BOM")
   wy_color = as.data.frame(cbind(c("W", "AN", "BN", "D", "C"),
                                  c("Wet","Above Normal", "Below Normal", "Dry", "Critical"),
@@ -146,7 +147,7 @@ rainy_season_table = function(P, rs_bounds = c(0.1, 0.9)){
   }
   
   #read in water year type
-  setwd(proj_dir); wy_type = read.csv("sac_valley_wyi.csv", fileEncoding="UTF-8-BOM")
+  setwd(ref_data_dir); wy_type = read.csv("sac_valley_wyi.csv", fileEncoding="UTF-8-BOM")
   
   wat_yr = unique(P$wy) #for all water years in precip dataframe
   #Initialize table
@@ -451,11 +452,12 @@ rain_day_threshold = 0 # Any rain counts as a rainy day
 rainy_season_bounds = c(0.1, 0.9)
 
 #Decide number of large storms and generate Scenario A records
-num_large_storms = 5
+num_large_storms = 10
+scenario_folder_name = "pvar_a10"
 
 P_sca = generate_scenario_a(select(ppt_hist, date, precip_m), num_large_storms)
-P_sca = select(P_sca, date, sca); colnames(P_sca) = c("date", "precip_m")
-check_sums(ppt_hist, P_sca)
+# P_sca = select(P_sca, date, sca); colnames(P_sca) = c("date", "precip_m")
+# check_sums(ppt_hist, P_sca)
 
 ##Plot time series of Scenario A records by water year
 ## Track number of large storms in the column name and plot titles.
@@ -468,18 +470,14 @@ sca_for_txt = select(P_sca, sca, date)
 sca_for_txt$date = paste0(strftime(P_sca$date, "%d"), "/",
                                strftime(P_sca$date, "%m"), "/",
                                strftime(P_sca$date, "%Y"))
-setwd(paste0(proj_dir,"/sca_output"))
-write.table(sca_for_txt, paste0("sca_precip_",num_large_storms,"large.txt"), 
+
+txt_file_name=paste0("sca_precip_",num_large_storms,"large.txt")
+write.table(sca_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
             col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
 
 
 ## Scenario B. Shorter wet season
 ## Decision variable: fraction of historical wet season length) 
-
-rain_day_threshold = 0 # Any rain counts as a rainy day
-rainy_season_bounds = c(0.1, 0.9)
-fraction_season_length = 0.7 #try 90, 80, 70
-
 
 generate_scenario_b = function(P, fraction_season_length){
   #Assumes P = dataframe with "date" and "precip_m" columns (date- and numeric-type respectively)
@@ -553,6 +551,11 @@ generate_scenario_b = function(P, fraction_season_length){
   return(list(rain_stats, Prd))
 }
 
+rain_day_threshold = 0 # Any rain counts as a rainy day
+rainy_season_bounds = c(0.1, 0.9)
+fraction_season_length = 0.9 #try 90, 80, 70
+scenario_folder_name = "pvar_b90"
+
 scb_tables = generate_scenario_b(select(ppt_hist, date, precip_m), fraction_season_length)
 
 rain_stats_scb = scb_tables[[1]]
@@ -565,8 +568,9 @@ scb_for_txt = select(P_scb, scb, date)
 scb_for_txt$date = paste0(strftime(P_scb$date, "%d"), "/",
                           strftime(P_scb$date, "%m"), "/",
                           strftime(P_scb$date, "%Y"))
-setwd(paste0(proj_dir,"/scb_output"))
-write.table(scb_for_txt, paste0("scb_precip_",fraction_season_length,"_season.txt"), 
+
+txt_file_name = paste0("scb_precip_",fraction_season_length,"_season.txt")
+write.table(scb_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
             col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
 
 
@@ -632,7 +636,8 @@ generate_scenario_c = function(P, S, percent_drier, dry_wet_thresholds){
 rain_day_threshold = 0 # Any rain counts as a rainy day
 rainy_season_bounds = c(0.1, 0.9) #fraction of total precip that defines wet season
 dry_wet_thresholds = c(1.0, 1.0) # mult. of mean annual precip. dry must <= wet threshold.
-percent_drier = 30 #try 10, 20, 30
+percent_drier = 10 #try 10, 20, 30
+scenario_folder_name = "pvar_c10"
 
 P = select(ppt_hist, date, precip_m)
 S = stm_hist
@@ -645,14 +650,15 @@ scc_for_txt = select(P_scc, scc, date)
 scc_for_txt$date = paste0(strftime(P_scc$date, "%d"), "/",
                           strftime(P_scc$date, "%m"), "/",
                           strftime(P_scc$date, "%Y"))
-setwd(paste0(proj_dir,"/scc_output"))
-write.table(scc_for_txt, paste0("scc_precip_",percent_drier,".txt"), 
-            col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
+txt_file_name = paste0("scc_precip", percent_drier,".txt")
+write.table(P_scc, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
+            col.names=TRUE, row.names=FALSE, sep = " ", quote = FALSE)
 
 S_scc = scc[[2]]
 S_scc$wy = NULL; S_scc$total_precip_multiplier = NULL; colnames(S_scc)[1] = "Month"
 
-write.table(S_scc, paste0("scc_streamflow_input",percent_drier,".txt"), 
+txt_file_name = paste0("scc_streamflow_input", percent_drier,".txt")
+write.table(S_scc, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
             col.names=TRUE, row.names=FALSE, sep = " ", quote = FALSE)
 
 # Get some bare-bones analyses of new precip records
