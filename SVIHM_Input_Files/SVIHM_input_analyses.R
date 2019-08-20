@@ -136,8 +136,8 @@ make_daily_precip = function(wx_table,
 make_daily_precip_extended_stations = function(wx_table,
                              record_start_date = as.Date("1943-01-01"), 
                              record_end_date = model_end_date){
-  record_days = seq(from = record_start_date, to = record_end_date, by = "days")
   
+  record_days = seq(from = record_start_date, to = record_end_date, by = "days")
   
   #Subset data into stations
   noaa=wx_table
@@ -386,6 +386,9 @@ p_record_dist$interp_cal_fj_mean =  apply(X = dplyr::select(p_record_dist, fj_in
 
 p_record_regress$interp_cal_fj_mean =  apply(X = dplyr::select(p_record_regress, fj_interp, cal_interp), 
                                           MARGIN = 1, FUN = mean, na.rm=T)
+
+
+
 # to do: December 2012 NAs. CURRENT ACTION
 # FROM STATIONFINDER: https://www.ncdc.noaa.gov/cdo-web/datatools/findstation
 # USR0000CQUA # Quartz Valley station. Temp only. 
@@ -572,21 +575,31 @@ hist(log10(p_record$interp_cal_fj_mean), xlab = "log10 of Interp FJ-Cal daily pr
 
 
 #read in original data (wys 1991-2011)
-daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
-colnames(daily_precip_orig) = c("PRCP", "Date")
+# daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
+# colnames(daily_precip_orig) = c("PRCP", "Date")
 
-#Format the update to attach to the original precip file
 p_record = p_record_regress
-daily_precip_update=data.frame(PRCP = p_record$interp_cal_fj_mean, Date = p_record$Date)
-daily_precip_update = daily_precip_update[daily_precip_update$Date > as.Date("2011-09-30"),]
-daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
-                                 str_pad(month(daily_precip_update$Date), 2, pad="0"),
-                                 year(daily_precip_update$Date), sep = "/")
-daily_precip_update$PRCP = daily_precip_update$PRCP / 1000 #convert to meters
+orig_record_end_date = as.Date("2011-09-30")
+orig_record = p_record$Date <= orig_record_end_date
+updated_record = p_record$Date > orig_record_end_date
 
+#Fill in 5 leap days in the original record using the gap-filled cal-FJ record
+leap_day_finder_pre2011 = orig_record & is.na(p_record$PRCP_mm_orig)
+p_record$PRCP_mm_orig[leap_day_finder_pre2011] = p_record$interp_cal_fj_mean[leap_day_finder_pre2011]
 
-#combine and write as text file
-daily_precip_updated = rbind(daily_precip_orig, daily_precip_update)
+#Subset original record
+p_record$stitched = NA
+p_record$stitched[orig_record] = p_record$PRCP_mm_orig[orig_record]
+p_record$stitched[updated_record] = p_record$interp_cal_fj_mean[updated_record]
+
+daily_precip_updated = data.frame(PRCP = p_record$stitched, Date = p_record$Date)
+
+#combine, format to match the original precip file, and write as text file
+daily_precip_updated$Date = paste(str_pad(day(daily_precip_updated$Date), 2, pad="0"),
+                                 str_pad(month(daily_precip_updated$Date), 2, pad="0"),
+                                 year(daily_precip_updated$Date), sep = "/")
+daily_precip_updated$PRCP = daily_precip_updated$PRCP / 1000 #convert to meters
+
 write.table(daily_precip_updated, file = file.path(scenario_dev_dir, "precip_regressed.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 

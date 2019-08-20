@@ -29,13 +29,13 @@
   
   IMPLICIT NONE
 
-  INTEGER  :: nmonth, numdays, imonth,jday,i,im,ip, nrows, ncols, dummy, nsegs, n_wel_param, num_daily_out, unit_num, num_MAR_fields
+  INTEGER  :: nmonth, imonth,jday,i,im,ip, nrows, ncols, dummy, nsegs, n_wel_param, num_daily_out, unit_num, num_MAR_fields
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
   INTEGER, ALLOCATABLE, DIMENSION(:)   :: MAR_fields, ip_daily_out
   REAL   :: precip, Total_Ref_ET, MAR_vol
   REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow, max_MAR_field_rate, moisture_save
   REAL :: start, finish
-  INTEGER, DIMENSION(0:11)  :: nday
+  INTEGER, ALLOCATABLE, DIMENSION(:)  :: ndays
   CHARACTER(9) :: param_dummy
   CHARACTER(10)  :: SFR_Template, scenario, suffix
   CHARACTER(50), ALLOCATABLE, DIMENSION(:) :: daily_out_name
@@ -44,7 +44,7 @@
   DOUBLE PRECISION :: eff_precip
  
   call cpu_time(start)
-  DATA nday / 30,31,30,31,31,28,31,30,31,30,31,31 /            ! The months are shifted by one because the first index location is zero due to use of MOD function
+  ! DATA nday / 30,31,30,31,31,28,31,30,31,30,31,31 /            ! The months are shifted by one because the first index location is zero due to use of MOD function
   open (unit=800, file='SWBM_log.rec')                         ! Open record file for screen output
   eff_precip = 0.
   Total_Ref_ET = 0.
@@ -92,7 +92,8 @@
   ALLOCATE(output_zone_matrix(nrows,ncols))
   ALLOCATE(Discharge_Zone_Cells(nrows,ncols))
   ALLOCATE(drain_flow(nmonth))
-  
+  ALLOCATE(ndays(nmonth))
+
   open(unit=211,file='Recharge_Zones_SVIHM.txt',status='old')      ! Read in MODFLOW recharge zone matrix
   read(211,*) zone_matrix
   open(unit=212,file='No_Flow_SVIHM.txt',status='old')       ! Read in MODFLOW no flow cell matrix
@@ -102,10 +103,14 @@
   read(213,*) dummy,nsegs 
   open(unit=214,file='ET_Cells_DZ.txt',status='old')      ! Read in MODFLOW recharge zone matrix
   read(214,*) Discharge_Zone_Cells
+  open(unit=888, file='stress_period_days.txt', status='old')      ! Read in vector with number of days in each stress period (month)
+  read(888, *) ndays   
+
   close(211)
   close(212)
   close(213)
   close(214)
+  close(888)
   
   call READ_KC_IRREFF                                ! Read in crop coefficients and irrigation efficiencies
   call readpoly(npoly, nrows, ncols, output_zone_matrix) ! Read in field info
@@ -135,6 +140,7 @@
   open(unit=79, file='kc_grain.txt', status = 'old')
   open(unit=80, file='kc_alfalfa.txt', status = 'old')
   open(unit=81, file='kc_pasture.txt', status = 'old')
+  open(unit=888, file = 'stress_period_days.txt', status='old') ! WY month number, year month number, 3-letter name, number of days
   
   open(unit=60, file='subwatershed_area_m2.dat')
   write(60,'(" Month Scott French Etna Patterson Kidder Moffet Mill Shackleford Tailings")')
@@ -272,7 +278,6 @@
    poly%irr_flag = 0          ! Initialize irrigation flag array
    do im=1, nmonth            ! Loop over each month
      imonth=MOD(im,12)        ! Create repeating integers for months (Oct=1, Nov=2, ..., Aug=11, Sep=0)
-     numdays = nday(imonth)   ! Number of days in the current month
      call zero_month                                 ! Zero out monthly accumulated volume
      if (imonth==1) call zero_year                             ! If October, Zero out yearly accumulated volume
      if (im==1) then 
@@ -281,15 +286,15 @@
        call do_rotation(im)	                 ! Rotate alfalfa/grain in January, except for first year since rotation happened in October   
      end if                   
      call calc_area(im)                ! Calculate area for each month due to changing alfalfa/grain
-     call read_streamflow(numdays)     ! Read in streamflow inputs
-     write(*,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', nday(imonth)
-     write(800,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', nday(imonth)
+     call read_streamflow(ndays(im))     ! Read in streamflow inputs
+     write(*,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', ndays(im)
+     write(800,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', ndays(im)
      call zero_month                                 ! Zero out monthly accumulated volume
      if (imonth==1) then                             ! If October:
        call zero_year                                ! Zero out yearly accumulated volume
      endif    
      read(220,*)drain_flow(im)                       ! Read drain flow into array         
-     do jday=1, nday(imonth)                         ! Loop over days in each month
+     do jday=1, ndays(im)                         ! Loop over days in each month
        if (jday==1) monthly%ET_active = 0            ! Set ET counter to 0 at the beginning of the month. Used for turning ET on and off in MODFLOW so it is not double counted.    
        daily%ET_active  = 0                                 ! Reset ET active counter
        daily%irrigation = 0.                                ! Reset daily irrigation value to zero
@@ -333,19 +338,19 @@
        call pumping(ip, jday, total_n_wells, npoly)   ! Stream depletion subroutine
 		   call monthly_SUM      ! add daily value to monthly total (e.g., monthly%irrigation = monthly%irrigation + daily%irrigation)
        call annual_SUM       ! add daily value to yearly total (e.g., yearly%irrigation = yearly%irrigation + daily%irrigation)
-       if (jday==numdays) then
+       if (jday==ndays(im)) then
          if (MAR_active) then
-           call SFR_streamflow_w_MAR(numdays, imonth)   ! Convert remaining surface water to SFR inflows at end of the month
+           call SFR_streamflow_w_MAR(ndays(im), imonth)   ! Convert remaining surface water to SFR inflows at end of the month
          else
-           call SFR_streamflow(numdays, imonth)         ! Convert remaining surface water to SFR inflows at end of the month	
+           call SFR_streamflow(ndays(im), imonth)         ! Convert remaining surface water to SFR inflows at end of the month	
          end if
        end if
-       if (MAR_active .and. jday==numdays) then
+       if (MAR_active .and. jday==ndays(im)) then
          write(*,'(a13,f4.2,a6,f5.2,a13)')'MAR Volume = ',sum(monthly%MAR_vol)/1E6, ' Mm3 (', &
-         sum(monthly%MAR_vol)*0.000408734569/numdays,' cfs per day)'
+         sum(monthly%MAR_vol)*0.000408734569/ndays(im),' cfs per day)'
          write(*,*)
          write(800,'(a13,f4.2,a6,f5.2,a13)')'MAR Volume = ',sum(monthly%MAR_vol)/1E6, ' Mm3 (', &
-         sum(monthly%MAR_vol)*0.000408734569/numdays,' cfs per day)'  
+         sum(monthly%MAR_vol)*0.000408734569/ndays(im),' cfs per day)'  
          write(800,*)
        end if
        enddo             ! End of day loop
@@ -353,9 +358,9 @@
        call convert_length_to_volume
        call monthly_out_by_field(im)
        call monthly_pumping(im, jday, total_n_wells)
-		   call ET_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells,npoly)
+		   call ET_out_MODFLOW(im,imonth,ndays,nmonth, nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells,npoly)
 		   Total_Ref_ET = 0.  ! Reset monthly Average ET
-		   call recharge_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix)
+		   call recharge_out_MODFLOW(im,imonth,ndays, nmonth,nrows,ncols,output_zone_matrix)
        call monthly_volume_out		   
        call write_MODFLOW_SFR(im, nmonth, nsegs, SFR_Flows, drain_flow)
        call write_SFR_template (im, nmonth, nsegs, SFR_Flows, drain_flow, SFR_Template)   ! Write JTF file for UCODE 

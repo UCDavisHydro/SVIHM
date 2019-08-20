@@ -343,10 +343,10 @@ end subroutine monthly_pumping
     end subroutine monthly_out_by_field
 
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine ET_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells, npoly)
+    subroutine ET_out_MODFLOW(im,imonth,ndays,nmonth, nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells, npoly)
  
-    INTEGER, INTENT(IN) :: im,imonth,nrows,ncols, npoly
-    INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), nday(0:11), Discharge_Zone_Cells(nrows,ncols)
+    INTEGER, INTENT(IN) :: im,imonth,nmonth,nrows,ncols, npoly
+    INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), ndays(nmonth), Discharge_Zone_Cells(nrows,ncols)
     REAL, INTENT(IN) :: Total_Ref_ET
     REAL :: Avg_Ref_ET
     REAL, DIMENSION(npoly) :: ET_fraction
@@ -354,10 +354,10 @@ end subroutine monthly_pumping
     REAL, DIMENSION(nrows,ncols) :: Extinction_depth_matrix, ET_matrix_out
     
     ET_matrix_out = 0.
-    Avg_Ref_ET = Total_Ref_ET/dble(nday(imonth))                                                   ! Calculate average Reference ET for populating ET package
+    Avg_Ref_ET = Total_Ref_ET/dble(ndays(im))                                                   ! Calculate average Reference ET for populating ET package
     
     do ip=1,npoly
-      ET_fraction(ip) = monthly(ip)%ET_active / dble(nday(imonth)) 
+      ET_fraction(ip) = monthly(ip)%ET_active / dble(ndays(im)) 
       where (output_zone_matrix(:,:) == ip)
         ET_matrix_out(:,:) = Avg_Ref_ET * (1 - ET_fraction(ip))  ! Scale Average monthly ET by the number of days ET was not active on the field.
         Extinction_depth_matrix(:,:) = 0.5
@@ -386,11 +386,11 @@ end subroutine monthly_pumping
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    subroutine recharge_out_MODFLOW(im,imonth,nday,nrows,ncols,output_zone_matrix)  ! Recharge file            
+    subroutine recharge_out_MODFLOW(im,imonth,ndays,nmonth,nrows,ncols,output_zone_matrix)  ! Recharge file            
 
       
-      INTEGER, INTENT(IN) :: im,imonth,nrows,ncols
-      INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), nday(0:11)
+      INTEGER, INTENT(IN) :: im,imonth,nmonth,nrows,ncols
+      INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), ndays(nmonth)
       REAL, ALLOCATABLE, DIMENSION(:,:) ::  recharge_matrix
       INTEGER :: ip
       REAL :: ttl_rch
@@ -409,20 +409,20 @@ end subroutine monthly_pumping
        
         do ip = 1, npoly
           where (output_zone_matrix(:,:) == ip) 
-            recharge_matrix(:,:) = monthly(ip)%recharge / nday(imonth)
+            recharge_matrix(:,:) = monthly(ip)%recharge / ndays(im)
           end where
         end do
       write(84,'(10e14.6)') recharge_matrix   
       ttl_rch = sum(recharge_matrix*10000)
-      write(900,*) ttl_rch, ttl_rch*nday(imonth)
+      write(900,*) ttl_rch, ttl_rch*ndays(im)
     end subroutine recharge_out_MODFLOW
     
 ! ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
-!     subroutine recharge_out_MODFLOW_w_MAR(im,imonth,nday,nrows,ncols,output_zone_matrix,MAR_Matrix)  ! Recharge file  with MAR added during Jan Feb and Mar          
+!     subroutine recharge_out_MODFLOW_w_MAR(im,imonth,ndays,nrows,ncols,output_zone_matrix,MAR_Matrix)  ! Recharge file  with MAR added during Jan Feb and Mar          
 ! 
 !       
 !       INTEGER, INTENT(IN) :: im,imonth,nrows,ncols
-!       INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), nday(0:11)
+!       INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), ndays(nmonth)
 !       REAL, INTENT(IN) :: MAR_Matrix(nrows,ncols)
 !       REAL, ALLOCATABLE, DIMENSION(:,:) ::  recharge_matrix
 !       INTEGER :: ip
@@ -442,7 +442,7 @@ end subroutine monthly_pumping
 !        
 !         do ip = 1, npoly
 !           where (output_zone_matrix(:,:) == ip) 
-!             recharge_matrix(:,:) = monthly(ip)%recharge / nday(imonth)
+!             recharge_matrix(:,:) = monthly(ip)%recharge / ndays(im)
 !           end where
 !         end do
 !         if (imonth == 4 .or. imonth == 5 .or. imonth == 6) then          ! If Jan-Mar add recharge from MAR

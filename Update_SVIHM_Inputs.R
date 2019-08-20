@@ -30,8 +30,8 @@ ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
 ## Directory used to archive the input files for each scenario
 model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
 ## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(proj_dir, "SWBM", "up2018_b")
-MF_file_dir = file.path(proj_dir, "MODFLOW","up2018_b")
+SWBM_file_dir = file.path(proj_dir, "SWBM", "hist")
+MF_file_dir = file.path(proj_dir, "MODFLOW","hist")
 
 
 #SET MODEL RUN DATES
@@ -114,6 +114,13 @@ gen_inputs = c(paste0("2119  167  ", num_stress_periods, "  440  210  1.4 UCODE 
 "! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR")
 write.table(gen_inputs, file = file.path(SWBM_file_dir, "general_inputs.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
+# stress_period_days.txt --------------------------------------------------
+
+write.table(num_days, file = file.path(SWBM_file_dir, "stress_period_days.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
 
 #  kc_alfalfa.txt -------------------------------------------------
 kc_alf_dormant = 0
@@ -227,124 +234,13 @@ write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
 
 
 #  precip.txt ----------------------------------------------------
-
-#to do: web scraper
-# CDEC data
-#FJN daily
-"http://cdec.water.ca.gov/dynamicapp/req/CSVDataServlet?Stations=SFJ&SensorNums=41&dur_code=D&Start=1990-10-01&End=2019-05-20"
-#CHA hourly accumulated
-"http://cdec.water.ca.gov/dynamicapp/req/CSVDataServlet?Stations=CHA&SensorNums=2&dur_code=H&Start=1990-10-01T00%3A00&End=2019-05-20"
-
-#NOAA data
-#daily data ftp site: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/
-#daily data ftp readme: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt
-#daily data documentation: https://www1.ncdc.noaa.gov/pub/data/cdo/documentation/GHCND_documentation.pdf
-
-
-#https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00041316.dly
-#https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00043182.dly
-
-
-noaa = read.csv(file.path(ref_data_dir,"noaa_precip_fjn_cal.csv"))
-noaa$DATE = as.Date(noaa$DATE)
-
-cal = subset(noaa, STATION=="USC00041316" & DATE >= model_start_date & DATE <= model_end_date)
-cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
-fj = subset(noaa, STATION=="USC00043182" & DATE >= model_start_date & DATE <= model_end_date)
-fj = data.frame(DATE = fj$DATE, PRCP = fj$PRCP)
-
-# # Compare visually
-# # plot(noaa$DATE, noaa$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
-# plot(cal$DATE, cal$PRCP, type = "l", col = "red")
-# lines(fj$DATE, fj$PRCP, #xlim = as.Date(c("1991-10-01","2018-09-01")),
-#      type = "l", col = "blue", add=T)
-
-### COMPARISON TABLE FOR 2 STATIONS
-daily_precip = data.frame(model_days)
-daily_precip = merge(x = daily_precip, y = cal, by.x = "model_days", by.y = "DATE", all=TRUE)
-daily_precip = merge(x = daily_precip, y = fj, by.x = "model_days", by.y = "DATE", all=TRUE)
-colnames(daily_precip)=c("Date","PRCP_mm_cal", "PRCP_mm_fj")
-daily_precip$mean_PRCP = apply(X = daily_precip[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
-
-#isolate the precip data after the end of the original model
-daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
-daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
-
-### HANDLE NAs
-
-# #check the NA values
-# which(is.na(daily_precip_update$mean_PRCP))
-# daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
-#shit that's a huge gap in december 2012. to do: find alternate precip data source for this gap
-#TEMPORARY SOLUTION FOR NOW: 
-#just put the average of all December dates in that window
-# dec 4-30th
-
-#calculate average precip values for that day in december over the whole model record (wy1991+)
-precip_dec = subset(daily_precip, month(Date) == 12 & day(Date) >=4 & day(Date) <=30)
-precip_dec$day = day(precip_dec$Date)
-daily_precip_dec = aggregate(precip_dec$mean_PRCP, by=list(precip_dec$day), FUN=mean, na.rm=T)
-
-#replace NAN values in Dec 2012 with average values over whole record
-daily_precip_update$mean_PRCP[daily_precip_update$Date >= as.Date("2012-12-04") 
-                              & daily_precip_update$Date <= as.Date("2012-12-30")]=daily_precip_dec$x
-
-#set remaining days with NA in both records to 0
-daily_precip_update$mean_PRCP[is.na(daily_precip_update$mean_PRCP)] = 0
-
-
-### FORMAT AND WRITE PRECIP FILE
-#Format the update to attach to the original precip file
-daily_precip_update=data.frame(mean_PRCP = daily_precip_update$mean_PRCP, Date = daily_precip_update$Date)
-daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
-                                 str_pad(month(daily_precip_update$Date), 2, pad="0"),
-                                 year(daily_precip_update$Date), sep = "/")
-daily_precip_update$mean_PRCP = daily_precip_update$mean_PRCP / 1000 #convert to meters
-
-#read in original data (wys 1991-2011)
-daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
-colnames(daily_precip_orig) = colnames(daily_precip_update)
-
-#combine and write as text file
-daily_precip_updated = rbind(daily_precip_orig, daily_precip_update)
-write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+# to do: Make precip writing callable from SVIHM_input_analyses
 
 
 
 #  ref_et.txt ----------------------------------------------------
+# to do: Make precip writing callable from SVIHM_input_analyses
 
-#to do: webscrape cimis? (login?)
-#units? 
-et_dl_may2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report.csv"))
-
-##generate new et record
-et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
-et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
-et = data.frame(Date = et$Date, ETo_mm = et$ETo..mm.day.)
-
-#Update existing record
-#subset update for ET, build update dataframe in same format as original input file
-et_update_allcol = subset(et_dl_may2019, Date >= as.Date("2011-10-01") & Date <= model_end_date)
-ETo_m = et_update_allcol$ETo..mm.day./1000
-et_update = data.frame(ETo_m)
-et_update$ETo_in = et_update$ETo_m * 39.3701 #convert to inches
-et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date), 2, pad="0"),
-                                                  str_pad(month(et_update_allcol$Date), 2, pad="0"),
-                                                  year(et_update_allcol$Date), sep = "/")
-
-#Read in original file
-ref_et_orig = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
-# head(ref_et_orig)
-# plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
-
-#Combine into updated ET record, check for continuity, and write file
-colnames(ref_et_orig) = colnames(et_update)
-ref_et_updated = rbind(ref_et_orig, et_update)
-# plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
-# sum(is.na(ref_et_updated$ETo_m))
-write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 
 #  streamflow_input.txt ------------------------------------------
@@ -575,3 +471,121 @@ pointLabel(dwr_in@coords, labels = dwr_in$Well_ID)
 pointLabel(dwr_not_in@coords, labels = dwr_in$Well_ID_2)
 write.csv(mon@data, file.path(ref_data_dir, "Monitoring_Wells_Names.csv"), row.names = F)
 
+####################################
+# Original Precip File Writing attempt
+#to do: web scraper
+# CDEC data
+#FJN daily
+"http://cdec.water.ca.gov/dynamicapp/req/CSVDataServlet?Stations=SFJ&SensorNums=41&dur_code=D&Start=1990-10-01&End=2019-05-20"
+#CHA hourly accumulated
+"http://cdec.water.ca.gov/dynamicapp/req/CSVDataServlet?Stations=CHA&SensorNums=2&dur_code=H&Start=1990-10-01T00%3A00&End=2019-05-20"
+
+#NOAA data
+#daily data ftp site: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/
+#daily data ftp readme: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt
+#daily data documentation: https://www1.ncdc.noaa.gov/pub/data/cdo/documentation/GHCND_documentation.pdf
+
+
+#https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00041316.dly
+#https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00043182.dly
+
+
+noaa = read.csv(file.path(ref_data_dir,"noaa_precip_fjn_cal.csv"))
+noaa$DATE = as.Date(noaa$DATE)
+
+cal = subset(noaa, STATION=="USC00041316" & DATE >= model_start_date & DATE <= model_end_date)
+cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
+fj = subset(noaa, STATION=="USC00043182" & DATE >= model_start_date & DATE <= model_end_date)
+fj = data.frame(DATE = fj$DATE, PRCP = fj$PRCP)
+
+# # Compare visually
+# # plot(noaa$DATE, noaa$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
+# plot(cal$DATE, cal$PRCP, type = "l", col = "red")
+# lines(fj$DATE, fj$PRCP, #xlim = as.Date(c("1991-10-01","2018-09-01")),
+#      type = "l", col = "blue", add=T)
+
+### COMPARISON TABLE FOR 2 STATIONS
+daily_precip = data.frame(model_days)
+daily_precip = merge(x = daily_precip, y = cal, by.x = "model_days", by.y = "DATE", all=TRUE)
+daily_precip = merge(x = daily_precip, y = fj, by.x = "model_days", by.y = "DATE", all=TRUE)
+colnames(daily_precip)=c("Date","PRCP_mm_cal", "PRCP_mm_fj")
+daily_precip$mean_PRCP = apply(X = daily_precip[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
+
+#isolate the precip data after the end of the original model
+daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
+daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
+
+### HANDLE NAs
+
+# #check the NA values
+# which(is.na(daily_precip_update$mean_PRCP))
+# daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
+#shit that's a huge gap in december 2012. to do: find alternate precip data source for this gap
+#TEMPORARY SOLUTION FOR NOW: 
+#just put the average of all December dates in that window
+# dec 4-30th
+
+#calculate average precip values for that day in december over the whole model record (wy1991+)
+precip_dec = subset(daily_precip, month(Date) == 12 & day(Date) >=4 & day(Date) <=30)
+precip_dec$day = day(precip_dec$Date)
+daily_precip_dec = aggregate(precip_dec$mean_PRCP, by=list(precip_dec$day), FUN=mean, na.rm=T)
+
+#replace NAN values in Dec 2012 with average values over whole record
+daily_precip_update$mean_PRCP[daily_precip_update$Date >= as.Date("2012-12-04") 
+                              & daily_precip_update$Date <= as.Date("2012-12-30")]=daily_precip_dec$x
+
+#set remaining days with NA in both records to 0
+daily_precip_update$mean_PRCP[is.na(daily_precip_update$mean_PRCP)] = 0
+
+
+### FORMAT AND WRITE PRECIP FILE
+#Format the update to attach to the original precip file
+daily_precip_update=data.frame(mean_PRCP = daily_precip_update$mean_PRCP, Date = daily_precip_update$Date)
+daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
+                                 str_pad(month(daily_precip_update$Date), 2, pad="0"),
+                                 year(daily_precip_update$Date), sep = "/")
+daily_precip_update$mean_PRCP = daily_precip_update$mean_PRCP / 1000 #convert to meters
+
+#read in original data (wys 1991-2011)
+daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
+colnames(daily_precip_orig) = colnames(daily_precip_update)
+
+#combine and write as text file
+daily_precip_updated = rbind(daily_precip_orig, daily_precip_update)
+write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
+############################################
+# Initial RefET writing attempt
+#to do: webscrape cimis? (login?)
+#units? 
+et_dl_may2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report.csv"))
+
+##generate new et record
+et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
+et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
+et = data.frame(Date = et$Date, ETo_mm = et$ETo..mm.day.)
+
+#Update existing record
+#subset update for ET, build update dataframe in same format as original input file
+et_update_allcol = subset(et_dl_may2019, Date >= as.Date("2011-10-01") & Date <= model_end_date)
+ETo_m = et_update_allcol$ETo..mm.day./1000
+et_update = data.frame(ETo_m)
+et_update$ETo_in = et_update$ETo_m * 39.3701 #convert to inches
+et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date), 2, pad="0"),
+                                               str_pad(month(et_update_allcol$Date), 2, pad="0"),
+                                               year(et_update_allcol$Date), sep = "/")
+
+#Read in original file
+ref_et_orig = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
+# head(ref_et_orig)
+# plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
+
+#Combine into updated ET record, check for continuity, and write file
+colnames(ref_et_orig) = colnames(et_update)
+ref_et_updated = rbind(ref_et_orig, et_update)
+# plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
+# sum(is.na(ref_et_updated$ETo_m))
+write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
