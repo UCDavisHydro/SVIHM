@@ -8,24 +8,25 @@ library(rstudioapi)
 
 rm(list = ls())
 
-proj_dir = dirname(getActiveDocumentContext()$path )
-pdf_dir = file.path(proj_dir,"Scenario_Development")#,"comparison_pdfs")
+proj_dir = dirname(dirname(getActiveDocumentContext()$path ))
+scenario_dir = file.path(proj_dir,"SVIHM_Input_Files", "Scenario_Development")
+ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
+pdf_dir = file.path(proj_dir,"SVIHM_Input_Files","Scenario_Development")#,"comparison_pdfs")
 
 #Read in water year type table (Sacramento Valley Water Index)
 # See also Deas analysis saying that Scott Valley water year type tracks sac valley
-setwd(proj_dir)
-wy_type = read.csv("sac_valley_wyi.csv", fileEncoding="UTF-8-BOM")
+wy_type = read.csv(file.path(ref_data_dir,"sac_valley_wyi.csv"), fileEncoding="UTF-8-BOM")
 
 #Read in precip data
-setwd(proj_dir)
-ppt_hist = as.data.frame(read.table("precip_hist.txt"))
+ppt_hist = as.data.frame(read.table(file.path(scenario_dir,"precip_regressed_2019.08.19.txt")))
 colnames(ppt_hist) = c("precip_m", "date")
 ppt_hist$date = as.Date(ppt_hist$date, format = "%d/%m/%Y")
 
-stm_hist = as.data.frame(read.table("streamflow_input_hist.txt", header = TRUE))
+stm_hist = as.data.frame(read.table(file.path(scenario_dir,"streamflow_input_hist.txt"), header = TRUE))
 colnames(stm_hist)[colnames(stm_hist) == "Month"] = "date"
 stm_hist$date = as.Date(as.character(stm_hist$date), format = "%Y-%m-%d")
-#P = ppt_hist #short name
+
+P = ppt_hist #short name
 
 #Add month, year, and water year info for analysis
 # P$mo = as.numeric(strftime(P$date, "%m"))

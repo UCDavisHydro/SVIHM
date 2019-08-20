@@ -14,9 +14,12 @@ library(plotly)
 rm(list = ls())
 
 #Define directories
-pdf_dir = "C:/Users/Claire/Documents/UCD/_Coursework/2019_Q1_Winter/ECI273_WatResSysEng/project/project_data_files/comparison_pdfs"
-proj_dir = "C:/Users/Claire/Documents/UCD/_Coursework/2019_Q1_Winter/ECI273_WatResSysEng/project/project_data_files"
-proj_dir = 
+proj_dir = dirname(dirname(dirname(getActiveDocumentContext()$path ))) #Outer SVIHM folder
+scenario_dir = file.path(proj_dir,"SWBM","up2018_b")
+output_dir = file.path(proj_dir,"SVIHM_Input_Files","Scenario_Development")
+pdf_dir = output_dir
+# pdf_dir = file.path(scenario_dir,"")#,"comparison_pdfs")
+
 
 # Functions ---------------------------------------------------------------
 
@@ -303,9 +306,14 @@ barplots_overall = function(scenario_totals){
 # Read in scenario budgets ------------------------------------------------
 
 #Read in SWBM scenario outputs: monthly water budget 
-setwd(proj_dir)
-monthly_water_budget_hist = read.table("monthly_water_budget_hist.dat", header = TRUE)
-mwb_hist = monthly_water_budget_hist
+scenario_dir = file.path(proj_dir,"SWBM","up2018_a")
+monthly_water_budget_hista = read.table(file.path(scenario_dir,"monthly_water_budget.dat"), header = TRUE)
+mwb_daily_et = monthly_water_budget_hista
+
+scenario_dir = file.path(proj_dir,"SWBM","up2018_b")
+monthly_water_budget_histb = read.table(file.path(scenario_dir,"monthly_water_budget.dat"), header = TRUE)
+mwb_monthly_et = monthly_water_budget_histb
+
 
 #Read in Scenario As
 setwd(paste0(proj_dir,"/sca_output/10_lg_storms"))
@@ -388,6 +396,8 @@ plot_water_budget_comparison(mwb_hist, mwb_scc30, c("Historical", "Scenario C, 3
 # total SW extracted
 #irrigation onset?
 
+mwbs = list(mwb_daily_et, mwb_monthly_et)
+scenario_ids = c("daily_et", "monthly_et")
 
 mwbs = list(mwb_hist, mwb_sca10, mwb_sca5, mwb_sca3, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
 scenario_ids = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
