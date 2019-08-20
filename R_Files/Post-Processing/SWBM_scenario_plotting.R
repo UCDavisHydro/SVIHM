@@ -15,7 +15,7 @@ rm(list = ls())
 
 #Define directories
 proj_dir = dirname(dirname(dirname(getActiveDocumentContext()$path ))) #Outer SVIHM folder
-scenario_dir = file.path(proj_dir,"SWBM","up2018_b")
+scenario_dir = file.path(proj_dir,"SWBM")
 output_dir = file.path(proj_dir,"SVIHM_Input_Files","Scenario_Development")
 pdf_dir = output_dir
 # pdf_dir = file.path(scenario_dir,"")#,"comparison_pdfs")
@@ -306,52 +306,38 @@ barplots_overall = function(scenario_totals){
 # Read in scenario budgets ------------------------------------------------
 
 #Read in SWBM scenario outputs: monthly water budget 
-scenario_dir = file.path(proj_dir,"SWBM","up2018_a")
-monthly_water_budget_hista = read.table(file.path(scenario_dir,"monthly_water_budget.dat"), header = TRUE)
-mwb_daily_et = monthly_water_budget_hista
 
-scenario_dir = file.path(proj_dir,"SWBM","up2018_b")
-monthly_water_budget_histb = read.table(file.path(scenario_dir,"monthly_water_budget.dat"), header = TRUE)
-mwb_monthly_et = monthly_water_budget_histb
-
+monthly_water_budget_hist = read.table(file.path(scenario_dir,"hist","monthly_water_budget.dat"), header = TRUE)
+mwb_hist = monthly_water_budget_hist
 
 #Read in Scenario As
-setwd(paste0(proj_dir,"/sca_output/10_lg_storms"))
-monthly_water_budget_sca10 = read.table("monthly_water_budget.dat", header = TRUE)
+monthly_water_budget_sca10 = read.table(file.path(scenario_dir,"pvar_a10","monthly_water_budget.dat"), header = TRUE)
 mwb_sca10 = monthly_water_budget_sca10
 
-setwd(paste0(proj_dir,"/sca_output/5_lg_storms"))
-monthly_water_budget_sca5 = read.table("monthly_water_budget.dat", header = TRUE)
-mwb_sca5 = monthly_water_budget_sca5
+monthly_water_budget_sca05 = read.table(file.path(scenario_dir,"pvar_a05","monthly_water_budget.dat"), header = TRUE)
+mwb_sca05 = monthly_water_budget_sca05
 
-setwd(paste0(proj_dir,"/sca_output/3_lg_storms"))
-monthly_water_budget_sca3 = read.table("monthly_water_budget.dat", header = TRUE)
-mwb_sca3 = monthly_water_budget_sca3
+monthly_water_budget_sca03 = read.table(file.path(scenario_dir,"pvar_a03","monthly_water_budget.dat"), header = TRUE)
+mwb_sca03 = monthly_water_budget_sca03
 
 #Read in Scenario Bs
-setwd(paste0(proj_dir,"/scb_output/scb_0.9"))
-monthly_water_budget_scb90 = read.table("monthly_water_budget.dat", header = TRUE)
-mwb_scb90 = monthly_water_budget_scb90
-
-setwd(paste0(proj_dir,"/scb_output/scb_0.8"))
-monthly_water_budget_scb80 = read.table("monthly_water_budget.dat", header = TRUE)
-mwb_scb80 = monthly_water_budget_scb80
-
-setwd(paste0(proj_dir,"/scb_output/scb_0.7"))
-monthly_water_budget_scb70 = read.table("monthly_water_budget.dat", header = TRUE)
+monthly_water_budget_scb70 = read.table(file.path(scenario_dir,"pvar_b70","monthly_water_budget.dat"), header = TRUE)
 mwb_scb70 = monthly_water_budget_scb70
 
+monthly_water_budget_scb80 = read.table(file.path(scenario_dir,"pvar_b80","monthly_water_budget.dat"), header = TRUE)
+mwb_scb80 = monthly_water_budget_scb80
+
+monthly_water_budget_scb90 = read.table(file.path(scenario_dir,"pvar_b90","monthly_water_budget.dat"), header = TRUE)
+mwb_scb90 = monthly_water_budget_scb90
+
 #Read in Scenario Cs
-setwd(paste0(proj_dir,"/scc_output/10_percent_drier"))
-monthly_water_budget_scc10 = read.table("monthly_water_budget.dat", header = TRUE)
+monthly_water_budget_scc10 = read.table(file.path(scenario_dir,"pvar_c10","monthly_water_budget.dat"), header = TRUE)
 mwb_scc10 = monthly_water_budget_scc10
 
-setwd(paste0(proj_dir,"/scc_output/20_percent_drier"))
-monthly_water_budget_scc20 = read.table("monthly_water_budget.dat", header = TRUE)
+monthly_water_budget_scc20 = read.table(file.path(scenario_dir,"pvar_c20","monthly_water_budget.dat"), header = TRUE)
 mwb_scc20 = monthly_water_budget_scc20
 
-setwd(paste0(proj_dir,"/scc_output/30_percent_drier"))
-monthly_water_budget_scc30 = read.table("monthly_water_budget.dat", header = TRUE)
+monthly_water_budget_scc30 = read.table(file.path(scenario_dir,"pvar_c30","monthly_water_budget.dat"), header = TRUE)
 mwb_scc30 = monthly_water_budget_scc30
 
 
@@ -363,8 +349,8 @@ mwb_scc30 = monthly_water_budget_scc30
 plot_water_budget_overview(mwb_hist, "Historical")
 
 plot_water_budget_overview(mwb_sca10, "Scenario A, 10 large storms")
-plot_water_budget_overview(mwb_sca5, "Scenario A, 5 large storms")
-plot_water_budget_overview(mwb_sca3, "Scenario A, 3 large storms")
+plot_water_budget_overview(mwb_sca05, "Scenario A, 5 large storms")
+plot_water_budget_overview(mwb_sca03, "Scenario A, 3 large storms")
 
 plot_water_budget_overview(mwb_scb90, "Scenario B, 90 percent wet season duration")
 plot_water_budget_overview(mwb_scb80, "Scenario B, 80 percent wet season duration")
@@ -377,8 +363,8 @@ plot_water_budget_overview(mwb_scc30, "Scenario C, 30 percent wet season duratio
 
 #Generate comparison plots - historical vs 3 scenarios
 plot_water_budget_comparison(mwb_hist, mwb_sca10, c("Historical", "Scenario A, 10 large storms"))
-plot_water_budget_comparison(mwb_hist, mwb_sca5, c("Historical", "Scenario A, 5 large storms"))
-plot_water_budget_comparison(mwb_hist, mwb_sca3, c("Historical", "Scenario A, 3 large storms"))
+plot_water_budget_comparison(mwb_hist, mwb_sca05, c("Historical", "Scenario A, 5 large storms"))
+plot_water_budget_comparison(mwb_hist, mwb_sca03, c("Historical", "Scenario A, 3 large storms"))
 
 plot_water_budget_comparison(mwb_hist, mwb_scb90, c("Historical", "Scenario B, 90 percent wet season duration"))
 plot_water_budget_comparison(mwb_hist, mwb_scb80, c("Historical", "Scenario B, 80 percent wet season duration"))
@@ -387,6 +373,14 @@ plot_water_budget_comparison(mwb_hist, mwb_scb70, c("Historical", "Scenario B, 7
 plot_water_budget_comparison(mwb_hist, mwb_scc10, c("Historical", "Scenario C, 10 percent drier dry years"))
 plot_water_budget_comparison(mwb_hist, mwb_scc20, c("Historical", "Scenario C, 20 percent drier dry years"))
 plot_water_budget_comparison(mwb_hist, mwb_scc30, c("Historical", "Scenario C, 30 percent drier dry years"))
+
+
+
+# Plot dry, wet year hist vs altered precip -------------------------------
+
+#6 plot figure
+# sca, scb, scc extremes. wet, dry and normal years. 
+# CURRENTLY HERE. 
 
 # Generate scenario comparison tables and bar graphs -------------------------------------
 

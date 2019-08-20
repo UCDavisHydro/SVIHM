@@ -229,9 +229,9 @@ rain_season_table = rainy_season_table(select(P, date, precip_m), rainy_season_b
 #      main = "Rainy season duration  (days) by water year type")
 
 # Store table (file name will change for different bounds)
-table_name = paste0("rainy_season_stats_def_",rainy_season_bounds[1], "_", rainy_season_bounds[2], ".csv")
-setwd(pdf_dir)
-write.csv(rain_season_table, table_name)
+# table_name = paste0("rainy_season_stats_def_",rainy_season_bounds[1], "_", rainy_season_bounds[2], ".csv")
+# setwd(pdf_dir)
+# write.csv(rain_season_table, table_name)
 
 
 # 2. Rain event characteristics ------------------------------------------------
@@ -325,8 +325,8 @@ dry_stats = interval_tables[[2]]
 # Probably need a different term for this
 
 #Step 2b. Calculate frequency in water years and in water year rainy seasons
-setwd(pdf_dir)
-rsea = read.csv("rainy_season_stats_def_0.1_0.9.csv") #read in rainy season stats table
+# setwd(pdf_dir)
+# rsea = read.csv("rainy_season_stats_def_0.1_0.9.csv") #read in rainy season stats table
 
 #additional_visualization = "sure" #Observe table-munging and question-asking
 
@@ -636,8 +636,8 @@ generate_scenario_c = function(P, S, percent_drier, dry_wet_thresholds){
 rain_day_threshold = 0 # Any rain counts as a rainy day
 rainy_season_bounds = c(0.1, 0.9) #fraction of total precip that defines wet season
 dry_wet_thresholds = c(1.0, 1.0) # mult. of mean annual precip. dry must <= wet threshold.
-percent_drier = 10 #try 10, 20, 30
-scenario_folder_name = "pvar_c10"
+percent_drier = 30 #try 10, 20, 30
+scenario_folder_name = "pvar_c30"
 
 P = select(ppt_hist, date, precip_m)
 S = stm_hist
@@ -651,8 +651,8 @@ scc_for_txt$date = paste0(strftime(P_scc$date, "%d"), "/",
                           strftime(P_scc$date, "%m"), "/",
                           strftime(P_scc$date, "%Y"))
 txt_file_name = paste0("scc_precip", percent_drier,".txt")
-write.table(P_scc, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
-            col.names=TRUE, row.names=FALSE, sep = " ", quote = FALSE)
+write.table(scc_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
+            col.names=FALSE, row.names=FALSE, sep = " ", quote = FALSE)
 
 S_scc = scc[[2]]
 S_scc$wy = NULL; S_scc$total_precip_multiplier = NULL; colnames(S_scc)[1] = "Month"
