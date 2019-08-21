@@ -8,7 +8,7 @@ library(dplyr)
 #Rules:
 ## dates in R are treated as YYYY-MM-DD for convenience. Dates in the model input files are DD-MM-YYYY.
 
-rm(list = ls())
+# rm(list = ls())
 
 # SETUP -------------------------------------------------------------------
 
@@ -30,8 +30,8 @@ ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
 ## Directory used to archive the input files for each scenario
 model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
 ## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(proj_dir, "SWBM", "pvar_c30")
-MF_file_dir = file.path(proj_dir, "MODFLOW","pvar_c30")
+SWBM_file_dir = file.path(proj_dir, "SWBM", "hist")
+MF_file_dir = file.path(proj_dir, "MODFLOW","hist")
 
 
 #SET MODEL RUN DATES
@@ -341,6 +341,7 @@ for (i in 1:num_stress_periods){
 # Currently spits out an extra space for each line after the first in the DZ definition. does this matter??
 
 
+# Now working here: get the fkn wl data from somewhere so you can make a hob file and run the modflow hist model
 
 
 # SVIHM.hob ---------------------------------------------------------------
@@ -351,13 +352,22 @@ for (i in 1:num_stress_periods){
 ### TO DO: Join additional wells to the model grid and add their well loc. info to reference hob_info table.
 
 ### 1) Get a cleaned water level dataframe. Use same cleaning protocol as for contours
-source('C:/Users/ckouba/Git/Contours/02_clean_data_casgem_scraping.R')
-wl_cleaned = clean_data_for_contours(CASGEM = TRUE, VMP = TRUE, WDL = FALSE, CGWL = FALSE, contours = TRUE, hydrographs = FALSE)
-wl = wl_cleaned
+# Get WL data from DMS folder
+# FOR NOW: Don't run the whole script; just selectively run the setup (db connection) and WL web scraper data
+# SiskiyouGSP2022/Data_Management_System/tabular_data_upload.R
+wl_items = get_wl_data(VMP = TRUE, DWR = TRUE, clean = TRUE)
+wl = wl_items[[1]]
+stations = wl_items[[2]]
+
+#merge SWN (long well names) onto wl obs table.
+stations_swn = select(stations, well_code, swn)
+wl$swn = NA
+wl$swn = stations_swn$swn[match(wl$well_code, stations_swn$well_code)]
+
 # Clean for SVIHM 
 #### 1a) Make A4_1 match the name in the water level file (A41). (This avoids confusion on unique WL observation IDs in modflow.)
-wl$local_well_number = as.character(wl$local_well_number)
-wl$local_well_number[wl$local_well_number == "A41"] = "A4_1"
+wl$well_code = as.character(wl$well_code)
+wl$well_code[wl$well_code == "A41"] = "A4_1"
 
 #### 1b) Convert longer DWR well names (in the WL file) to the abbreviations in SVIHM hob_info table
 mon_info = read.csv( file.path(ref_data_dir, "Monitoring_Wells_Names.csv"))
@@ -365,11 +375,11 @@ dwr_in_model_short_names = c("DWR_1","DWR_2","DWR_3","DWR_4","DWR_5")
 dwr_in_model_long_names = as.character(mon_info$Well_ID_2[mon_info$Well_ID %in% dwr_in_model_short_names])
 # Select based on State Well Number (SWN), which is listed as the local well number in the VMP data. 
 # CASGEM "local well number" is sometimes the SWN but in the cases of DWR_1 and DWR_3 is an unrelated abbreviation.
-replaceables = unique(wl$state_well_number[wl$state_well_number %in% dwr_in_model_long_names])
-replaceables_selector = wl$state_well_number %in% replaceables
+replaceables = unique(wl$swn[wl$swn %in% dwr_in_model_long_names])
+replaceables_selector = wl$swn %in% replaceables
 #Replace local well numbers of replaceables with the abbreviations (DWR_1 etc) of replaceable SWNs
-wl$local_well_number[replaceables_selector] = 
-  as.character(mon_info$Well_ID[match(wl$state_well_number[replaceables_selector],mon_info$Well_ID_2)])
+wl$well_code[replaceables_selector] = 
+  as.character(mon_info$Well_ID[match(wl$swn[replaceables_selector],mon_info$Well_ID_2)])
 
 ### 2) Read in  .hob info file (well location information)
 hob_info = read.table(file.path(ref_data_dir,"hob_wells.txt"), header = F, skip = 4)
@@ -379,7 +389,9 @@ colnames(hob_info) = c('OBSNAM', 'LAYER', 'ROW', 'COLUMN', 'IREFSP', 'TOFFSET', 
 ### 3) Retain just the water level obs (no NAs) from Scott Valley in the model period
 ### TEMPORARY: retain just the ones that have hob_info.
 ### TO DO: Join additional wells to the model grid and add their well loc. info to reference hob_info table.
-wl = wl[wl$basin == "Scott River Valley" & !is.na(wl$wse) & wl$local_well_number %in% hob_info$OBSNAM &
+# wl = wl[wl$basin == "Scott River Valley" & !is.na(wl$wse_ft) & wl$well_code %in% hob_info$OBSNAM &
+#           wl$date >= model_start_date & wl$date <= model_end_date,]
+wl = wl[!is.na(wl$wse_ft) & wl$well_code %in% hob_info$OBSNAM &
           wl$date >= model_start_date & wl$date <= model_end_date,]
 
 ### 4) Update total number of well observations and write preamble for .hob file.
@@ -395,7 +407,7 @@ for(i in 1:length(hob_info$OBSNAM)){
   #### 5a) Info for each well location
   ##### 5a1) Calculate number of observations for an individual well loc ("IREFSP" neg values in Dataset 3)
   obs_loc = hob_info$OBSNAM[i]
-  IREFSP = sum(wl$local_well_number == obs_loc, na.rm=T) #calculate number of measurements for this well
+  IREFSP = sum(wl$well_code == obs_loc, na.rm=T) #calculate number of measurements for this well
   if(IREFSP < 1){next} #skip it if there's no observations for this well name. It's currently happening for A4_1 and the DWR wells.
   
   #### 5a2) Update IREFSP and write topline (info for each well location)
@@ -410,7 +422,7 @@ for(i in 1:length(hob_info$OBSNAM)){
   
   #### 5b) write up the observations for each well
   ##### 5b1) Create unique observation ids 
-  wl_subset = wl[wl$local_well_number == obs_loc & !is.na(wl$local_well_number),]
+  wl_subset = wl[wl$well_code == obs_loc & !is.na(wl$well_code),]
   obs_id_num = 1:IREFSP
   obs_id = paste0(obs_loc, obs_id_num)
   ##### 5b2) convert sample date to stress period and time offset
@@ -419,8 +431,8 @@ for(i in 1:length(hob_info$OBSNAM)){
   samp_months = month(dates)
   stress_periods = (samp_years - year(model_start_date))*12 + samp_months - (month(model_start_date)-1)
   offset_days = day(dates)
-  ##### 5b3) Convert wse from feet to meters
-  meters_asl = 0.3048 * wl_subset$wse #0.3048006096012 * wl_subset$wse
+  ##### 5b3) Convert wse_ft from feet to meters
+  meters_asl = 0.3048 * wl_subset$wse_ft #0.3048006096012 * wl_subset$wse_ft
   #### 5b4) Write the vectors into the file. Attach a bunch of 1s as Modflow flags
   cat(sprintf("%12s%12i%12.6f%12.6f%12.6f%12.6f%8i%8i\n", 
               obs_id, stress_periods, offset_days, meters_asl,
