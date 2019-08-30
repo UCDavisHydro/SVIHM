@@ -374,35 +374,21 @@ p_record_regress = fill_fj_cal_gaps_regression_table(model_coeff=model_coeff,
                                              start_date = model_start_date, 
                                              end_date = model_end_date)
 
-p_record_dist = fill_fj_cal_gaps_distance(station_dist = station_dist, 
-                                     daily_precip = daily_precip_p_record,
-                                     start_date = model_start_date, 
-                                     end_date = model_end_date)
+# p_record_dist = fill_fj_cal_gaps_distance(station_dist = station_dist, 
+#                                      daily_precip = daily_precip_p_record,
+#                                      start_date = model_start_date, 
+#                                      end_date = model_end_date)
 
 
-# average interp-fj and interp-cal records and compare to original
-p_record_dist$interp_cal_fj_mean =  apply(X = dplyr::select(p_record_dist, fj_interp, cal_interp), 
-                                     MARGIN = 1, FUN = mean, na.rm=T)
+# # average interp-fj and interp-cal records and compare to original
+# p_record_dist$interp_cal_fj_mean =  apply(X = dplyr::select(p_record_dist, fj_interp, cal_interp), 
+#                                      MARGIN = 1, FUN = mean, na.rm=T)
 
 p_record_regress$interp_cal_fj_mean =  apply(X = dplyr::select(p_record_regress, fj_interp, cal_interp), 
                                           MARGIN = 1, FUN = mean, na.rm=T)
 
 
-
-# to do: December 2012 NAs. CURRENT ACTION
-# FROM STATIONFINDER: https://www.ncdc.noaa.gov/cdo-web/datatools/findstation
-# USR0000CQUA # Quartz Valley station. Temp only. 
-
-
-#station abbreviation, number in the NOAA dataset, and column number in the daily_precip table
-
-
-
-
-# USC00049866 # Yreka station
-# US1CASK0005 # secondary yreka station
-# which has better match?  Both have dec 2012 data
-
+p_record = p_record_regress
 # combine original precip and new regressed gap-filled fj-cal average
 p_record$stitched = p_record$PRCP_mm_orig
 p_record$stitched[is.na(p_record$PRCP_mm_orig)] = p_record$interp_cal_fj_mean[is.na(p_record$PRCP_mm_orig)]
@@ -410,30 +396,30 @@ p_record$stitched[is.na(p_record$PRCP_mm_orig)] = p_record$interp_cal_fj_mean[is
 # _Did I replicate original 1991-2011 precip record ------------------------------
 
 
-par(mfrow = c(3,1))
-plot(p_record$PRCP_mm_orig,p_record$interp_cal_fj_mean); abline(0,1, col = "red")
-cor(p_record$PRCP_mm_orig,p_record$interp_cal_fj_mean, use = "pairwise.complete.obs") #0.85
-plot(p_record$PRCP_mm_cal, p_record$interp_cal_fj_mean); abline(0,1, col = "red")
-plot(p_record$PRCP_mm_fj, p_record$interp_cal_fj_mean); abline(0,1, col = "red")
-
-
-# That is... a reasonable reproduction of the original values. 
-
-# plot monthly values to see if they match 
-monthly_interp = aggregate(p_record$interp_cal_fj_mean, by = list(p_record$month_day1), FUN = sum)
-monthly_orig = aggregate(p_record$PRCP_mm_orig, by = list(p_record$month_day1), FUN = sum)
-cor(monthly_orig$x, monthly_interp$x, use = "pairwise.complete.obs") #0.87
-plot(monthly_orig$x, monthly_interp$x)
-abline(0,1, col = "red")
+# par(mfrow = c(3,1))
+# plot(p_record$PRCP_mm_orig,p_record$interp_cal_fj_mean); abline(0,1, col = "red")
+# cor(p_record$PRCP_mm_orig,p_record$interp_cal_fj_mean, use = "pairwise.complete.obs") #0.85
+# plot(p_record$PRCP_mm_cal, p_record$interp_cal_fj_mean); abline(0,1, col = "red")
+# plot(p_record$PRCP_mm_fj, p_record$interp_cal_fj_mean); abline(0,1, col = "red")
+# 
+# 
+# # That is... a reasonable reproduction of the original values. 
+# 
+# # plot monthly values to see if they match 
+# monthly_interp = aggregate(p_record$interp_cal_fj_mean, by = list(p_record$month_day1), FUN = sum)
+# monthly_orig = aggregate(p_record$PRCP_mm_orig, by = list(p_record$month_day1), FUN = sum)
+# cor(monthly_orig$x, monthly_interp$x, use = "pairwise.complete.obs") #0.87
+# plot(monthly_orig$x, monthly_interp$x)
+# abline(0,1, col = "red")
 
 # 3 dates above 300 mm / month: 2005-02 is a serious outlier
-View(monthly_interp)
-
-# FOR NOW: this is our precip record, eh
-par(mfrow = c(3,1))
-plot(p_record$Date, p_record$PRCP_mm_fj, type = "l", ylim = c(0, 120))
-plot(p_record$Date, p_record$PRCP_mm_cal, type = "l", ylim = c(0, 120))
-plot(p_record$Date, p_record$interp_cal_fj_mean, type = "l", ylim = c(0, 120))
+# View(monthly_interp)
+# 
+# # FOR NOW: this is our precip record, eh
+# par(mfrow = c(3,1))
+# plot(p_record$Date, p_record$PRCP_mm_fj, type = "l", ylim = c(0, 120))
+# plot(p_record$Date, p_record$PRCP_mm_cal, type = "l", ylim = c(0, 120))
+# plot(p_record$Date, p_record$interp_cal_fj_mean, type = "l", ylim = c(0, 120))
 
 
 
@@ -605,28 +591,28 @@ write.table(daily_precip_updated, file = file.path(scenario_dev_dir, "precip_reg
 
 
 
-# Precip (geography) ------------------------------------------------------
-
-# Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
-rm(list = ls()[!(ls() %in% c("wx")) ]) #Remove all variables other than the weather dataframe
-# Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
-
-
-station_info = make_station_table()
-station_table = station_info[[1]]; station_dist = station_info[[2]]
-
-daily_precip_p_record = make_daily_precip_extended_stations(wx_table = wx,
-                                                            record_start_date = model_start_date, 
-                                                            record_end_date = model_end_date)
-
-p_record = fill_fj_cal_gaps_distance(station_dist = station_dist, 
-                                             daily_precip = daily_precip_p_record,
-                                             start_date = model_start_date, 
-                                             end_date = model_end_date)
-
-# average interp-fj and interp-cal records and compare to original
-p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
-                                     MARGIN = 1, FUN = mean, na.rm=T)
+# # Precip (geography) ------------------------------------------------------
+# 
+# # Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
+# rm(list = ls()[!(ls() %in% c("wx")) ]) #Remove all variables other than the weather dataframe
+# # Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
+# 
+# 
+# station_info = make_station_table()
+# station_table = station_info[[1]]; station_dist = station_info[[2]]
+# 
+# daily_precip_p_record = make_daily_precip_extended_stations(wx_table = wx,
+#                                                             record_start_date = model_start_date, 
+#                                                             record_end_date = model_end_date)
+# 
+# p_record = fill_fj_cal_gaps_distance(station_dist = station_dist, 
+#                                              daily_precip = daily_precip_p_record,
+#                                              start_date = model_start_date, 
+#                                              end_date = model_end_date)
+# 
+# # average interp-fj and interp-cal records and compare to original
+# p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
+#                                      MARGIN = 1, FUN = mean, na.rm=T)
 
 
 
