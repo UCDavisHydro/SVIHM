@@ -9,6 +9,11 @@ library(stringr)
 library(lubridate)
 library(dplyr)
 library(Matrix)
+library(rpostgis)
+library(postGIStools)
+library(dplyr)
+library(raster)
+
 
 # 1) Set drives for collecting all SWBM input files and SVIHM modflow files
 
@@ -30,6 +35,11 @@ scenario_dev_dir = file.path(proj_dir, "SVIHM_Input_Files", "Scenario_Developmen
 ## Directories for running the scenarios (files copied at end of script)
 SWBM_file_dir = file.path(proj_dir, "SWBM", "up2018")
 MF_file_dir = file.path(proj_dir, "MODFLOW","up2018")
+# Directory for connecting to the database
+dms_dir = file.path(dirname(proj_dir), "SiskiyouGSP2022", "Data_Management_System")
+#Connect to Siskiyou DB
+
+source(file.path(dms_dir, "connect_to_db.R"))
 
 
 #SET MODEL RUN DATES
@@ -57,7 +67,7 @@ num_stress_periods = length(model_months)
 
 # Subfunctions ------------------------------------------------------------
 
-make_station_table = function(){
+make_station_table = function(weather_table){
   #station abbreviation, number in the NOAA dataset, and column number in the daily_precip table
   # station_table = data.frame(abbrev = c("cal", "fj", "et", "gv"),
   #                               station = c("USC00041316", "USC00043182", "USC00042899", "USC00043614"),
@@ -70,8 +80,8 @@ make_station_table = function(){
   #Assign coordinates to Station Locations from NOAA data
   for(i in 1:dim(station_table)[1]){
     station = station_table$station[i]
-    station_table$lat[i] = unique(wx$LATITUDE[wx$STATION==station])
-    station_table$lon[i] = unique(wx$LONGITUDE[wx$STATION==station])
+    station_table$lat[i] = unique(weather_table$LATITUDE[weather_table$STATION==station])
+    station_table$lon[i] = unique(weather_table$LONGITUDE[weather_table$STATION==station])
   }
   coordinates(station_table) = ~lon + lat
   
@@ -87,15 +97,13 @@ make_station_table = function(){
   return(list(station_table, station_dist))
 }
 
-make_daily_precip = function(wx_table,
+make_daily_precip = function(weather_table = noaa,
                              record_start_date = as.Date("1943-01-01"), 
                              record_end_date = model_end_date){
   
   record_days = seq(from = record_start_date, to = record_end_date, by = "days")
   
-  
   #Subset data into stations
-  noaa=wx_table
   cal = subset(noaa, STATION=="USC00041316" & DATE >= record_start_date & DATE <= record_end_date)
   cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
   fj = subset(noaa, STATION=="USC00043182" & DATE >= record_start_date & DATE <= record_end_date)
@@ -133,25 +141,24 @@ make_daily_precip = function(wx_table,
   return(daily_precip)
 }
 
-make_daily_precip_extended_stations = function(wx_table,
+make_daily_precip_extended_stations = function(weather_table = noaa,
                              record_start_date = as.Date("1943-01-01"), 
                              record_end_date = model_end_date){
   
   record_days = seq(from = record_start_date, to = record_end_date, by = "days")
   
   #Subset data into stations
-  noaa=wx_table
-  cal = subset(noaa, STATION=="USC00041316" & DATE >= record_start_date & DATE <= record_end_date)
+  cal = subset(weather_table, STATION=="USC00041316" & DATE >= record_start_date & DATE <= record_end_date)
   cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
-  fj = subset(noaa, STATION=="USC00043182" & DATE >= record_start_date & DATE <= record_end_date)
+  fj = subset(weather_table, STATION=="USC00043182" & DATE >= record_start_date & DATE <= record_end_date)
   fj = data.frame(DATE = fj$DATE, PRCP = fj$PRCP)
-  et = subset(noaa, STATION == "USC00042899" & DATE >= record_start_date & DATE <= record_end_date)
+  et = subset(weather_table, STATION == "USC00042899" & DATE >= record_start_date & DATE <= record_end_date)
   et =data.frame(DATE = et$DATE, PRCP = et$PRCP)
-  gv = subset(noaa, STATION == "USC00043614" & DATE >= record_start_date & DATE <= record_end_date)
+  gv = subset(weather_table, STATION == "USC00043614" & DATE >= record_start_date & DATE <= record_end_date)
   gv =data.frame(DATE = gv$DATE, PRCP = gv$PRCP)
-  yr = subset(noaa, STATION == "USC00049866" & DATE >= record_start_date & DATE <= record_end_date)
+  yr = subset(weather_table, STATION == "USC00049866" & DATE >= record_start_date & DATE <= record_end_date)
   yr =data.frame(DATE = yr$DATE, PRCP = yr$PRCP) 
-  y2 = subset(noaa, STATION == "US1CASK0005" & DATE >= record_start_date & DATE <= record_end_date)
+  y2 = subset(weather_table, STATION == "US1CASK0005" & DATE >= record_start_date & DATE <= record_end_date)
   y2 =data.frame(DATE = y2$DATE, PRCP = y2$PRCP) 
   
   
@@ -186,6 +193,7 @@ make_daily_precip_extended_stations = function(wx_table,
 }
 
 make_model_coeffs_table = function(months = 1:12, 
+                                   station_table = station_table,
                                    daily_precip = daily_precip,
                                    ys = c("fj", "cal"), 
                                    xs = c("fj", "cal", "gv", "et", "yr", "y2")){  
@@ -225,6 +233,7 @@ make_model_coeffs_table = function(months = 1:12,
 }
 
 fill_fj_cal_gaps_regression_table = function(model_coeff, 
+                                             station_table = station_table,
                                              daily_precip = daily_precip,
                                              start_date = model_start_date,
                                              end_date = model_end_date){
@@ -346,287 +355,87 @@ fill_fj_cal_gaps_distance = function(station_dist = station_dist,
 
 
 
-# Precip (Regression) ------------------------------------------------------------------
-
-# Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
-rm(list = ls()[!(ls() %in% c("wx")) ]) #Remove all variables other than the weather dataframe
-# Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
-
-station_info = make_station_table()
-station_table = station_info[[1]]
-station_dist = station_info[[2]]
-
-daily_precip_regression = make_daily_precip_extended_stations(wx_table = wx,
-                  record_start_date = as.Date("1943-10-01"), 
-                  record_end_date = as.Date("2011-09-30"))
-
-model_coeff = make_model_coeffs_table(months = 1:12, 
-                                      daily_precip = daily_precip_regression,
-                                      ys = c("fj", "cal"), 
-                                      xs = c(c("fj", "cal", "gv", "et", "yr", "y2")))
-
-daily_precip_p_record = make_daily_precip_extended_stations(wx_table = wx,
-                                            record_start_date = model_start_date, 
-                                            record_end_date = model_end_date)
-
-p_record_regress = fill_fj_cal_gaps_regression_table(model_coeff=model_coeff, 
-                                             daily_precip = daily_precip_p_record,
-                                             start_date = model_start_date, 
-                                             end_date = model_end_date)
-
-p_record_dist = fill_fj_cal_gaps_distance(station_dist = station_dist, 
-                                     daily_precip = daily_precip_p_record,
-                                     start_date = model_start_date, 
-                                     end_date = model_end_date)
+# Precip ------------------------------------------------------------------
 
 
-# average interp-fj and interp-cal records and compare to original
-p_record_dist$interp_cal_fj_mean =  apply(X = dplyr::select(p_record_dist, fj_interp, cal_interp), 
-                                     MARGIN = 1, FUN = mean, na.rm=T)
-
-p_record_regress$interp_cal_fj_mean =  apply(X = dplyr::select(p_record_regress, fj_interp, cal_interp), 
-                                          MARGIN = 1, FUN = mean, na.rm=T)
-
-
-
-# to do: December 2012 NAs. CURRENT ACTION
-# FROM STATIONFINDER: https://www.ncdc.noaa.gov/cdo-web/datatools/findstation
-# USR0000CQUA # Quartz Valley station. Temp only. 
-
-
-#station abbreviation, number in the NOAA dataset, and column number in the daily_precip table
-
-
-
-
-# USC00049866 # Yreka station
-# US1CASK0005 # secondary yreka station
-# which has better match?  Both have dec 2012 data
-
-# combine original precip and new regressed gap-filled fj-cal average
-p_record$stitched = p_record$PRCP_mm_orig
-p_record$stitched[is.na(p_record$PRCP_mm_orig)] = p_record$interp_cal_fj_mean[is.na(p_record$PRCP_mm_orig)]
-
-# _Did I replicate original 1991-2011 precip record ------------------------------
-
-
-par(mfrow = c(3,1))
-plot(p_record$PRCP_mm_orig,p_record$interp_cal_fj_mean); abline(0,1, col = "red")
-cor(p_record$PRCP_mm_orig,p_record$interp_cal_fj_mean, use = "pairwise.complete.obs") #0.85
-plot(p_record$PRCP_mm_cal, p_record$interp_cal_fj_mean); abline(0,1, col = "red")
-plot(p_record$PRCP_mm_fj, p_record$interp_cal_fj_mean); abline(0,1, col = "red")
-
-
-# That is... a reasonable reproduction of the original values. 
-
-# plot monthly values to see if they match 
-monthly_interp = aggregate(p_record$interp_cal_fj_mean, by = list(p_record$month_day1), FUN = sum)
-monthly_orig = aggregate(p_record$PRCP_mm_orig, by = list(p_record$month_day1), FUN = sum)
-cor(monthly_orig$x, monthly_interp$x, use = "pairwise.complete.obs") #0.87
-plot(monthly_orig$x, monthly_interp$x)
-abline(0,1, col = "red")
-
-# 3 dates above 300 mm / month: 2005-02 is a serious outlier
-View(monthly_interp)
-
-# FOR NOW: this is our precip record, eh
-par(mfrow = c(3,1))
-plot(p_record$Date, p_record$PRCP_mm_fj, type = "l", ylim = c(0, 120))
-plot(p_record$Date, p_record$PRCP_mm_cal, type = "l", ylim = c(0, 120))
-plot(p_record$Date, p_record$interp_cal_fj_mean, type = "l", ylim = c(0, 120))
-
-
-
-# _exceedance curves ------------------------------------------------------
-
-legend_labels = c("Callahan", "Fort Jones","Greenview", "Yreka", "Yreka NW",
-                  "Original 91-11", "Cal-FJ Mean",
-                   "Gap-filled Fort Jones", "Gap-filled Callahan",
-                  "Gap-filled Cal-FJ Mean")
-#initialize plot
-par(mfrow = c(1,1))
-plot(x = NA, y = NA, xlim = c(0.6, 1), ylim = c(-2.1, 5), xlab = "Exceedance probability", ylab = "log daily precip, mm")
-
-col_names = colnames(p_record)[!(colnames(p_record) %in% c("Date","month_day1", "water_year", "PRCP_mm_et"))]
-for(i in 1:length(col_names)){
-  i=i+1
-  col_name = col_names[i]
-  record = select(p_record, col_name)
-  record = log(record[!is.na(record)])
-  record_exceedance = (record[order(record)])
-  t = length(record_exceedance)
-  lines(x = (1:t)/t, y = record_exceedance, type = "l", col = i, main = col_name)#,
-       # xlab = "Exceedance probability", ylab = "log daily precip, mm")
-}
-legend(x = "topleft", legend = legend_labels, cex = 0.8, lwd = rep(1, length(col_names)), col = 1:length(col_names))
-
-
-
-
-# _visualize regression relationships --------------------------------------
-
-par(mfrow = c(3,4))
-
-months = 1:12; ys = c("fj", "cal"); xs = c("fj", "cal", "gv", #"et",
-                                           "yr", "y2")
-
-plotter = expand.grid(months = months, Y_var = ys, X_var = xs)
-# plotter = expand.grid(Y_var = ys, X_var = xs)
-#take out matching combinations (e.g. x = fj, y = fj)
-plotter = plotter[as.character(plotter$Y_var) != as.character(plotter$X_var),]
-
-for(i in 1:dim(plotter)[1]){
-  mnth = as.numeric(plotter$month[i])
-  y_abbrev = as.character(plotter$Y_var[i])
-  x_abbrev = as.character(plotter$X_var[i])
+get_daily_precip_table=function(record_start_date=model_start_date, 
+                                record_end_date = model_end_date){
+  # Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
+  noaa = data.frame(tbl(siskiyou_tables, "noaa_daily_data"))
+  # Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
   
-  y_record = p_record[month(p_record$Date) == mnth, 
-                      station_table$col_num[station_table$abbrev == y_abbrev]]
-  x_record = p_record[month(p_record$Date) == mnth,
-                      station_table$col_num[station_table$abbrev == x_abbrev]]
+  station_info = make_station_table(weather_table = noaa)
+  station_table = station_info[[1]]
+  station_dist = station_info[[2]]
   
-  plot(x_record, y_record, xlab = x_abbrev, ylab = y_abbrev, main = mnth)
-  abline(0,1, col = "red")
+  #Generate daily precip table (same daterange as in original methodology) to make model coefficients
+  daily_precip_regression = make_daily_precip_extended_stations(weather_table = noaa,
+                                                                record_start_date = as.Date("1943-10-01"), 
+                                                                record_end_date = as.Date("2011-09-30"))
+  model_coeff = make_model_coeffs_table(months = 1:12, 
+                                        station_table = station_table,
+                                        daily_precip = daily_precip_regression,
+                                        ys = c("fj", "cal"), 
+                                        xs = c(c("fj", "cal", "gv", "et", "yr", "y2")))
+  #Generate daily precip table to make the gap-filled records
+  daily_precip_p_record = make_daily_precip_extended_stations(weather_table = noaa,
+                                                              record_start_date = model_start_date, 
+                                                              record_end_date = model_end_date)
+  p_record = fill_fj_cal_gaps_regression_table(model_coeff=model_coeff, 
+                                               station_table = station_table,
+                                                       daily_precip = daily_precip_p_record,
+                                                       start_date = model_start_date, 
+                                                       end_date = model_end_date)
+  # average interp-fj and interp-cal records and compare to original
+  p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
+                                               MARGIN = 1, FUN = mean, na.rm=T)
+  
+  # Prepare to combine original precip and new regressed gap-filled fj-cal average
+  p_record$stitched = p_record$PRCP_mm_orig
+  p_record$stitched[is.na(p_record$PRCP_mm_orig)] = p_record$interp_cal_fj_mean[is.na(p_record$PRCP_mm_orig)]
+  
+  orig_record_end_date = as.Date("2011-09-30")
+  orig_record = p_record$Date <= orig_record_end_date
+  updated_record = p_record$Date > orig_record_end_date
+  
+  #Fill in 5 leap days in the original record using the gap-filled cal-FJ record
+  leap_day_finder_pre2011 = orig_record & is.na(p_record$PRCP_mm_orig)
+  p_record$PRCP_mm_orig[leap_day_finder_pre2011] = p_record$interp_cal_fj_mean[leap_day_finder_pre2011]
+  
+  #Subset original record
+  p_record$stitched = NA
+  p_record$stitched[orig_record] = p_record$PRCP_mm_orig[orig_record]
+  p_record$stitched[updated_record] = p_record$interp_cal_fj_mean[updated_record]
+  
+  return(p_record)
 }
 
-
-
-# _visualize distance vs regression method --------------------------------
-par(mfrow = c(3,1))
-plot(p_record_regress$interp_cal_fj_mean, p_record_dist$interp_cal_fj_mean)
-cor(p_record_regress$interp_cal_fj_mean, p_record_dist$interp_cal_fj_mean, use="pairwise.complete.obs") # 0.91
-plot(p_record_regress$PRCP_mm_orig, p_record_regress$interp_cal_fj_mean)
-plot(p_record_dist$PRCP_mm_orig, p_record_dist$interp_cal_fj_mean)
-
-plot(p_record_regress$Date,p_record_regress$PRCP_mm_orig, type = "l")
-plot(p_record_regress$Date,p_record_regress$interp_cal_fj_mean, type = "l")
-plot(p_record_dist$Date,p_record_dist$interp_cal_fj_mean, type = "l")
-
-tot_reg = sum(p_record_regress$interp_cal_fj_mean, na.rm=T)
-tot_dist = sum(p_record_dist$interp_cal_fj_mean, na.rm=T)
-
-tot_dist / tot_reg # the distance one yields about 9.5% more overall. Probably because Etna is close to both Cal and FJ.
-
-# _histograms -------------------------------------------------------------
-
-legend_labels = c("Callahan", "Fort Jones","Greenview", 
-                  "Original 91-11", "Cal-FJ Mean",
-                  "Gap-filled Callahan", "Gap-filled Fort Jones",
-                  "Gap-filled Cal-FJ Mean")
-#initialize plot
-# plot(x = NA, y = NA, xlim = c(0.6, 1), ylim = c(0, 120), xlab = "Exceedance probabylity", ylab = "log daily precip, mm")
-
-#need to fix these to account for 0s
-par(mfrow = c(2,4))
-col_names = colnames(p_record)[!(colnames(p_record) %in% c("Date","month_day1", "water_year", "PRCP_mm_et"))]
-for(i in 1:length(col_names)){
-  col_name = col_names[i]
-  record = select(p_record, col_name)
-  record = log(record[!is.na(record)])
-  hist(record, main = col_name, col = i,
-       freq = F)#, xlim = c(-2.5, 6), ylim = c(0, 0.4))
-  abline(v = mean(record), lty = 2)
-  print(mean(record))
+write_swbm_precip_input_file=function(){
+  #read in original data (wys 1991-2011)
+  # daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
+  # colnames(daily_precip_orig) = c("PRCP", "Date")
+  
+  p_record = get_daily_precip_table()
+  
+  daily_precip_updated = data.frame(PRCP = p_record$stitched, Date = p_record$Date)
+  
+  #combine, format to match the original precip file, and write as text file
+  daily_precip_updated$Date = paste(str_pad(day(daily_precip_updated$Date), 2, pad="0"),
+                                    str_pad(month(daily_precip_updated$Date), 2, pad="0"),
+                                    year(daily_precip_updated$Date), sep = "/")
+  daily_precip_updated$PRCP = daily_precip_updated$PRCP / 1000 #convert to meters
+  
+  write.table(daily_precip_updated, file = file.path(scenario_dev_dir, "precip_regressed.txt"),
+              sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+  
 }
 
-
-
-
-
-
-# _How many days are 0 ppt? ----------------------------------------
-
-
-# precip_for_tab = daily_precip[daily_precip$Date >= model_start_date & daily_precip$Date <= "2011-09-30",]
-precip_for_tab = p_record; precip_for_tab$month_day1=NULL; precip_for_tab$water_year=NULL
-
-num_cols = dim(precip_for_tab)[2]
-num_nas = apply(precip_for_tab[2:num_cols], MARGIN = 2, function(x) sum(is.na(x)))
-num_0s = apply(precip_for_tab[2:num_cols], MARGIN = 2, function(x) sum(x==0, na.rm=T))
-num_gt0 = apply(precip_for_tab[2:num_cols], MARGIN = 2, function(x) sum(x>0, na.rm=T))
-
-p_tab = data.frame( num_nas, num_0s, num_gt0)
-
-total_days = as.numeric(unique(p_tab[1]+p_tab[2]+p_tab[3]))
-p_tab$perc_0 = round(p_tab$num_0s / total_days, 2)*100
-p_tab$perc_na = round(p_tab$num_nas / total_days, 2)*100
-p_tab$perc_gt0 = round(p_tab$num_gt0 / total_days, 2)*100
-p_tab$num0_div_gt0 = round(p_tab$num_0s / p_tab$num_gt0, 2) 
-
-
-
-# Precip: how different are exceedance curves for each station? For orig precip input?
-#starting point: histograms
-
-# plot(p_record$Date, p_record$PRCP_mm_orig, ylim = c(0, 120))
-# plot(p_record$Date, p_record$PRCP_mm_fj, ylim = c(0, 120))
-# plot(p_record$Date, p_record$PRCP_mm_cal, ylim = c(0, 120))
-par(mfrow = c(2,2))
-
-# need to fix these to account for 0 values becoming -Inf. proportion of 0 values. 
-hist(log10(p_record$PRCP_mm_fj), xlab = "log10 of FJ daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6), freq = F)
-hist(log10(p_record$PRCP_mm_cal), xlab = "log10 of Cal daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6),freq = F)
-hist(log10(p_record$PRCP_mm_orig), xlab = "log10 of Original Input daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6),freq = F)
-hist(log10(p_record$interp_cal_fj_mean), xlab = "log10 of Interp FJ-Cal daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6),freq = F)
-
-
+write_swbm_precip_input_file()
 
 # _stitch orig and update together ----------------------------------------
 
 
-#read in original data (wys 1991-2011)
-# daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
-# colnames(daily_precip_orig) = c("PRCP", "Date")
 
-p_record = p_record_regress
-orig_record_end_date = as.Date("2011-09-30")
-orig_record = p_record$Date <= orig_record_end_date
-updated_record = p_record$Date > orig_record_end_date
-
-#Fill in 5 leap days in the original record using the gap-filled cal-FJ record
-leap_day_finder_pre2011 = orig_record & is.na(p_record$PRCP_mm_orig)
-p_record$PRCP_mm_orig[leap_day_finder_pre2011] = p_record$interp_cal_fj_mean[leap_day_finder_pre2011]
-
-#Subset original record
-p_record$stitched = NA
-p_record$stitched[orig_record] = p_record$PRCP_mm_orig[orig_record]
-p_record$stitched[updated_record] = p_record$interp_cal_fj_mean[updated_record]
-
-daily_precip_updated = data.frame(PRCP = p_record$stitched, Date = p_record$Date)
-
-#combine, format to match the original precip file, and write as text file
-daily_precip_updated$Date = paste(str_pad(day(daily_precip_updated$Date), 2, pad="0"),
-                                 str_pad(month(daily_precip_updated$Date), 2, pad="0"),
-                                 year(daily_precip_updated$Date), sep = "/")
-daily_precip_updated$PRCP = daily_precip_updated$PRCP / 1000 #convert to meters
-
-write.table(daily_precip_updated, file = file.path(scenario_dev_dir, "precip_regressed.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
-
-
-
-# Precip (geography) ------------------------------------------------------
-
-# Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
-rm(list = ls()[!(ls() %in% c("wx")) ]) #Remove all variables other than the weather dataframe
-# Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
-
-
-station_info = make_station_table()
-station_table = station_info[[1]]; station_dist = station_info[[2]]
-
-daily_precip_p_record = make_daily_precip_extended_stations(wx_table = wx,
-                                                            record_start_date = model_start_date, 
-                                                            record_end_date = model_end_date)
-
-p_record = fill_fj_cal_gaps_distance(station_dist = station_dist, 
-                                             daily_precip = daily_precip_p_record,
-                                             start_date = model_start_date, 
-                                             end_date = model_end_date)
-
-# average interp-fj and interp-cal records and compare to original
-p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
-                                     MARGIN = 1, FUN = mean, na.rm=T)
 
 
 
@@ -890,65 +699,61 @@ et_input_2$Date = paste(str_pad(day(et_input_2$Date), 2, pad="0"),
 write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
-# SWBM overview plot ------------------------------------------------------
-
-# first: run the subfunctions in eci273_scenario_plotting.
-
-#Read in SWBM scenario outputs: monthly water budget 
-setwd("C:/Users/Claire/Documents/GitHub/SVIHM/SWBM/up2018")
-monthly_water_budget_hist = read.table("monthly_water_budget.dat", header = TRUE)
-mwb_hist = monthly_water_budget_hist
-
-plot_water_budget_overview(mwb_hist, "Historical")
-
-
-
-
-
 
 
 # scratchwork -------------------------------------------------------------
 
+# SWBM overview plot ------------------------------------------------------
+
+# first: run the subfunctions in eci273_scenario_plotting.
+
+# #Read in SWBM scenario outputs: monthly water budget 
+# setwd("C:/Users/Claire/Documents/GitHub/SVIHM/SWBM/up2018")
+# monthly_water_budget_hist = read.table("monthly_water_budget.dat", header = TRUE)
+# mwb_hist = monthly_water_budget_hist
+# 
+# plot_water_budget_overview(mwb_hist, "Historical")
+
 
 # _make monthly_precip 
 
-#Test 1: Don't remove NA
-monthly_precip1 = aggregate(daily_precip$PRCP_mm_orig, by = list(daily_precip$month_day1), FUN=sum)
-fj_m = aggregate(daily_precip$PRCP_mm_fj, by = list(daily_precip$month_day1), FUN=sum)
-cal_m = aggregate(daily_precip$PRCP_mm_cal, by = list(daily_precip$month_day1), FUN=sum)
-monthly_precip1=merge(monthly_precip1, fj_m, by.x = "Group.1", by.y="Group.1")
-monthly_precip1=merge(monthly_precip1, cal_m, by.x = "Group.1", by.y="Group.1")
-colnames(monthly_precip1) = c("Month", "PRCP_mm_orig", "PRCP_mm_fj", "PRCP_mm_cal")
-monthly_precip1$mean_PRCP = apply(X = monthly_precip1[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
-
-#Test 2: NA = 0
-daily_precip2 = daily_precip
-daily_precip2$PRCP_mm_cal[is.na(daily_precip2$PRCP_mm_cal)] = 0
-daily_precip2$PRCP_mm_fj[is.na(daily_precip2$PRCP_mm_fj)] = 0
-
-monthly_precip2 = aggregate(daily_precip2$PRCP_mm_orig, by = list(daily_precip2$month_day1), FUN=sum)
-fj_m = aggregate(daily_precip2$PRCP_mm_fj, by = list(daily_precip2$month_day1), FUN=sum)
-cal_m = aggregate(daily_precip2$PRCP_mm_cal, by = list(daily_precip2$month_day1), FUN=sum)
-monthly_precip2=merge(monthly_precip2, fj_m, by.x = "Group.1", by.y="Group.1")
-monthly_precip2=merge(monthly_precip2, cal_m, by.x = "Group.1", by.y="Group.1")
-colnames(monthly_precip2) = c("Month", "PRCP_mm_orig", "PRCP_mm_fj", "PRCP_mm_cal")
-monthly_precip2$mean_PRCP = apply(X = monthly_precip2[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
-
-#Test 3: Remove NAs
-monthly_precip3 = aggregate(daily_precip$PRCP_mm_orig, by = list(daily_precip$month_day1), FUN=sum, na.rm=T)
-fj_m = aggregate(daily_precip$PRCP_mm_fj, by = list(daily_precip$month_day1), FUN=sum, na.rm=T)
-cal_m = aggregate(daily_precip$PRCP_mm_cal, by = list(daily_precip$month_day1), FUN=sum, na.rm=T)
-monthly_precip3=merge(monthly_precip3, fj_m, by.x = "Group.1", by.y="Group.1")
-monthly_precip3=merge(monthly_precip3, cal_m, by.x = "Group.1", by.y="Group.1")
-colnames(monthly_precip3) = c("Month", "PRCP_mm_orig", "PRCP_mm_fj", "PRCP_mm_cal")
-monthly_precip3$mean_PRCP = apply(X = monthly_precip3[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
-
-
-# _make yearly_precip 
-
-
-#Calculate yearly average
-yearly_precip = aggregate(daily_precip$PRCP_mm_orig, by = list(daily_precip$water_year), FUN = sum)
+# #Test 1: Don't remove NA
+# monthly_precip1 = aggregate(daily_precip$PRCP_mm_orig, by = list(daily_precip$month_day1), FUN=sum)
+# fj_m = aggregate(daily_precip$PRCP_mm_fj, by = list(daily_precip$month_day1), FUN=sum)
+# cal_m = aggregate(daily_precip$PRCP_mm_cal, by = list(daily_precip$month_day1), FUN=sum)
+# monthly_precip1=merge(monthly_precip1, fj_m, by.x = "Group.1", by.y="Group.1")
+# monthly_precip1=merge(monthly_precip1, cal_m, by.x = "Group.1", by.y="Group.1")
+# colnames(monthly_precip1) = c("Month", "PRCP_mm_orig", "PRCP_mm_fj", "PRCP_mm_cal")
+# monthly_precip1$mean_PRCP = apply(X = monthly_precip1[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
+# 
+# #Test 2: NA = 0
+# daily_precip2 = daily_precip
+# daily_precip2$PRCP_mm_cal[is.na(daily_precip2$PRCP_mm_cal)] = 0
+# daily_precip2$PRCP_mm_fj[is.na(daily_precip2$PRCP_mm_fj)] = 0
+# 
+# monthly_precip2 = aggregate(daily_precip2$PRCP_mm_orig, by = list(daily_precip2$month_day1), FUN=sum)
+# fj_m = aggregate(daily_precip2$PRCP_mm_fj, by = list(daily_precip2$month_day1), FUN=sum)
+# cal_m = aggregate(daily_precip2$PRCP_mm_cal, by = list(daily_precip2$month_day1), FUN=sum)
+# monthly_precip2=merge(monthly_precip2, fj_m, by.x = "Group.1", by.y="Group.1")
+# monthly_precip2=merge(monthly_precip2, cal_m, by.x = "Group.1", by.y="Group.1")
+# colnames(monthly_precip2) = c("Month", "PRCP_mm_orig", "PRCP_mm_fj", "PRCP_mm_cal")
+# monthly_precip2$mean_PRCP = apply(X = monthly_precip2[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
+# 
+# #Test 3: Remove NAs
+# monthly_precip3 = aggregate(daily_precip$PRCP_mm_orig, by = list(daily_precip$month_day1), FUN=sum, na.rm=T)
+# fj_m = aggregate(daily_precip$PRCP_mm_fj, by = list(daily_precip$month_day1), FUN=sum, na.rm=T)
+# cal_m = aggregate(daily_precip$PRCP_mm_cal, by = list(daily_precip$month_day1), FUN=sum, na.rm=T)
+# monthly_precip3=merge(monthly_precip3, fj_m, by.x = "Group.1", by.y="Group.1")
+# monthly_precip3=merge(monthly_precip3, cal_m, by.x = "Group.1", by.y="Group.1")
+# colnames(monthly_precip3) = c("Month", "PRCP_mm_orig", "PRCP_mm_fj", "PRCP_mm_cal")
+# monthly_precip3$mean_PRCP = apply(X = monthly_precip3[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
+# 
+# 
+# # _make yearly_precip 
+# 
+# 
+# #Calculate yearly average
+# yearly_precip = aggregate(daily_precip$PRCP_mm_orig, by = list(daily_precip$water_year), FUN = sum)
 
 
 # _visual comparison 
@@ -968,121 +773,313 @@ yearly_precip = aggregate(daily_precip$PRCP_mm_orig, by = list(daily_precip$wate
 # nonzero_diffs = daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal; nonzero_diffs = nonzero_diffs[abs(nonzero_diffs)>5]
 # hist(nonzero_diffs,breaks = seq(-80,90,5), main = "Num. days with Cal-FJ difference of >5 mm", xlab = "mm difference, Cal-FJ")
 
-# Visual comparison (1:1 line): daily precip values
-par(mfrow = c(2,2))
-plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_cal, pch = 18, main = "Original vs Cal", xlab = "orig", ylab = "daily mm precip")
-cor(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_cal, use="pairwise.complete.obs") # 0.21
-abline(0,1, col = "red", lwd = 2)
-plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
-cor(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_fj, use="pairwise.complete.obs") # 0.19
-abline(0,1, col = "red", lwd = 2)
-plot(daily_precip$PRCP_mm_orig, daily_precip$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
-cor(daily_precip$PRCP_mm_orig, daily_precip$mean_PRCP, use="pairwise.complete.obs") # 0.22
-abline(0,1, col = "red", lwd = 2)
-plot(daily_precip$PRCP_mm_cal, daily_precip$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
-cor(daily_precip$PRCP_mm_cal, daily_precip$PRCP_mm_fj, use="pairwise.complete.obs") # 0.67
-abline(0,1, col = "red", lwd = 2)
+# # Visual comparison (1:1 line): daily precip values
+# par(mfrow = c(2,2))
+# plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_cal, pch = 18, main = "Original vs Cal", xlab = "orig", ylab = "daily mm precip")
+# cor(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_cal, use="pairwise.complete.obs") # 0.21
+# abline(0,1, col = "red", lwd = 2)
+# plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
+# cor(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_fj, use="pairwise.complete.obs") # 0.19
+# abline(0,1, col = "red", lwd = 2)
+# plot(daily_precip$PRCP_mm_orig, daily_precip$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
+# cor(daily_precip$PRCP_mm_orig, daily_precip$mean_PRCP, use="pairwise.complete.obs") # 0.22
+# abline(0,1, col = "red", lwd = 2)
+# plot(daily_precip$PRCP_mm_cal, daily_precip$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
+# cor(daily_precip$PRCP_mm_cal, daily_precip$PRCP_mm_fj, use="pairwise.complete.obs") # 0.67
+# abline(0,1, col = "red", lwd = 2)
+# 
+# # Shitty match-up in daily values for orig v FJ AND orig v Cal AND orig v FJ-Cal mean. (cor of 0.19-0.22) 
+# # Much better, but still pretty bad, match-up in daily values for Cal vs FJ. (cor of 0.67)
+# 
+# 
+# # Visual comparison (1:1 line): monthly precip values, Test 1, don't remove NAs
+# par(mfrow = c(2,2))
+# plot(monthly_precip1$PRCP_mm_orig, monthly_precip1$PRCP_mm_cal, pch = 18, main = "Orig vs Cal, keep NAs", xlab = "orig", ylab = "mm precip")
+# cor(monthly_precip1$PRCP_mm_orig, monthly_precip1$PRCP_mm_cal, use="pairwise.complete.obs") #0.81
+# abline(0,1, col = "red", lwd = 2)
+# plot(monthly_precip1$PRCP_mm_orig, monthly_precip1$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
+# cor(monthly_precip1$PRCP_mm_orig, monthly_precip1$PRCP_mm_fj, use="pairwise.complete.obs") #0.68
+# abline(0,1, col = "red", lwd = 2)
+# plot(monthly_precip1$PRCP_mm_orig, monthly_precip1$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
+# cor(monthly_precip1$PRCP_mm_orig, monthly_precip1$mean_PRCP, use="pairwise.complete.obs") #0.998
+# abline(0,1, col = "red", lwd = 2)
+# plot(monthly_precip1$PRCP_mm_cal, monthly_precip1$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
+# cor(monthly_precip1$PRCP_mm_cal, monthly_precip1$PRCP_mm_fj, use="pairwise.complete.obs") #0.87
+# abline(0,1, col = "red", lwd = 2)
+# 
+# 
+# # Visual comparison (1:1 line): monthly precip values, Test 2, NAs = 0
+# par(mfrow = c(2,2))
+# plot(monthly_precip2$PRCP_mm_orig, monthly_precip2$PRCP_mm_cal, pch = 18, main = "Orig vs Cal, NAs = 0", xlab = "orig", ylab = "mm precip")
+# cor(monthly_precip2$PRCP_mm_orig, monthly_precip2$PRCP_mm_cal, use="pairwise.complete.obs") #0.83
+# abline(0,1, col = "red", lwd = 2)
+# plot(monthly_precip2$PRCP_mm_orig, monthly_precip2$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
+# cor(monthly_precip2$PRCP_mm_orig, monthly_precip2$PRCP_mm_fj, use="pairwise.complete.obs") #0.73
+# abline(0,1, col = "red", lwd = 2)
+# plot(monthly_precip2$PRCP_mm_orig, monthly_precip2$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
+# cor(monthly_precip2$PRCP_mm_orig, monthly_precip2$mean_PRCP, use="pairwise.complete.obs") #0.95
+# abline(0,1, col = "red", lwd = 2)
+# plot(monthly_precip2$PRCP_mm_cal, monthly_precip2$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
+# cor(monthly_precip2$PRCP_mm_cal, monthly_precip2$PRCP_mm_fj, use="pairwise.complete.obs") #0.79
+# abline(0,1, col = "red", lwd = 2)
+# 
+# # Visual comparison (1:1 line): monthly precip values, Test 3, remove NAs
+# par(mfrow = c(2,2))
+# plot(monthly_precip3$PRCP_mm_orig, monthly_precip3$PRCP_mm_cal, pch = 18, main = "Orig vs Cal, remove NAs", xlab = "orig", ylab = "mm precip")
+# cor(monthly_precip3$PRCP_mm_orig, monthly_precip3$PRCP_mm_cal, use="pairwise.complete.obs") #0.70
+# abline(0,1, col = "red", lwd = 2)
+# plot(monthly_precip3$PRCP_mm_orig, monthly_precip3$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
+# cor(monthly_precip3$PRCP_mm_orig, monthly_precip3$PRCP_mm_fj, use="pairwise.complete.obs") #0.66
+# abline(0,1, col = "red", lwd = 2)
+# plot(monthly_precip3$PRCP_mm_orig, monthly_precip3$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
+# cor(monthly_precip3$PRCP_mm_orig, monthly_precip3$mean_PRCP, use="pairwise.complete.obs") #0.94
+# abline(0,1, col = "red", lwd = 2)
+# plot(monthly_precip3$PRCP_mm_cal, monthly_precip3$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
+# cor(monthly_precip3$PRCP_mm_cal, monthly_precip3$PRCP_mm_fj, use="pairwise.complete.obs") #0.79
+# abline(0,1, col = "red", lwd = 2)
+# 
+# 
+# 
+# #Visual comparison - over time
+# par(mfrow = c(2,2))
+# plot(monthly_precip$Month, monthly_precip$PRCP_mm_orig, type = "l", main = "Original", xlab = "Date", ylab = "mm precip")
+# plot(monthly_precip$Month, monthly_precip$PRCP_mm_fj, type = "l", main = "FJ monthly", xlab = "Month", ylab = "mm precip")
+# plot(monthly_precip$Month, monthly_precip$PRCP_mm_cal, type = "l", main = "Cal", xlab = "Month", ylab = "mm precip")
+# plot(monthly_precip$Month, monthly_precip$mean_PRCP, type = "l", main = "Cal, FJ mean", xlab = "Month", ylab = "mm precip")
+# 
+# 
+# # plot(monthly_precip$Month, monthly_precip$PRCP_mm_orig-monthly_precip$PRCP_mm_cal, type = "l", main = "Original minus Cal", xlab = "Month", ylab = "mm precip")
+# # plot(monthly_precip$Month, monthly_precip$PRCP_mm_orig-monthly_precip$PRCP_mm_fj, type = "l", main = "Original minus FJ", xlab = "Month", ylab = "mm precip")
+# plot(monthly_precip$Month, monthly_precip$PRCP_mm_orig-monthly_precip$mean_PRCP, type = "l", main = "Original minus Cal, FJ mean", xlab = "Month", ylab = "mm precip")
+# 
+# 
+# #By forgetting to remove NA values I think I must have stumbled on what they
+# #used to make the precip data.
+# #
+# 
+# 
+# 
+# # May 2019 precip effort - visualization 
+# 
+# # Visual comparison (over time)
+# par(mfrow = c(2,1))
+# plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$PRCP_mm_cal, type = "l", main = "Original minus Cal", xlab = "Date", ylab = "mm precip")
+# plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$PRCP_mm_fj, type = "l", main = "Original minus FJ", xlab = "Date", ylab = "mm precip")
+# plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$mean_PRCP, type = "l", main = "Original minus Cal, FJ mean", xlab = "Date", ylab = "mm precip")
+# 
+# 
+# # Visual comparison (1:1 line)
+# par(mfrow = c(2,2))
+# plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_cal, pch = 18, main = "Original vs Cal", xlab = "orig", ylab = "mm precip")
+# abline(0,1, col = "red", lwd = 2)
+# plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
+# abline(0,1, col = "red", lwd = 2)
+# plot(daily_precip$PRCP_mm_orig, daily_precip$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
+# abline(0,1, col = "red", lwd = 2)
+# plot(daily_precip$PRCP_mm_cal, daily_precip$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
+# abline(0,1, col = "red", lwd = 2)
+# 
+# 
+# plot(daily_precip$Date, daily_precip$PRCP_mm_fj, type = "l", main = "Fort Jones station", xlab = "Date", ylab = "mm precip")
+# 
+# plot(daily_precip$Date, daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal, type = "l", 
+#      main = "Fort Jones minus Callahan", xlab = "Date", ylab = "mm precip")
+# 
+# #Histogram of differences between Callahan and FJ
+# hist(daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal, breaks = seq(-80,90,5))
+# nonzero_diffs = daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal; nonzero_diffs = nonzero_diffs[abs(nonzero_diffs)>5]
+# hist(nonzero_diffs,breaks = seq(-80,90,5), main = "Num. days with Cal-FJ difference of >5 mm", xlab = "mm difference, Cal-FJ")
+# 
+# 
 
-# Shitty match-up in daily values for orig v FJ AND orig v Cal AND orig v FJ-Cal mean. (cor of 0.19-0.22) 
-# Much better, but still pretty bad, match-up in daily values for Cal vs FJ. (cor of 0.67)
 
 
-# Visual comparison (1:1 line): monthly precip values, Test 1, don't remove NAs
-par(mfrow = c(2,2))
-plot(monthly_precip1$PRCP_mm_orig, monthly_precip1$PRCP_mm_cal, pch = 18, main = "Orig vs Cal, keep NAs", xlab = "orig", ylab = "mm precip")
-cor(monthly_precip1$PRCP_mm_orig, monthly_precip1$PRCP_mm_cal, use="pairwise.complete.obs") #0.81
-abline(0,1, col = "red", lwd = 2)
-plot(monthly_precip1$PRCP_mm_orig, monthly_precip1$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
-cor(monthly_precip1$PRCP_mm_orig, monthly_precip1$PRCP_mm_fj, use="pairwise.complete.obs") #0.68
-abline(0,1, col = "red", lwd = 2)
-plot(monthly_precip1$PRCP_mm_orig, monthly_precip1$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
-cor(monthly_precip1$PRCP_mm_orig, monthly_precip1$mean_PRCP, use="pairwise.complete.obs") #0.998
-abline(0,1, col = "red", lwd = 2)
-plot(monthly_precip1$PRCP_mm_cal, monthly_precip1$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
-cor(monthly_precip1$PRCP_mm_cal, monthly_precip1$PRCP_mm_fj, use="pairwise.complete.obs") #0.87
-abline(0,1, col = "red", lwd = 2)
+# Precip scratchwork ------------------------------------------------------
 
-
-# Visual comparison (1:1 line): monthly precip values, Test 2, NAs = 0
-par(mfrow = c(2,2))
-plot(monthly_precip2$PRCP_mm_orig, monthly_precip2$PRCP_mm_cal, pch = 18, main = "Orig vs Cal, NAs = 0", xlab = "orig", ylab = "mm precip")
-cor(monthly_precip2$PRCP_mm_orig, monthly_precip2$PRCP_mm_cal, use="pairwise.complete.obs") #0.83
-abline(0,1, col = "red", lwd = 2)
-plot(monthly_precip2$PRCP_mm_orig, monthly_precip2$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
-cor(monthly_precip2$PRCP_mm_orig, monthly_precip2$PRCP_mm_fj, use="pairwise.complete.obs") #0.73
-abline(0,1, col = "red", lwd = 2)
-plot(monthly_precip2$PRCP_mm_orig, monthly_precip2$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
-cor(monthly_precip2$PRCP_mm_orig, monthly_precip2$mean_PRCP, use="pairwise.complete.obs") #0.95
-abline(0,1, col = "red", lwd = 2)
-plot(monthly_precip2$PRCP_mm_cal, monthly_precip2$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
-cor(monthly_precip2$PRCP_mm_cal, monthly_precip2$PRCP_mm_fj, use="pairwise.complete.obs") #0.79
-abline(0,1, col = "red", lwd = 2)
-
-# Visual comparison (1:1 line): monthly precip values, Test 3, remove NAs
-par(mfrow = c(2,2))
-plot(monthly_precip3$PRCP_mm_orig, monthly_precip3$PRCP_mm_cal, pch = 18, main = "Orig vs Cal, remove NAs", xlab = "orig", ylab = "mm precip")
-cor(monthly_precip3$PRCP_mm_orig, monthly_precip3$PRCP_mm_cal, use="pairwise.complete.obs") #0.70
-abline(0,1, col = "red", lwd = 2)
-plot(monthly_precip3$PRCP_mm_orig, monthly_precip3$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
-cor(monthly_precip3$PRCP_mm_orig, monthly_precip3$PRCP_mm_fj, use="pairwise.complete.obs") #0.66
-abline(0,1, col = "red", lwd = 2)
-plot(monthly_precip3$PRCP_mm_orig, monthly_precip3$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
-cor(monthly_precip3$PRCP_mm_orig, monthly_precip3$mean_PRCP, use="pairwise.complete.obs") #0.94
-abline(0,1, col = "red", lwd = 2)
-plot(monthly_precip3$PRCP_mm_cal, monthly_precip3$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
-cor(monthly_precip3$PRCP_mm_cal, monthly_precip3$PRCP_mm_fj, use="pairwise.complete.obs") #0.79
-abline(0,1, col = "red", lwd = 2)
-
-
-
-#Visual comparison - over time
-par(mfrow = c(2,2))
-plot(monthly_precip$Month, monthly_precip$PRCP_mm_orig, type = "l", main = "Original", xlab = "Date", ylab = "mm precip")
-plot(monthly_precip$Month, monthly_precip$PRCP_mm_fj, type = "l", main = "FJ monthly", xlab = "Month", ylab = "mm precip")
-plot(monthly_precip$Month, monthly_precip$PRCP_mm_cal, type = "l", main = "Cal", xlab = "Month", ylab = "mm precip")
-plot(monthly_precip$Month, monthly_precip$mean_PRCP, type = "l", main = "Cal, FJ mean", xlab = "Month", ylab = "mm precip")
-
-
-# plot(monthly_precip$Month, monthly_precip$PRCP_mm_orig-monthly_precip$PRCP_mm_cal, type = "l", main = "Original minus Cal", xlab = "Month", ylab = "mm precip")
-# plot(monthly_precip$Month, monthly_precip$PRCP_mm_orig-monthly_precip$PRCP_mm_fj, type = "l", main = "Original minus FJ", xlab = "Month", ylab = "mm precip")
-plot(monthly_precip$Month, monthly_precip$PRCP_mm_orig-monthly_precip$mean_PRCP, type = "l", main = "Original minus Cal, FJ mean", xlab = "Month", ylab = "mm precip")
-
-
-#By forgetting to remove NA values I think I must have stumbled on what they
-#used to make the precip data.
-#
-
-
-
-# May 2019 precip effort - visualization 
-
-# Visual comparison (over time)
-par(mfrow = c(2,1))
-plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$PRCP_mm_cal, type = "l", main = "Original minus Cal", xlab = "Date", ylab = "mm precip")
-plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$PRCP_mm_fj, type = "l", main = "Original minus FJ", xlab = "Date", ylab = "mm precip")
-plot(daily_precip$Date, daily_precip$PRCP_mm_orig-daily_precip$mean_PRCP, type = "l", main = "Original minus Cal, FJ mean", xlab = "Date", ylab = "mm precip")
-
-
-# Visual comparison (1:1 line)
-par(mfrow = c(2,2))
-plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_cal, pch = 18, main = "Original vs Cal", xlab = "orig", ylab = "mm precip")
-abline(0,1, col = "red", lwd = 2)
-plot(daily_precip$PRCP_mm_orig, daily_precip$PRCP_mm_fj, pch = 18, main = "Original vs FJ", xlab = "orig", ylab = "mm precip")
-abline(0,1, col = "red", lwd = 2)
-plot(daily_precip$PRCP_mm_orig, daily_precip$mean_PRCP, pch = 18, main = "Original vs Cal, FJ mean", xlab = "orig", ylab = "mm precip")
-abline(0,1, col = "red", lwd = 2)
-plot(daily_precip$PRCP_mm_cal, daily_precip$PRCP_mm_fj, pch = 18, main = "Cal vs FJ", xlab = "Cal", ylab = "FJ")
-abline(0,1, col = "red", lwd = 2)
-
-
-plot(daily_precip$Date, daily_precip$PRCP_mm_fj, type = "l", main = "Fort Jones station", xlab = "Date", ylab = "mm precip")
-
-plot(daily_precip$Date, daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal, type = "l", 
-     main = "Fort Jones minus Callahan", xlab = "Date", ylab = "mm precip")
-
-#Histogram of differences between Callahan and FJ
-hist(daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal, breaks = seq(-80,90,5))
-nonzero_diffs = daily_precip$PRCP_mm_fj - daily_precip$PRCP_mm_cal; nonzero_diffs = nonzero_diffs[abs(nonzero_diffs)>5]
-hist(nonzero_diffs,breaks = seq(-80,90,5), main = "Num. days with Cal-FJ difference of >5 mm", xlab = "mm difference, Cal-FJ")
+# # _Did I replicate original 1991-2011 precip record ------------------------------
+# 
+# 
+# par(mfrow = c(3,1))
+# plot(p_record$PRCP_mm_orig,p_record$interp_cal_fj_mean); abline(0,1, col = "red")
+# cor(p_record$PRCP_mm_orig,p_record$interp_cal_fj_mean, use = "pairwise.complete.obs") #0.85
+# plot(p_record$PRCP_mm_cal, p_record$interp_cal_fj_mean); abline(0,1, col = "red")
+# plot(p_record$PRCP_mm_fj, p_record$interp_cal_fj_mean); abline(0,1, col = "red")
+# 
+# 
+# # That is... a reasonable reproduction of the original values. 
+# 
+# # plot monthly values to see if they match 
+# monthly_interp = aggregate(p_record$interp_cal_fj_mean, by = list(p_record$month_day1), FUN = sum)
+# monthly_orig = aggregate(p_record$PRCP_mm_orig, by = list(p_record$month_day1), FUN = sum)
+# cor(monthly_orig$x, monthly_interp$x, use = "pairwise.complete.obs") #0.87
+# plot(monthly_orig$x, monthly_interp$x)
+# abline(0,1, col = "red")
+# 
+# # 3 dates above 300 mm / month: 2005-02 is a serious outlier
+# View(monthly_interp)
+# 
+# # FOR NOW: this is our precip record, eh
+# par(mfrow = c(3,1))
+# plot(p_record$Date, p_record$PRCP_mm_fj, type = "l", ylim = c(0, 120))
+# plot(p_record$Date, p_record$PRCP_mm_cal, type = "l", ylim = c(0, 120))
+# plot(p_record$Date, p_record$interp_cal_fj_mean, type = "l", ylim = c(0, 120))
+# 
+# 
+# 
+# # _exceedance curves ------------------------------------------------------
+# 
+# legend_labels = c("Callahan", "Fort Jones","Greenview", "Yreka", "Yreka NW",
+#                   "Original 91-11", "Cal-FJ Mean",
+#                   "Gap-filled Fort Jones", "Gap-filled Callahan",
+#                   "Gap-filled Cal-FJ Mean")
+# #initialize plot
+# par(mfrow = c(1,1))
+# plot(x = NA, y = NA, xlim = c(0.6, 1), ylim = c(-2.1, 5), xlab = "Exceedance probability", ylab = "log daily precip, mm")
+# 
+# col_names = colnames(p_record)[!(colnames(p_record) %in% c("Date","month_day1", "water_year", "PRCP_mm_et"))]
+# for(i in 1:length(col_names)){
+#   i=i+1
+#   col_name = col_names[i]
+#   record = select(p_record, col_name)
+#   record = log(record[!is.na(record)])
+#   record_exceedance = (record[order(record)])
+#   t = length(record_exceedance)
+#   lines(x = (1:t)/t, y = record_exceedance, type = "l", col = i, main = col_name)#,
+#   # xlab = "Exceedance probability", ylab = "log daily precip, mm")
+# }
+# legend(x = "topleft", legend = legend_labels, cex = 0.8, lwd = rep(1, length(col_names)), col = 1:length(col_names))
+# 
+# 
+# 
+# 
+# # _visualize regression relationships --------------------------------------
+# 
+# par(mfrow = c(3,4))
+# 
+# months = 1:12; ys = c("fj", "cal"); xs = c("fj", "cal", "gv", #"et",
+#                                            "yr", "y2")
+# 
+# plotter = expand.grid(months = months, Y_var = ys, X_var = xs)
+# # plotter = expand.grid(Y_var = ys, X_var = xs)
+# #take out matching combinations (e.g. x = fj, y = fj)
+# plotter = plotter[as.character(plotter$Y_var) != as.character(plotter$X_var),]
+# 
+# for(i in 1:dim(plotter)[1]){
+#   mnth = as.numeric(plotter$month[i])
+#   y_abbrev = as.character(plotter$Y_var[i])
+#   x_abbrev = as.character(plotter$X_var[i])
+#   
+#   y_record = p_record[month(p_record$Date) == mnth, 
+#                       station_table$col_num[station_table$abbrev == y_abbrev]]
+#   x_record = p_record[month(p_record$Date) == mnth,
+#                       station_table$col_num[station_table$abbrev == x_abbrev]]
+#   
+#   plot(x_record, y_record, xlab = x_abbrev, ylab = y_abbrev, main = mnth)
+#   abline(0,1, col = "red")
+# }
+# 
+# 
+# 
+# # _visualize distance vs regression method --------------------------------
+# par(mfrow = c(3,1))
+# plot(p_record_regress$interp_cal_fj_mean, p_record_dist$interp_cal_fj_mean)
+# cor(p_record_regress$interp_cal_fj_mean, p_record_dist$interp_cal_fj_mean, use="pairwise.complete.obs") # 0.91
+# plot(p_record_regress$PRCP_mm_orig, p_record_regress$interp_cal_fj_mean)
+# plot(p_record_dist$PRCP_mm_orig, p_record_dist$interp_cal_fj_mean)
+# 
+# plot(p_record_regress$Date,p_record_regress$PRCP_mm_orig, type = "l")
+# plot(p_record_regress$Date,p_record_regress$interp_cal_fj_mean, type = "l")
+# plot(p_record_dist$Date,p_record_dist$interp_cal_fj_mean, type = "l")
+# 
+# tot_reg = sum(p_record_regress$interp_cal_fj_mean, na.rm=T)
+# tot_dist = sum(p_record_dist$interp_cal_fj_mean, na.rm=T)
+# 
+# tot_dist / tot_reg # the distance one yields about 9.5% more overall. Probably because Etna is close to both Cal and FJ.
+# 
+# # _histograms -------------------------------------------------------------
+# 
+# legend_labels = c("Callahan", "Fort Jones","Greenview", 
+#                   "Original 91-11", "Cal-FJ Mean",
+#                   "Gap-filled Callahan", "Gap-filled Fort Jones",
+#                   "Gap-filled Cal-FJ Mean")
+# #initialize plot
+# # plot(x = NA, y = NA, xlim = c(0.6, 1), ylim = c(0, 120), xlab = "Exceedance probabylity", ylab = "log daily precip, mm")
+# 
+# #need to fix these to account for 0s
+# par(mfrow = c(2,4))
+# col_names = colnames(p_record)[!(colnames(p_record) %in% c("Date","month_day1", "water_year", "PRCP_mm_et"))]
+# for(i in 1:length(col_names)){
+#   col_name = col_names[i]
+#   record = select(p_record, col_name)
+#   record = log(record[!is.na(record)])
+#   hist(record, main = col_name, col = i,
+#        freq = F)#, xlim = c(-2.5, 6), ylim = c(0, 0.4))
+#   abline(v = mean(record), lty = 2)
+#   print(mean(record))
+# }
+# 
+# 
+# 
+# 
+# 
+# 
+# # _How many days are 0 ppt? ----------------------------------------
+# 
+# 
+# # precip_for_tab = daily_precip[daily_precip$Date >= model_start_date & daily_precip$Date <= "2011-09-30",]
+# precip_for_tab = p_record; precip_for_tab$month_day1=NULL; precip_for_tab$water_year=NULL
+# 
+# num_cols = dim(precip_for_tab)[2]
+# num_nas = apply(precip_for_tab[2:num_cols], MARGIN = 2, function(x) sum(is.na(x)))
+# num_0s = apply(precip_for_tab[2:num_cols], MARGIN = 2, function(x) sum(x==0, na.rm=T))
+# num_gt0 = apply(precip_for_tab[2:num_cols], MARGIN = 2, function(x) sum(x>0, na.rm=T))
+# 
+# p_tab = data.frame( num_nas, num_0s, num_gt0)
+# 
+# total_days = as.numeric(unique(p_tab[1]+p_tab[2]+p_tab[3]))
+# p_tab$perc_0 = round(p_tab$num_0s / total_days, 2)*100
+# p_tab$perc_na = round(p_tab$num_nas / total_days, 2)*100
+# p_tab$perc_gt0 = round(p_tab$num_gt0 / total_days, 2)*100
+# p_tab$num0_div_gt0 = round(p_tab$num_0s / p_tab$num_gt0, 2) 
+# 
+# 
+# 
+# # Precip: how different are exceedance curves for each station? For orig precip input?
+# #starting point: histograms
+# 
+# # plot(p_record$Date, p_record$PRCP_mm_orig, ylim = c(0, 120))
+# # plot(p_record$Date, p_record$PRCP_mm_fj, ylim = c(0, 120))
+# # plot(p_record$Date, p_record$PRCP_mm_cal, ylim = c(0, 120))
+# par(mfrow = c(2,2))
+# 
+# # need to fix these to account for 0 values becoming -Inf. proportion of 0 values. 
+# hist(log10(p_record$PRCP_mm_fj), xlab = "log10 of FJ daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6), freq = F)
+# hist(log10(p_record$PRCP_mm_cal), xlab = "log10 of Cal daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6),freq = F)
+# hist(log10(p_record$PRCP_mm_orig), xlab = "log10 of Original Input daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6),freq = F)
+# hist(log10(p_record$interp_cal_fj_mean), xlab = "log10 of Interp FJ-Cal daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6),freq = F)
+# 
+# 
+# # Precip (geography) ------------------------------------------------------
+# 
+# # Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
+# rm(list = ls()[!(ls() %in% c("wx")) ]) #Remove all variables other than the weather dataframe
+# # Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
+# 
+# 
+# station_info = make_station_table()
+# station_table = station_info[[1]]; station_dist = station_info[[2]]
+# 
+# daily_precip_p_record = make_daily_precip_extended_stations(weather_table = wx,
+#                                                             record_start_date = model_start_date, 
+#                                                             record_end_date = model_end_date)
+# 
+# p_record = fill_fj_cal_gaps_distance(station_dist = station_dist, 
+#                                      daily_precip = daily_precip_p_record,
+#                                      start_date = model_start_date, 
+#                                      end_date = model_end_date)
+# 
+# # average interp-fj and interp-cal records and compare to original
+# p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
+#                                      MARGIN = 1, FUN = mean, na.rm=T)
 
 

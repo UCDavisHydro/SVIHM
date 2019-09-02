@@ -452,8 +452,8 @@ rain_day_threshold = 0 # Any rain counts as a rainy day
 rainy_season_bounds = c(0.1, 0.9)
 
 #Decide number of large storms and generate Scenario A records
-num_large_storms = 10
-scenario_folder_name = "pvar_a10"
+num_large_storms = 5
+scenario_folder_name = "pvar_a05"
 
 P_sca = generate_scenario_a(select(ppt_hist, date, precip_m), num_large_storms)
 # P_sca = select(P_sca, date, sca); colnames(P_sca) = c("date", "precip_m")
