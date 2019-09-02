@@ -236,7 +236,7 @@ write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
 #  precip.txt ----------------------------------------------------
 # to do: Make precip writing callable from SVIHM_input_analyses
 
-
+file.copy()
 
 #  ref_et.txt ----------------------------------------------------
 # to do: Make precip writing callable from SVIHM_input_analyses
