@@ -17,51 +17,60 @@ library(raster)
 
 # 1) Set drives for collecting all SWBM input files and SVIHM modflow files
 
-# 1a) Set project directory. 
-#This code allows it to automatically detect the location of this R script.
-isRStudio <- Sys.getenv("RSTUDIO") == "1"
-if(isRStudio == TRUE){ library(rstudioapi); proj_dir <- dirname(dirname(getActiveDocumentContext()$path))}
-if(isRStudio == FALSE){ library(here); proj_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
+# Set project directory. 
+# Option 1: this script is being called by Update_SVIHM_Inputs. 
+#   Declare directories and model dates, and connect to db, in outer script. 
 
-# 1b) Set directories for data used in update and output file locations
+#Option 2: this script is the active document in RStudio:
+# declare_dir_in_analyses_script = TRUE #defaults to false, when called from update_SVIHM_Inputs
 
-## Data used in update
-Stream_Regression_dir = file.path(proj_dir, "Streamflow_Regression_Model")
-time_indep_dir = file.path(proj_dir, "SVIHM_Input_Files", "time_independent_input_files")
-ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
-## Directory used to archive the input files for each scenario
-model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
-scenario_dev_dir = file.path(proj_dir, "SVIHM_Input_Files", "Scenario_Development")
-## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(proj_dir, "SWBM", "up2018")
-MF_file_dir = file.path(proj_dir, "MODFLOW","up2018")
-# Directory for connecting to the database
-dms_dir = file.path(dirname(proj_dir), "SiskiyouGSP2022", "Data_Management_System")
-#Connect to Siskiyou DB
+if(Sys.getenv("RSTUDIO")==1 & declare_dir_in_analyses_script ){ 
+  library(rstudioapi)
+  proj_dir <- dirname(dirname(getActiveDocumentContext()$path))
+  ## Data used in update
+  Stream_Regression_dir = file.path(proj_dir, "Streamflow_Regression_Model")
+  time_indep_dir = file.path(proj_dir, "SVIHM_Input_Files", "time_independent_input_files")
+  ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
+  ## Directory used to archive the input files for each scenario
+  model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
+  scenario_dev_dir = file.path(proj_dir, "SVIHM_Input_Files", "Scenario_Development")
+  ## Directories for running the scenarios (files copied at end of script)
+  SWBM_file_dir = file.path(proj_dir, "SWBM", "up2018")
+  MF_file_dir = file.path(proj_dir, "MODFLOW","up2018")
+  # Directory for connecting to the database
+  dms_dir = file.path(dirname(proj_dir), "SiskiyouGSP2022", "Data_Management_System")
+  #Connect to Siskiyou DB
+  source(file.path(dms_dir, "connect_to_db.R"))
+  
 
-source(file.path(dms_dir, "connect_to_db.R"))
+# SET MODEL RUN DATES -----------------------------------------------------
+  
+  start_year = 1990 # WY 1991; do not change
+  end_year = 2018 # through WY of this year
+  model_whole_water_years = TRUE
+  
+  if(model_whole_water_years)
+  {start_month = "10"; start_day = "01"; end_month = "09"; end_day = "30"}
+  if(!model_whole_water_years) {print("please define month and day for start and end of model run period")}
+  
+  #Generate date vectors and number of stress periods
+  model_start_date = as.Date(paste(start_year, start_month, start_day, sep = "-"))
+  model_end_date = as.Date(paste(end_year, end_month, end_day, sep = "-"))
+  model_days = seq(from = model_start_date, to = model_end_date, by = "days")
+  model_months = seq(from = model_start_date, to = model_end_date, by = "month")
+  # Calculate number of days (time steps) in each month (stress period)
+  model_end_date_plus_one = as.Date(paste(end_year, as.numeric(end_month)+1, end_day, sep = "-"))
+  model_months_plus_one = seq(from = model_start_date, to = model_end_date_plus_one, by = "month")
+  num_days = diff(model_months_plus_one) #number of days in each stress period/month
+  
+  num_stress_periods = length(model_months)
+  
+}
+
+# if(isRStudio == FALSE){ library(here); proj_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
+# here() doesn't really work on this computer.
 
 
-#SET MODEL RUN DATES
-start_year = 1990 # WY 1991; do not change
-end_year = 2018 # through WY of this year
-model_whole_water_years = TRUE
-
-if(model_whole_water_years)
-{start_month = "10"; start_day = "01"; end_month = "09"; end_day = "30"} 
-if(!model_whole_water_years) {print("please define month and day for start and end of model run period")}
-
-#Generate date vectors and number of stress periods
-model_start_date = as.Date(paste(start_year, start_month, start_day, sep = "-"))
-model_end_date = as.Date(paste(end_year, end_month, end_day, sep = "-"))
-model_days = seq(from = model_start_date, to = model_end_date, by = "days")
-model_months = seq(from = model_start_date, to = model_end_date, by = "month")
-# Calculate number of days (time steps) in each month (stress period)
-model_end_date_plus_one = as.Date(paste(end_year, as.numeric(end_month)+1, end_day, sep = "-"))
-model_months_plus_one = seq(from = model_start_date, to = model_end_date_plus_one, by = "month")
-num_days = diff(model_months_plus_one) #number of days in each stress period/month
-
-num_stress_periods = length(model_months)
 
 
 
@@ -419,7 +428,7 @@ write_swbm_precip_input_file=function(){
   
   daily_precip_updated = data.frame(PRCP = p_record$stitched, Date = p_record$Date)
   
-  #combine, format to match the original precip file, and write as text file
+  #format to match the original precip file, and write as text file
   daily_precip_updated$Date = paste(str_pad(day(daily_precip_updated$Date), 2, pad="0"),
                                     str_pad(month(daily_precip_updated$Date), 2, pad="0"),
                                     year(daily_precip_updated$Date), sep = "/")
@@ -430,275 +439,120 @@ write_swbm_precip_input_file=function(){
   
 }
 
-write_swbm_precip_input_file()
-
-# _stitch orig and update together ----------------------------------------
-
-
+# write_swbm_precip_input_file()
 
 
 
 # ET ----------------------------------------------------------------------
 
 #to do: webscrape cimis? (login?)
-# to do: explore date range of spatial cimis
-# to do: create daily and aggregatated refET inputs
-# to do: run SWBM with both daily and aggregated refET
 
+# to do: explore date range of spatial cimis; create daily and aggregatated refET inputs; run SWBM with both daily and aggregated refET 
+#^ DONE. Makes no difference. Sticking with monthly ET values
 
-# _stitch together orig and update ----------------------------------------
-
-
-# #Attempt in May 2019
-# #units? 
-# et_dl_may2019 = read.csv(file.path(ref_data_dir,"eto_spatial_report.csv"))
-# 
-# ##generate new et record
-# et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
-# et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
-# et = data.frame(Date = et$Date, ETo_mm = et$ETo..mm.day.)
-# 
-# #Update existing record
-# #subset update for ET, build update dataframe in same format as original input file
-# et_update_allcol = subset(et_dl_may2019, Date >= as.Date("2011-10-01") & Date <= model_end_date)
-# ETo_m = et_update_allcol$ETo..mm.day./1000
-# et_update = data.frame(ETo_m)
-# et_update$ETo_in = et_update$ETo_m * 39.3701 #convert to inches
-# et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date), 2, pad="0"),
-#                                                str_pad(month(et_update_allcol$Date), 2, pad="0"),
-#                                                year(et_update_allcol$Date), sep = "/")
-# 
-# #Read in original file
-# ref_et_orig = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
-# # head(ref_et_orig)
-# # plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
-# 
-# #Combine into updated ET record, check for continuity, and write file
-# colnames(ref_et_orig) = colnames(et_update)
-# ref_et_updated = rbind(ref_et_orig, et_update)
-# # plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
-# # sum(is.na(ref_et_updated$ETo_m))
-# write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
-#             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
-
-
-
-# _visualize daily and monthly values -----------------------------------
-
-#225 station
-et225_dl_aug2019 = read.csv(file.path(ref_data_dir,"eto_daily_225.csv"))
-et225 = data.frame(Date = et225_dl_aug2019$Date, ETo_mm = et225_dl_aug2019$ETo..mm)
-et225$Date = as.Date(et225$Date, format = "%m/%d/%Y")
-et225$month1 = floor_date(et225$Date, unit = "month")
-et225_monthly = aggregate(et225$ETo_mm, by = list(et225$month1), FUN = sum, na.rm=T); colnames(et225_monthly) = c("Date", "ETo_mm")
-par(mfrow = c(2,1))
-plot(et225_monthly$Date, et225_monthly$ETo_mm, type ="l")
-plot(et225$Date, et225$ETo_mm, col = "red", type ="l")
-
-#spatial cimis
-et_dl_aug2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report_aug2019.csv"))
-et_sp = data.frame(Date = et_dl_aug2019$Date, ETo_mm = et_dl_aug2019$ETo..mm)
-et_sp$Date = as.Date(et_sp$Date, format = "%m/%d/%Y")
-et_sp$month1 = floor_date(et_sp$Date, unit = "month")
-et_sp_monthly = aggregate(et_sp$ETo_mm, by = list(et_sp$month1), FUN = sum, na.rm=T); colnames(et_sp_monthly) = c("Date", "ETo_mm")
-par(mfrow = c(2,1))
-plot(et_sp_monthly$Date, et_sp_monthly$ETo_mm, type ="l")
-plot(et_sp$Date, et_sp$ETo_mm, col = "red", type ="l")
-
-
-#Original eto record
-et_orig_input = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
-et_orig = data.frame(Date = as.Date(et_orig_input$V3, format = "%d/%m/%Y"), ETo_mm = et_orig_input$V1*1000)
-et_orig$month1 = floor_date(et_orig$Date, unit = "month")
-et_orig_monthly = aggregate(et_orig$ETo_mm, by = list(et_orig$month1), FUN = sum, na.rm=T); colnames(et_orig_monthly) = c("Date", "ETo_mm")
-
-
-#Set date bounds/plot titles
-# sd = as.Date("1990-10-01"); ed = as.Date("2019-09-30")
-sd = as.Date("2017-03-01"); ed = as.Date("2017-09-01")
-name_string = "ETo 2017"
-
-#Initialize pdf
-pdf(file = paste0(name_string,".pdf"), 11, 8.5)
-
-#Plot params
-par(mfrow = c(2,1))
-# vert_lines = seq(sd, ed, by = "year")
-vert_lines = seq(sd, ed, by = "month")
-horz_lines_daily = seq(0, 10, 2); horz_lines_monthly = seq(0,300,50)
-
-#daily data
-
-plot(et_orig$Date, et_orig$ETo_mm, type ="l", col = "black", xlim = c(sd, ed), ylim = c(0,12),
-     xlab = "Date", ylab = "Daily Reference ET (mm)", main = paste("Daily", name_string))
-abline(v = vert_lines, h = horz_lines_daily, col = "darkgray")
-lines(et_orig$Date, et_orig$ETo_mm, type ="l", col = "black", xlim = c(sd, ed))
-lines(et_sp$Date, et_sp$ETo_mm, type ="l", col = rgb(1,0,0,0.6), xlim = c(sd, ed))
-lines(et225$Date, et225$ETo_mm, type ="l", col = rgb(0,0,1,0.5), xlim = c(sd, ed))
-axis(side = 1, at = vert_lines, labels=F)
-legend(x = "topright", lwd = c(1,1,1), col = c("black",rgb(1,0,0,0.7), rgb(0,0,1,0.5)), cex = 0.9,bg="white",
-       legend = c("1991-2011 SVIHM ETo", "Spatial CIMIS circa 225", "CIMIS Station 225 data"))
-
-
-# monthly data
-plot(et_orig_monthly$Date, et_orig_monthly$ETo_mm, type ="l", lwd=2, col = "black", xlim = c(sd, ed), ylim = c(0,300),
-     xlab = "Date", ylab = "Monthly Reference ET (mm)", main = paste("Monthly", name_string))
-lines(et_sp_monthly$Date, et_sp_monthly$ETo_mm, type = "l", lwd=2, col = rgb(1,0,0,0.7), xlim = c(sd, ed))
-lines(et225_monthly$Date, et225_monthly$ETo_mm, type = "l", lwd=2, col = rgb(0,0,1,0.5), xlim = c(sd, ed))
-abline(v = vert_lines, h = horz_lines_monthly, col = "darkgray")
-legend(x = "topright", lwd = c(2,2,2), col = c("black",rgb(1,0,0,0.7), rgb(0,0,1,0.5)), cex = 0.9, bg="white",
-       legend = c("1991-2011 SVIHM ETo", "Spatial CIMIS circa 225", "CIMIS Station 225 data"))
-
-dev.off()
-
-
-
-# _stitch original-daily record (aug 2018) -----------------------------------------------------------------------
-
-head(et_orig_input); colnames(et_orig_input) = c("ETo_m", "ETo_in", "Date")
-#Need to match this format.
-
-# last plausible ET record for the original input is June 2011. After that it flatlines for some reason. 
-# first plausible CIMIS225 record is Apr 21, 2015. first full month is May 2015. 
-# So, the stitched record will be:
-# original record 1991-June 30 2011, spatial CIMIS June 30 2011-Apr 20 2015, and 225 CIMIS Apr 21 2015-Sep 30 2018.
-end_orig = as.Date("2011-06-30"); end_sp = as.Date("2015-04-20")
-
-et_orig = data.frame(Date = as.Date(et_orig_input$Date, format = "%d/%m/%Y"), ETo_mm = et_orig_input$ETo_m*1000)
-
-#Initialize stitched record
-et_stitched_1 = data.frame(Date = model_days); et_stitched_1$ETo_mm = NA
-
-#Attempt to assign original record to 1991-2011 period
-# et_stitched_1$ETo_mm[1:which(et_stitched_1$Date == end_orig)] = et_orig$ETo_mm[which(et_orig$Date==model_start_date): which(et_orig$Date == end_orig)]
-# This ^ doesn't work because they didn't include the mother effing leap days
-
-#Add leap days to et record. This is easy, because they are constant values for each month. 
-leap_days = as.Date(paste0(c(1992, 1996, 2000, 2004, 2008), "-02-29"))
-leap_day_values = rep(NA, 5)
-for(i in 1:length(leap_days)){ leap_day_values[i] = et_orig$ETo_mm[et_orig$Date == leap_days[i]-1]} #assign the Feb 28 value to Feb 29
-#Jeez, it's the same for each february except 2004. What weird formula made this?
-et_orig = rbind(et_orig, data.frame(Date = leap_days, ETo_mm = leap_day_values)) #append leap days
-et_orig = et_orig[order(et_orig$Date),]
-#Now it works to assign the original record:
-#Original record
-et_stitched_1$ETo_mm[1:which(et_stitched_1$Date == end_orig)] = et_orig$ETo_mm[which(et_orig$Date==model_start_date):which(et_orig$Date == end_orig)]
-#Spatial CIMIS record
-et_stitched_1$ETo_mm[which(et_stitched_1$Date == (end_orig+1)):which(et_stitched_1$Date ==end_sp)] = 
-  et_sp$ETo_mm[which(et_sp$Date== (end_orig +1)):which(et_sp$Date == end_sp)]
-# CIMIS225 record
-et_stitched_1$ETo_mm[which(et_stitched_1$Date == (end_sp+1)):length(et_stitched_1$Date)] = 
-  et225$ETo_mm[which(et225$Date==(end_sp +1)): which(et225$Date == model_end_date)]
-
-
-
-
-# _stitch original-monthly record (aug 2019) -------------------------------
-
-#add number of days per month to monthly data frames
-num_days_df = data.frame(month_day1 = model_months, num_days = num_days)
-et_sp_monthly$num_days = as.numeric(num_days_df$num_days[match(et_sp_monthly$Date, num_days_df$month_day1)])
-et225_monthly$num_days = as.numeric(num_days_df$num_days[match(et225_monthly$Date, num_days_df$month_day1)])
-#Calculate monthly averages
-et_sp_monthly$daily_avg_by_mo = et_sp_monthly$ETo_mm / et_sp_monthly$num_days
-et225_monthly$daily_avg_by_mo = et225_monthly$ETo_mm / et225_monthly$num_days
-
-#Initialize stitched original-monthly record
-et_stitched_2 = data.frame(Date = model_days)
-et_stitched_2$ETo_mm = NA
-
-#Original record
-et_stitched_2$ETo_mm[1:which(et_stitched_2$Date == end_orig)] = et_orig$ETo_mm[which(et_orig$Date==model_start_date):which(et_orig$Date == end_orig)]
-
-#Spatial CIMIS record
-#declare indices for the spatial section of the CIMIS record
-sp_indices_stitched = which(et_stitched_2$Date == (end_orig+1)):which(et_stitched_2$Date ==end_sp)
-# Assign each day in the Spatial Cimis chunk of the record the monthly average ET value from the et_sp_monthly table.
-# Generate indices by matching the floor_date of each day in stitched_2 with the date in et_sp_monthly.
-et_stitched_2$ETo_mm[sp_indices_stitched] = 
-  et_sp_monthly$daily_avg_by_mo[match(floor_date(et_stitched_2$Date[sp_indices_stitched], unit="month"), et_sp_monthly$Date )]
-
-# CIMIS225 record
-# declare indices
-indices225_stitched = which(et_stitched_2$Date == (end_sp+1)):length(et_stitched_2$Date)
-# indices225_daily = which(et225$Date== (end_sp +1)):which(et_sp$Date == model_end_date)
-et_stitched_2$ETo_mm[indices225_stitched] = 
-  et225_monthly$daily_avg_by_mo[match(floor_date(et_stitched_2$Date[indices225_stitched], unit="month"), et225_monthly$Date )]
-
-
-# _visualize stitched records ---------------------------------------------
-
-
-par(mfrow = c(2,1))
-plot(et_stitched_1$Date, et_stitched_1$ETo_mm, type = "l")
-plot(et_stitched_2$Date, et_stitched_2$ETo_mm, type = "l")
-
-#Set date bounds/plot titles
-# sd = as.Date("1990-10-01"); ed = as.Date("2019-09-30")
-sd = as.Date("2017-03-01"); ed = as.Date("2017-09-01")
-name_string = "ETo 2017"
-
-#Initialize pdf
-pdf(file = paste0(name_string,".pdf"), 11, 8.5)
-
-#Plot params
-par(mfrow = c(2,1))
-# vert_lines = seq(sd, ed, by = "year")
-vert_lines = seq(sd, ed, by = "month")
-horz_lines_daily = seq(0, 10, 2); horz_lines_monthly = seq(0,300,50)
-
-#daily data
-
-plot(et_orig$Date, et_orig$ETo_mm, type ="l", col = "black", xlim = c(sd, ed), ylim = c(0,12),
-     xlab = "Date", ylab = "Daily Reference ET (mm)", main = paste("Daily", name_string))
-abline(v = vert_lines, h = horz_lines_daily, col = "darkgray")
-lines(et_orig$Date, et_orig$ETo_mm, type ="l", col = "black", xlim = c(sd, ed))
-lines(et_sp$Date, et_sp$ETo_mm, type ="l", col = rgb(1,0,0,0.6), xlim = c(sd, ed))
-lines(et225$Date, et225$ETo_mm, type ="l", col = rgb(0,0,1,0.5), xlim = c(sd, ed))
-axis(side = 1, at = vert_lines, labels=F)
-legend(x = "topright", lwd = c(1,1,1), col = c("black",rgb(1,0,0,0.7), rgb(0,0,1,0.5)), cex = 0.9,bg="white",
-       legend = c("1991-2011 SVIHM ETo", "Spatial CIMIS circa 225", "CIMIS Station 225 data"))
-
-
-
-# _visualize yearly -------------------------------------------------------
-
-et_stitched_1$wy = year(et_stitched_1$Date)
-et_stitched_1$wy[month(et_stitched_1$Date) > 9] = et_stitched_1$wy[month(et_stitched_1$Date) > 9] +1
-et_yearly = aggregate(et_stitched_1$ETo_mm, by = list(et_stitched_1$wy), FUN = sum)
-colnames(et_yearly) = c("Date", "ETo_mm")
-# barplot(height = et_yearly$ETo_mm, names.arg = et_yearly$Date)
-plot(et_yearly$Date, et_yearly$ETo_mm, ylim = c(0, 1500))
-grid()
-
+# From _visualize yearly:
 # WY 2011 is very low ET. I guess it was a high-rainfall year. It's not as low as 1997.
 # Man, whenever the spatial CIMIS and the NWSETO original record overlap, the original record has
-# this spike in the summer that is absent from the summer CIMIS record. 
-# Are we systematically overestimating ET in the original record? 
+# this spike in the summer that is absent from the summer CIMIS record.
+# Are we systematically overestimating ET in the original record?
 
 
 
-# _write ET output files ---------------------------------------------------
+write_swbm_et_input_file=function(){
+  
+  # 1. Read in 3 ET sources
+  
+  #225 station
+  et225_dl_aug2019 = read.csv(file.path(ref_data_dir,"eto_daily_225.csv"))
+  et225 = data.frame(Date = et225_dl_aug2019$Date, ETo_mm = et225_dl_aug2019$ETo..mm)
+  et225$Date = as.Date(et225$Date, format = "%m/%d/%Y")
+  et225$month1 = floor_date(et225$Date, unit = "month")
+  et225_monthly = aggregate(et225$ETo_mm, by = list(et225$month1), FUN = sum, na.rm=T); colnames(et225_monthly) = c("Date", "ETo_mm")
+  par(mfrow = c(2,1))
+  plot(et225_monthly$Date, et225_monthly$ETo_mm, type ="l")
+  plot(et225$Date, et225$ETo_mm, col = "red", type ="l")
+  
+  #spatial cimis
+  et_dl_aug2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report_aug2019.csv"))
+  et_sp = data.frame(Date = et_dl_aug2019$Date, ETo_mm = et_dl_aug2019$ETo..mm)
+  et_sp$Date = as.Date(et_sp$Date, format = "%m/%d/%Y")
+  et_sp$month1 = floor_date(et_sp$Date, unit = "month")
+  et_sp_monthly = aggregate(et_sp$ETo_mm, by = list(et_sp$month1), FUN = sum, na.rm=T); colnames(et_sp_monthly) = c("Date", "ETo_mm")
+  par(mfrow = c(2,1))
+  plot(et_sp_monthly$Date, et_sp_monthly$ETo_mm, type ="l")
+  plot(et_sp$Date, et_sp$ETo_mm, col = "red", type ="l")
+  
+  
+  #Original eto record
+  et_orig_input = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
+  et_orig = data.frame(Date = as.Date(et_orig_input$V3, format = "%d/%m/%Y"), ETo_mm = et_orig_input$V1*1000)
 
-et_input_1 = data.frame(ETo_m = round(et_stitched_1$ETo_mm /1000, 9), #convert to meters
-                        ETo_in = round(et_stitched_1$ETo_mm / 25.4, 2), #convert to inches
-                        Date = et_stitched_1$Date)
-et_input_1$Date = paste(str_pad(day(et_input_1$Date), 2, pad="0"),
-                                               str_pad(month(et_input_1$Date), 2, pad="0"),
-                                               year(et_input_1$Date), sep = "/")
-write.table(et_input_1, file = file.path(scenario_dev_dir, "ref_et_daily.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
-et_input_2 = data.frame(ETo_m = et_stitched_2$ETo_mm /1000, 
-                        ETo_in = et_stitched_2$ETo_mm / 25.4, #convert to inches
-                        Date = et_stitched_2$Date)
-et_input_2$Date = paste(str_pad(day(et_input_2$Date), 2, pad="0"),
-                        str_pad(month(et_input_2$Date), 2, pad="0"),
-                        year(et_input_2$Date), sep = "/")
-write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+# 2. processing (leap days, avg daily by month)
+  
+  #Add leap days to et record. This is easy, because they are constant values for each month.
+  leap_days = as.Date(paste0(c(1992, 1996, 2000, 2004, 2008), "-02-29"))
+  leap_day_values = rep(NA, 5)
+  for(i in 1:length(leap_days)){ leap_day_values[i] = et_orig$ETo_mm[et_orig$Date == leap_days[i]-1]} #assign the Feb 28 value to Feb 29
+  #Jeez, it's the same for each february except 2004. What weird formula made this?
+  et_orig = rbind(et_orig, data.frame(Date = leap_days, ETo_mm = leap_day_values)) #append leap days
+  et_orig = et_orig[order(et_orig$Date),]
+  
+  #add number of days per month to monthly data frames
+  num_days_df = data.frame(month_day1 = model_months, num_days = num_days)
+  et_sp_monthly$num_days = as.numeric(num_days_df$num_days[match(et_sp_monthly$Date, num_days_df$month_day1)])
+  et225_monthly$num_days = as.numeric(num_days_df$num_days[match(et225_monthly$Date, num_days_df$month_day1)])
+  #Calculate monthly averages
+  et_sp_monthly$daily_avg_by_mo = et_sp_monthly$ETo_mm / et_sp_monthly$num_days
+  et225_monthly$daily_avg_by_mo = et225_monthly$ETo_mm / et225_monthly$num_days
+  
 
+# 3. stitch 3 ET sources
 
+  #Initialize stitched original-monthly record
+  et_stitched_2 = data.frame(Date = model_days)
+  et_stitched_2$ETo_mm = NA
+  
+  # 3a) Suture dates:
+  # last plausible ET record for the original input is June 2011. After that it flatlines for some reason.
+  # first plausible CIMIS225 record is Apr 21, 2015. first full month is May 2015.
+  # So, the stitched record will be:
+  # original record 1991-June 30 2011, spatial CIMIS June 30 2011-Apr 20 2015, and 225 CIMIS Apr 21 2015-Sep 30 2018.
+  # So, the stitched record will be:
+  # original record 1991-June 30 2011, spatial CIMIS June 30 2011-Apr 20 2015, and 225 CIMIS Apr 21 2015-Sep 30 2018.
+  end_orig = as.Date("2011-06-30"); end_sp = as.Date("2015-04-20")
+  
+  #Assign original record
+  et_stitched_2$ETo_mm[1:which(et_stitched_2$Date == end_orig)] = et_orig$ETo_mm[which(et_orig$Date==model_start_date):which(et_orig$Date == end_orig)]
+  
+  #Assigng spatial CIMIS record
+  #declare indices for the spatial section of the CIMIS record
+  sp_indices_stitched = which(et_stitched_2$Date == (end_orig+1)):which(et_stitched_2$Date ==end_sp)
+  # Assign each day in the Spatial Cimis chunk of the record the monthly average ET value from the et_sp_monthly table.
+  # Generate indices by matching the floor_date of each day in stitched_2 with the date in et_sp_monthly.
+  et_stitched_2$ETo_mm[sp_indices_stitched] = 
+    et_sp_monthly$daily_avg_by_mo[match(floor_date(et_stitched_2$Date[sp_indices_stitched], unit="month"), et_sp_monthly$Date )]
+  
+  # Assign CIMIS225 record
+  # declare indices
+  indices225_stitched = which(et_stitched_2$Date == (end_sp+1)):length(et_stitched_2$Date)
+  # indices225_daily = which(et225$Date== (end_sp +1)):which(et_sp$Date == model_end_date)
+  et_stitched_2$ETo_mm[indices225_stitched] = 
+    et225_monthly$daily_avg_by_mo[match(floor_date(et_stitched_2$Date[indices225_stitched], unit="month"), et225_monthly$Date )]
+  
+# 4. write et input file
+  et_input_2 = data.frame(ETo_m = et_stitched_2$ETo_mm /1000, 
+                          ETo_in = et_stitched_2$ETo_mm / 25.4, #convert to inches
+                          Date = et_stitched_2$Date)
+  et_input_2$Date = paste(str_pad(day(et_input_2$Date), 2, pad="0"),
+                          str_pad(month(et_input_2$Date), 2, pad="0"),
+                          year(et_input_2$Date), sep = "/")
+  write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt"),
+              sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+}
+
+# write_swbm_et_input_file()
 
 # scratchwork -------------------------------------------------------------
 
@@ -1058,7 +912,7 @@ write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt")
 # hist(log10(p_record$interp_cal_fj_mean), xlab = "log10 of Interp FJ-Cal daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6),freq = F)
 # 
 # 
-# # Precip (geography) ------------------------------------------------------
+# #_Precip (geography) ------------------------------------------------------
 # 
 # # Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
 # rm(list = ls()[!(ls() %in% c("wx")) ]) #Remove all variables other than the weather dataframe
@@ -1081,4 +935,229 @@ write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt")
 # p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
 #                                      MARGIN = 1, FUN = mean, na.rm=T)
 
+
+
+
+
+
+
+# ET scratchwork ----------------------------------------------------------
+
+# _stitch together orig and update ET----------------------------------------
+
+
+# #Attempt in May 2019
+# #units? 
+# et_dl_may2019 = read.csv(file.path(ref_data_dir,"eto_spatial_report.csv"))
+# 
+# ##generate new et record
+# et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
+# et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
+# et = data.frame(Date = et$Date, ETo_mm = et$ETo..mm.day.)
+# 
+# #Update existing record
+# #subset update for ET, build update dataframe in same format as original input file
+# et_update_allcol = subset(et_dl_may2019, Date >= as.Date("2011-10-01") & Date <= model_end_date)
+# ETo_m = et_update_allcol$ETo..mm.day./1000
+# et_update = data.frame(ETo_m)
+# et_update$ETo_in = et_update$ETo_m * 39.3701 #convert to inches
+# et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date), 2, pad="0"),
+#                                                str_pad(month(et_update_allcol$Date), 2, pad="0"),
+#                                                year(et_update_allcol$Date), sep = "/")
+# 
+# #Read in original file
+# ref_et_orig = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
+# # head(ref_et_orig)
+# # plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
+# 
+# #Combine into updated ET record, check for continuity, and write file
+# colnames(ref_et_orig) = colnames(et_update)
+# ref_et_updated = rbind(ref_et_orig, et_update)
+# # plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
+# # sum(is.na(ref_et_updated$ETo_m))
+# write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
+#             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
+# _visualize records ------------------------------------------------------
+
+# 
+# #Set date bounds/plot titles
+# # sd = as.Date("1990-10-01"); ed = as.Date("2019-09-30")
+# sd = as.Date("2017-03-01"); ed = as.Date("2017-09-01")
+# name_string = "ETo 2017"
+# 
+# #Initialize pdf
+# pdf(file = paste0(name_string,".pdf"), 11, 8.5)
+# 
+# #Plot params
+# par(mfrow = c(2,1))
+# # vert_lines = seq(sd, ed, by = "year")
+# vert_lines = seq(sd, ed, by = "month")
+# horz_lines_daily = seq(0, 10, 2); horz_lines_monthly = seq(0,300,50)
+# 
+# #daily data
+# 
+# plot(et_orig$Date, et_orig$ETo_mm, type ="l", col = "black", xlim = c(sd, ed), ylim = c(0,12),
+#      xlab = "Date", ylab = "Daily Reference ET (mm)", main = paste("Daily", name_string))
+# abline(v = vert_lines, h = horz_lines_daily, col = "darkgray")
+# lines(et_orig$Date, et_orig$ETo_mm, type ="l", col = "black", xlim = c(sd, ed))
+# lines(et_sp$Date, et_sp$ETo_mm, type ="l", col = rgb(1,0,0,0.6), xlim = c(sd, ed))
+# lines(et225$Date, et225$ETo_mm, type ="l", col = rgb(0,0,1,0.5), xlim = c(sd, ed))
+# axis(side = 1, at = vert_lines, labels=F)
+# legend(x = "topright", lwd = c(1,1,1), col = c("black",rgb(1,0,0,0.7), rgb(0,0,1,0.5)), cex = 0.9,bg="white",
+#        legend = c("1991-2011 SVIHM ETo", "Spatial CIMIS circa 225", "CIMIS Station 225 data"))
+# 
+# 
+# # monthly data
+# plot(et_orig_monthly$Date, et_orig_monthly$ETo_mm, type ="l", lwd=2, col = "black", xlim = c(sd, ed), ylim = c(0,300),
+#      xlab = "Date", ylab = "Monthly Reference ET (mm)", main = paste("Monthly", name_string))
+# lines(et_sp_monthly$Date, et_sp_monthly$ETo_mm, type = "l", lwd=2, col = rgb(1,0,0,0.7), xlim = c(sd, ed))
+# lines(et225_monthly$Date, et225_monthly$ETo_mm, type = "l", lwd=2, col = rgb(0,0,1,0.5), xlim = c(sd, ed))
+# abline(v = vert_lines, h = horz_lines_monthly, col = "darkgray")
+# legend(x = "topright", lwd = c(2,2,2), col = c("black",rgb(1,0,0,0.7), rgb(0,0,1,0.5)), cex = 0.9, bg="white",
+#        legend = c("1991-2011 SVIHM ETo", "Spatial CIMIS circa 225", "CIMIS Station 225 data"))
+# 
+# dev.off()
+
+
+
+# _stitch original-daily record (aug 2019) -----------------------------------------------------------------------
+
+# #Need to match this format.
+# 
+# last plausible ET record for the original input is June 2011. After that it flatlines for some reason.
+# first plausible CIMIS225 record is Apr 21, 2015. first full month is May 2015.
+# So, the stitched record will be:
+# original record 1991-June 30 2011, spatial CIMIS June 30 2011-Apr 20 2015, and 225 CIMIS Apr 21 2015-Sep 30 2018.
+
+# end_orig = as.Date("2011-06-30"); end_sp = as.Date("2015-04-20")
+# et_orig = data.frame(Date = as.Date(et_orig_input$Date, format = "%d/%m/%Y"), ETo_mm = et_orig_input$ETo_m*1000)
+
+# #Initialize stitched record
+# et_stitched_1 = data.frame(Date = model_days); et_stitched_1$ETo_mm = NA
+# 
+# #Attempt to assign original record to 1991-2011 period
+# # et_stitched_1$ETo_mm[1:which(et_stitched_1$Date == end_orig)] = et_orig$ETo_mm[which(et_orig$Date==model_start_date): which(et_orig$Date == end_orig)]
+# # This ^ doesn't work because they didn't include the mother effing leap days
+# 
+# #Add leap days to et record. This is easy, because they are constant values for each month. 
+# leap_days = as.Date(paste0(c(1992, 1996, 2000, 2004, 2008), "-02-29"))
+# leap_day_values = rep(NA, 5)
+# for(i in 1:length(leap_days)){ leap_day_values[i] = et_orig$ETo_mm[et_orig$Date == leap_days[i]-1]} #assign the Feb 28 value to Feb 29
+# #Jeez, it's the same for each february except 2004. What weird formula made this?
+# et_orig = rbind(et_orig, data.frame(Date = leap_days, ETo_mm = leap_day_values)) #append leap days
+# et_orig = et_orig[order(et_orig$Date),]
+# #Now it works to assign the original record:
+# #Original record
+# et_stitched_1$ETo_mm[1:which(et_stitched_1$Date == end_orig)] = et_orig$ETo_mm[which(et_orig$Date==model_start_date):which(et_orig$Date == end_orig)]
+# #Spatial CIMIS record
+# et_stitched_1$ETo_mm[which(et_stitched_1$Date == (end_orig+1)):which(et_stitched_1$Date ==end_sp)] = 
+#   et_sp$ETo_mm[which(et_sp$Date== (end_orig +1)):which(et_sp$Date == end_sp)]
+# # CIMIS225 record
+# et_stitched_1$ETo_mm[which(et_stitched_1$Date == (end_sp+1)):length(et_stitched_1$Date)] = 
+#   et225$ETo_mm[which(et225$Date==(end_sp +1)): which(et225$Date == model_end_date)]
+
+
+# # _stitch original-monthly record (aug 2019) -------------------------------
+# 
+# #add number of days per month to monthly data frames
+# num_days_df = data.frame(month_day1 = model_months, num_days = num_days)
+# et_sp_monthly$num_days = as.numeric(num_days_df$num_days[match(et_sp_monthly$Date, num_days_df$month_day1)])
+# et225_monthly$num_days = as.numeric(num_days_df$num_days[match(et225_monthly$Date, num_days_df$month_day1)])
+# #Calculate monthly averages
+# et_sp_monthly$daily_avg_by_mo = et_sp_monthly$ETo_mm / et_sp_monthly$num_days
+# et225_monthly$daily_avg_by_mo = et225_monthly$ETo_mm / et225_monthly$num_days
+# 
+# #Initialize stitched original-monthly record
+# et_stitched_2 = data.frame(Date = model_days)
+# et_stitched_2$ETo_mm = NA
+# 
+# #Original record
+# et_stitched_2$ETo_mm[1:which(et_stitched_2$Date == end_orig)] = et_orig$ETo_mm[which(et_orig$Date==model_start_date):which(et_orig$Date == end_orig)]
+# 
+# #Spatial CIMIS record
+# #declare indices for the spatial section of the CIMIS record
+# sp_indices_stitched = which(et_stitched_2$Date == (end_orig+1)):which(et_stitched_2$Date ==end_sp)
+# # Assign each day in the Spatial Cimis chunk of the record the monthly average ET value from the et_sp_monthly table.
+# # Generate indices by matching the floor_date of each day in stitched_2 with the date in et_sp_monthly.
+# et_stitched_2$ETo_mm[sp_indices_stitched] = 
+#   et_sp_monthly$daily_avg_by_mo[match(floor_date(et_stitched_2$Date[sp_indices_stitched], unit="month"), et_sp_monthly$Date )]
+# 
+# # CIMIS225 record
+# # declare indices
+# indices225_stitched = which(et_stitched_2$Date == (end_sp+1)):length(et_stitched_2$Date)
+# # indices225_daily = which(et225$Date== (end_sp +1)):which(et_sp$Date == model_end_date)
+# et_stitched_2$ETo_mm[indices225_stitched] = 
+#   et225_monthly$daily_avg_by_mo[match(floor_date(et_stitched_2$Date[indices225_stitched], unit="month"), et225_monthly$Date )]
+
+
+# # _visualize stitched records ---------------------------------------------
+# 
+# 
+# par(mfrow = c(2,1))
+# plot(et_stitched_1$Date, et_stitched_1$ETo_mm, type = "l")
+# plot(et_stitched_2$Date, et_stitched_2$ETo_mm, type = "l")
+# 
+# #Set date bounds/plot titles
+# # sd = as.Date("1990-10-01"); ed = as.Date("2019-09-30")
+# sd = as.Date("2017-03-01"); ed = as.Date("2017-09-01")
+# name_string = "ETo 2017"
+# 
+# #Initialize pdf
+# pdf(file = paste0(name_string,".pdf"), 11, 8.5)
+# 
+# #Plot params
+# par(mfrow = c(2,1))
+# # vert_lines = seq(sd, ed, by = "year")
+# vert_lines = seq(sd, ed, by = "month")
+# horz_lines_daily = seq(0, 10, 2); horz_lines_monthly = seq(0,300,50)
+# 
+# #daily data
+# 
+# plot(et_orig$Date, et_orig$ETo_mm, type ="l", col = "black", xlim = c(sd, ed), ylim = c(0,12),
+#      xlab = "Date", ylab = "Daily Reference ET (mm)", main = paste("Daily", name_string))
+# abline(v = vert_lines, h = horz_lines_daily, col = "darkgray")
+# lines(et_orig$Date, et_orig$ETo_mm, type ="l", col = "black", xlim = c(sd, ed))
+# lines(et_sp$Date, et_sp$ETo_mm, type ="l", col = rgb(1,0,0,0.6), xlim = c(sd, ed))
+# lines(et225$Date, et225$ETo_mm, type ="l", col = rgb(0,0,1,0.5), xlim = c(sd, ed))
+# axis(side = 1, at = vert_lines, labels=F)
+# legend(x = "topright", lwd = c(1,1,1), col = c("black",rgb(1,0,0,0.7), rgb(0,0,1,0.5)), cex = 0.9,bg="white",
+#        legend = c("1991-2011 SVIHM ETo", "Spatial CIMIS circa 225", "CIMIS Station 225 data"))
+
+
+# # _visualize yearly -------------------------------------------------------
+# 
+# et_stitched_1$wy = year(et_stitched_1$Date)
+# et_stitched_1$wy[month(et_stitched_1$Date) > 9] = et_stitched_1$wy[month(et_stitched_1$Date) > 9] +1
+# et_yearly = aggregate(et_stitched_1$ETo_mm, by = list(et_stitched_1$wy), FUN = sum)
+# colnames(et_yearly) = c("Date", "ETo_mm")
+# # barplot(height = et_yearly$ETo_mm, names.arg = et_yearly$Date)
+# plot(et_yearly$Date, et_yearly$ETo_mm, ylim = c(0, 1500))
+# grid()
+# 
+# # WY 2011 is very low ET. I guess it was a high-rainfall year. It's not as low as 1997.
+# # Man, whenever the spatial CIMIS and the NWSETO original record overlap, the original record has
+# # this spike in the summer that is absent from the summer CIMIS record. 
+# # Are we systematically overestimating ET in the original record? 
+
+# _write ET output files ---------------------------------------------------
+
+# et_input_1 = data.frame(ETo_m = round(et_stitched_1$ETo_mm /1000, 9), #convert to meters
+#                         ETo_in = round(et_stitched_1$ETo_mm / 25.4, 2), #convert to inches
+#                         Date = et_stitched_1$Date)
+# et_input_1$Date = paste(str_pad(day(et_input_1$Date), 2, pad="0"),
+#                                                str_pad(month(et_input_1$Date), 2, pad="0"),
+#                                                year(et_input_1$Date), sep = "/")
+# write.table(et_input_1, file = file.path(scenario_dev_dir, "ref_et_daily.txt"),
+#             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+# et_input_2 = data.frame(ETo_m = et_stitched_2$ETo_mm /1000, 
+#                         ETo_in = et_stitched_2$ETo_mm / 25.4, #convert to inches
+#                         Date = et_stitched_2$Date)
+# et_input_2$Date = paste(str_pad(day(et_input_2$Date), 2, pad="0"),
+#                         str_pad(month(et_input_2$Date), 2, pad="0"),
+#                         year(et_input_2$Date), sep = "/")
+# write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt"),
+#             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 

@@ -5,6 +5,8 @@
 library(lubridate)
 library(stringr)
 library(dplyr)
+library(DBI)
+library(rpostgis)
 #Rules:
 ## dates in R are treated as YYYY-MM-DD for convenience. Dates in the model input files are DD-MM-YYYY.
 
@@ -25,14 +27,21 @@ if(isRStudio == FALSE){ library(here); proj_dir <- dirname(here::here("Update_SV
 
 ## Data used in update
 Stream_Regression_dir = file.path(proj_dir, "Streamflow_Regression_Model")
+input_files_dir = file.path(proj_dir, "SVIHM_Input_Files")
+scenario_dev_dir = file.path(proj_dir, "SVIHM_Input_Files", "Scenario_Development")
 time_indep_dir = file.path(proj_dir, "SVIHM_Input_Files", "time_independent_input_files")
 ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
-## Directory used to archive the input files for each scenario
-model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
+## Directory used to archive the precip and ET files for different scenarios
+scenario_dev_dir = file.path(proj_dir, "SVIHM_Input_Files", "Scenario_Development")
 ## Directories for running the scenarios (files copied at end of script)
 SWBM_file_dir = file.path(proj_dir, "SWBM", "hist")
 MF_file_dir = file.path(proj_dir, "MODFLOW","hist")
+# Directory for connecting to the database
+dms_dir = file.path(dirname(proj_dir), "SiskiyouGSP2022", "Data_Management_System")
+#Connect to Siskiyou DB (for generating precip and eventually ET and streamflow)
+source(file.path(dms_dir, "connect_to_db.R"))
 
+#To do: incorporate web-scraping into streamflow and ET record generation
 
 #SET MODEL RUN DATES
 start_year = 1990 # WY 1991; do not change
@@ -234,13 +243,26 @@ write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
 
 
 #  precip.txt ----------------------------------------------------
-# to do: Make precip writing callable from SVIHM_input_analyses
 
-file.copy()
+#BEFORE USE: check to see that updated end model year propogates to analyses script (?)
+declare_dir_in_analyses_script = FALSE #Prevents the input_analyses script from overwriting proj_dir
+source(file.path(input_files_dir,'SVIHM_input_analyses.R'))
+
+write_swbm_precip_input_file()
+file1=file.path(scenario_dev_dir,"precip_regressed.txt")
+file2=file.path(SWBM_file_dir,"precip.txt")
+file.copy(from=file1, to = file2)
 
 #  ref_et.txt ----------------------------------------------------
-# to do: Make precip writing callable from SVIHM_input_analyses
 
+#BEFORE USE: check to see that updated end model year propogates to analyses script (?)
+# declare_dir_in_analyses_script = FALSE #Prevents the input_analyses script from overwriting proj_dir
+# source(file.path(input_files_dir,'SVIHM_input_analyses.R'))
+write_swbm_et_input_file()
+
+file.copy(from=file1, to = file2)
+file1=file.path(scenario_dev_dir,"ref_et_monthly.txt")
+file2=file.path(SWBM_file_dir,"ref_et.txt")
 
 
 #  streamflow_input.txt ------------------------------------------
