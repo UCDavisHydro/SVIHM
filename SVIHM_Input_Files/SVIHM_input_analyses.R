@@ -24,7 +24,7 @@ library(raster)
 #Option 2: this script is the active document in RStudio:
 # declare_dir_in_analyses_script = TRUE #defaults to false, when called from update_SVIHM_Inputs
 
-if(Sys.getenv("RSTUDIO")==1 & declare_dir_in_analyses_script ){ 
+if(declare_dir_in_analyses_script){ 
   library(rstudioapi)
   proj_dir <- dirname(dirname(getActiveDocumentContext()$path))
   ## Data used in update
@@ -67,6 +67,11 @@ if(Sys.getenv("RSTUDIO")==1 & declare_dir_in_analyses_script ){
   
 }
 
+if(calling_from_gsp_repo){
+  proj_dir = file.path(dirname(proj_dir), "SVIHM")
+  ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
+}
+
 # if(isRStudio == FALSE){ library(here); proj_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
 # here() doesn't really work on this computer.
 
@@ -107,19 +112,19 @@ make_station_table = function(weather_table){
 }
 
 make_daily_precip = function(weather_table = noaa,
-                             record_start_date = as.Date("1943-01-01"), 
-                             record_end_date = model_end_date){
+                             daily_precip_start_date = as.Date("1943-01-01"), 
+                             daily_precip_end_date = model_end_date){
   
-  record_days = seq(from = record_start_date, to = record_end_date, by = "days")
+  record_days = seq(from = daily_precip_start_date, to = daily_precip_end_date, by = "days")
   
   #Subset data into stations
-  cal = subset(noaa, STATION=="USC00041316" & DATE >= record_start_date & DATE <= record_end_date)
+  cal = subset(noaa, STATION=="USC00041316" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
-  fj = subset(noaa, STATION=="USC00043182" & DATE >= record_start_date & DATE <= record_end_date)
+  fj = subset(noaa, STATION=="USC00043182" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   fj = data.frame(DATE = fj$DATE, PRCP = fj$PRCP)
-  et = subset(noaa, STATION == "USC00042899" & DATE >= record_start_date & DATE <= record_end_date)
+  et = subset(noaa, STATION == "USC00042899" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   et =data.frame(DATE = et$DATE, PRCP = et$PRCP)
-  gv = subset(noaa, STATION == "USC00043614" & DATE >= record_start_date & DATE <= record_end_date)
+  gv = subset(noaa, STATION == "USC00043614" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   gv =data.frame(DATE = gv$DATE, PRCP = gv$PRCP)
 
 
@@ -151,27 +156,28 @@ make_daily_precip = function(weather_table = noaa,
 }
 
 make_daily_precip_extended_stations = function(weather_table = noaa,
-                             record_start_date = as.Date("1943-01-01"), 
-                             record_end_date = model_end_date){
+                             daily_precip_start_date = as.Date("1943-01-01"), 
+                             daily_precip_end_date = model_end_date){
   
-  record_days = seq(from = record_start_date, to = record_end_date, by = "days")
+  record_days = seq(from = daily_precip_start_date, to = daily_precip_end_date, by = "days")
   
   #Subset data into stations
-  cal = subset(weather_table, STATION=="USC00041316" & DATE >= record_start_date & DATE <= record_end_date)
+  cal = subset(weather_table, STATION=="USC00041316" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
-  fj = subset(weather_table, STATION=="USC00043182" & DATE >= record_start_date & DATE <= record_end_date)
+  fj = subset(weather_table, STATION=="USC00043182" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   fj = data.frame(DATE = fj$DATE, PRCP = fj$PRCP)
-  et = subset(weather_table, STATION == "USC00042899" & DATE >= record_start_date & DATE <= record_end_date)
+  et = subset(weather_table, STATION == "USC00042899" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   et =data.frame(DATE = et$DATE, PRCP = et$PRCP)
-  gv = subset(weather_table, STATION == "USC00043614" & DATE >= record_start_date & DATE <= record_end_date)
+  gv = subset(weather_table, STATION == "USC00043614" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   gv =data.frame(DATE = gv$DATE, PRCP = gv$PRCP)
-  yr = subset(weather_table, STATION == "USC00049866" & DATE >= record_start_date & DATE <= record_end_date)
+  yr = subset(weather_table, STATION == "USC00049866" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   yr =data.frame(DATE = yr$DATE, PRCP = yr$PRCP) 
-  y2 = subset(weather_table, STATION == "US1CASK0005" & DATE >= record_start_date & DATE <= record_end_date)
+  y2 = subset(weather_table, STATION == "US1CASK0005" & DATE >= daily_precip_start_date & DATE <= daily_precip_end_date)
   y2 =data.frame(DATE = y2$DATE, PRCP = y2$PRCP) 
   
   
   #read in original data (wys 1991-2011)
+  print(ref_data_dir)
   daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
   colnames(daily_precip_orig) = c("PRCP", "Date")
   daily_precip_orig$Date = as.Date(daily_precip_orig$Date, format = "%d/%m/%Y")
@@ -367,8 +373,8 @@ fill_fj_cal_gaps_distance = function(station_dist = station_dist,
 # Precip ------------------------------------------------------------------
 
 
-get_daily_precip_table=function(record_start_date=model_start_date, 
-                                record_end_date = model_end_date){
+get_daily_precip_table=function(final_table_start_date=model_start_date, 
+                                final_table_end_date = model_end_date){
   # Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
   noaa = data.frame(tbl(siskiyou_tables, "noaa_daily_data"))
   # Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
@@ -379,8 +385,8 @@ get_daily_precip_table=function(record_start_date=model_start_date,
   
   #Generate daily precip table (same daterange as in original methodology) to make model coefficients
   daily_precip_regression = make_daily_precip_extended_stations(weather_table = noaa,
-                                                                record_start_date = as.Date("1943-10-01"), 
-                                                                record_end_date = as.Date("2011-09-30"))
+                                                                daily_precip_start_date = as.Date("1943-10-01"), 
+                                                                daily_precip_end_date = as.Date("2011-09-30"))
   model_coeff = make_model_coeffs_table(months = 1:12, 
                                         station_table = station_table,
                                         daily_precip = daily_precip_regression,
@@ -388,13 +394,13 @@ get_daily_precip_table=function(record_start_date=model_start_date,
                                         xs = c(c("fj", "cal", "gv", "et", "yr", "y2")))
   #Generate daily precip table to make the gap-filled records
   daily_precip_p_record = make_daily_precip_extended_stations(weather_table = noaa,
-                                                              record_start_date = model_start_date, 
-                                                              record_end_date = model_end_date)
+                                                              daily_precip_start_date = final_table_start_date, 
+                                                              daily_precip_end_date = final_table_end_date)
   p_record = fill_fj_cal_gaps_regression_table(model_coeff=model_coeff, 
                                                station_table = station_table,
                                                        daily_precip = daily_precip_p_record,
-                                                       start_date = model_start_date, 
-                                                       end_date = model_end_date)
+                                                       start_date = final_table_start_date, 
+                                                       end_date = final_table_end_date)
   # average interp-fj and interp-cal records and compare to original
   p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
                                                MARGIN = 1, FUN = mean, na.rm=T)
@@ -419,6 +425,7 @@ get_daily_precip_table=function(record_start_date=model_start_date,
   return(p_record)
 }
 
+# test = get_daily_precip_table(record_start_date = as.Date("1935-10-01"), daily_precip_end_date = as.Date("2018-09-30"))
 write_swbm_precip_input_file=function(){
   #read in original data (wys 1991-2011)
   # daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
@@ -924,7 +931,7 @@ write_swbm_et_input_file=function(){
 # 
 # daily_precip_p_record = make_daily_precip_extended_stations(weather_table = wx,
 #                                                             record_start_date = model_start_date, 
-#                                                             record_end_date = model_end_date)
+#                                                             daily_precip_end_date = model_end_date)
 # 
 # p_record = fill_fj_cal_gaps_distance(station_dist = station_dist, 
 #                                      daily_precip = daily_precip_p_record,
