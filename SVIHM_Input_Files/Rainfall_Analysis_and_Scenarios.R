@@ -6,24 +6,29 @@ library(rstudioapi)
 
 #Input : daily rainfall record, (depth in m) from Oct 1 1990 - Sep 30 2011 (WY 1991-2011)
 
-rm(list = ls())
+dev_mode = FALSE #this is false if calling from another script. flip to true if working in this script
 
-proj_dir = dirname(dirname(getActiveDocumentContext()$path ))
-scenario_dir = file.path(proj_dir,"SVIHM_Input_Files", "Scenario_Development")
-ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
-pdf_dir = file.path(proj_dir,"SVIHM_Input_Files","Scenario_Development")#,"comparison_pdfs")
-swbm_dir = file.path(proj_dir, "SWBM")
+if(dev_mode){
+  rm(list = ls())
+  
+  proj_dir = dirname(dirname(getActiveDocumentContext()$path ))
+  ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
+  pdf_dir = file.path(proj_dir,"SVIHM_Input_Files","Scenario_Development")#,"comparison_pdfs")
+  swbm_dir = file.path(proj_dir, "SWBM")
+}
+# declare this directory - location for historical precip - regardless
+scenario_dev_dir = file.path(proj_dir,"SVIHM_Input_Files", "Scenario_Development")
 
 #Read in water year type table (Sacramento Valley Water Index)
 # See also Deas analysis saying that Scott Valley water year type tracks sac valley
 wy_type = read.csv(file.path(ref_data_dir,"sac_valley_wyi.csv"), fileEncoding="UTF-8-BOM")
 
 #Read in precip data
-ppt_hist = as.data.frame(read.table(file.path(scenario_dir,"precip_regressed_2019.08.19.txt")))
+ppt_hist = as.data.frame(read.table(file.path(scenario_dev_dir,"precip_regressed_2019.08.19.txt")))
 colnames(ppt_hist) = c("precip_m", "date")
 ppt_hist$date = as.Date(ppt_hist$date, format = "%d/%m/%Y")
 
-stm_hist = as.data.frame(read.table(file.path(scenario_dir,"streamflow_input_hist.txt"), header = TRUE))
+stm_hist = as.data.frame(read.table(file.path(scenario_dev_dir,"streamflow_input_hist.txt"), header = TRUE))
 colnames(stm_hist)[colnames(stm_hist) == "Month"] = "date"
 stm_hist$date = as.Date(as.character(stm_hist$date), format = "%Y-%m-%d")
 
@@ -205,9 +210,9 @@ rainy_season_bounds = c(0.1, 0.9) #i.e., "rainy season" defined as the part of y
 
 #Plot precip time series, cumulative precip and cumulative fraction by water year
 #Saves a pdf for each
-plot_by_wy_type(select(P, date, precip_m)) #select extracts just specified columns as a dataframe
-plot_by_wy_type(select(P, date, cum_precip_m), rainy_season_bounds) #select extracts just specified columns as a dataframe
-plot_by_wy_type(select(P, date, cum_frac_precip), rainy_season_bounds) #select extracts just specified columns as a dataframe
+# plot_by_wy_type(select(P, date, precip_m)) #select extracts just specified columns as a dataframe
+# plot_by_wy_type(select(P, date, cum_precip_m), rainy_season_bounds) #select extracts just specified columns as a dataframe
+# plot_by_wy_type(select(P, date, cum_frac_precip), rainy_season_bounds) #select extracts just specified columns as a dataframe
 
 
 # Step 1b. calculate overall rainy season intensity (depth total season precip / length rainy season)
@@ -328,7 +333,7 @@ dry_stats = interval_tables[[2]]
 # setwd(pdf_dir)
 # rsea = read.csv("rainy_season_stats_def_0.1_0.9.csv") #read in rainy season stats table
 
-#additional_visualization = "sure" #Observe table-munging and question-asking
+additional_visualization = "nah" #Observe table-munging and question-asking
 
 if(additional_visualization == "sure"){
   #Calculate dates of start and end of rainy season for comparison purposes
@@ -451,30 +456,31 @@ generate_scenario_a=function(P, num_large_storms){
 rain_day_threshold = 0 # Any rain counts as a rainy day
 rainy_season_bounds = c(0.1, 0.9)
 
-#Decide number of large storms and generate Scenario A records
-num_large_storms = 5
-scenario_folder_name = "pvar_a05"
-
-P_sca = generate_scenario_a(select(ppt_hist, date, precip_m), num_large_storms)
-# P_sca = select(P_sca, date, sca); colnames(P_sca) = c("date", "precip_m")
-# check_sums(ppt_hist, P_sca)
-
-##Plot time series of Scenario A records by water year
-## Track number of large storms in the column name and plot titles.
-# scenario_name = paste0("sca_",num_large_storms,"_large")
-# colnames(P_sca)[colnames(P_sca) == "sca"] = scenario_name
-# plot_by_wy_type(select(P_sca, date, scenario_name))
-
-#Write precip to a text file for SWMB run.
-sca_for_txt = select(P_sca, sca, date)
-sca_for_txt$date = paste0(strftime(P_sca$date, "%d"), "/",
-                               strftime(P_sca$date, "%m"), "/",
-                               strftime(P_sca$date, "%Y"))
-
-txt_file_name=paste0("sca_precip_",num_large_storms,"large.txt")
-write.table(sca_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
-            col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
-
+if(dev_mode){
+  #Decide number of large storms and generate Scenario A records
+  num_large_storms = 5
+  scenario_folder_name = "pvar_a05"
+  
+  P_sca = generate_scenario_a(select(ppt_hist, date, precip_m), num_large_storms)
+  # P_sca = select(P_sca, date, sca); colnames(P_sca) = c("date", "precip_m")
+  # check_sums(ppt_hist, P_sca)
+  
+  ##Plot time series of Scenario A records by water year
+  ## Track number of large storms in the column name and plot titles.
+  # scenario_name = paste0("sca_",num_large_storms,"_large")
+  # colnames(P_sca)[colnames(P_sca) == "sca"] = scenario_name
+  # plot_by_wy_type(select(P_sca, date, scenario_name))
+  
+  #Write precip to a text file for SWMB run.
+  sca_for_txt = select(P_sca, sca, date)
+  sca_for_txt$date = paste0(strftime(P_sca$date, "%d"), "/",
+                            strftime(P_sca$date, "%m"), "/",
+                            strftime(P_sca$date, "%Y"))
+  
+  txt_file_name=paste0("sca_precip_",num_large_storms,"large.txt")
+  write.table(sca_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
+              col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
+}
 
 ## Scenario B. Shorter wet season
 ## Decision variable: fraction of historical wet season length) 
@@ -551,28 +557,29 @@ generate_scenario_b = function(P, fraction_season_length){
   return(list(rain_stats, Prd))
 }
 
-rain_day_threshold = 0 # Any rain counts as a rainy day
-rainy_season_bounds = c(0.1, 0.9)
-fraction_season_length = 0.9 #try 90, 80, 70
-scenario_folder_name = "pvar_b90"
+if(dev_mode){
+  rain_day_threshold = 0 # Any rain counts as a rainy day
+  rainy_season_bounds = c(0.1, 0.9)
+  fraction_season_length = 0.9 #try 90, 80, 70
+  scenario_folder_name = "pvar_b90"
+  
+  scb_tables = generate_scenario_b(select(ppt_hist, date, precip_m), fraction_season_length)
+  
+  rain_stats_scb = scb_tables[[1]]
+  P_scb = scb_tables[[2]]
+  
+  check_sums(ppt_hist, P_scb)
 
-scb_tables = generate_scenario_b(select(ppt_hist, date, precip_m), fraction_season_length)
-
-rain_stats_scb = scb_tables[[1]]
-P_scb = scb_tables[[2]]
-
-check_sums(ppt_hist, P_scb)
-
-#Write precip to a text file for SWMB run.
-scb_for_txt = select(P_scb, scb, date)
-scb_for_txt$date = paste0(strftime(P_scb$date, "%d"), "/",
-                          strftime(P_scb$date, "%m"), "/",
-                          strftime(P_scb$date, "%Y"))
-
-txt_file_name = paste0("scb_precip_",fraction_season_length,"_season.txt")
-write.table(scb_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
-            col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
-
+  #Write precip to a text file for SWMB run.
+  scb_for_txt = select(P_scb, scb, date)
+  scb_for_txt$date = paste0(strftime(P_scb$date, "%d"), "/",
+                            strftime(P_scb$date, "%m"), "/",
+                            strftime(P_scb$date, "%Y"))
+  
+  txt_file_name = paste0("scb_precip_",fraction_season_length,"_season.txt")
+  write.table(scb_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
+              col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
+}
 
 ## Scenario C. More whiplash
 ## Decision variables: 1) percent more extreme, 2) "dry" and "wet" year thresholds (% of max annual precip)
@@ -633,34 +640,35 @@ generate_scenario_c = function(P, S, percent_drier, dry_wet_thresholds){
   return(list(P, S))
 }
 
-rain_day_threshold = 0 # Any rain counts as a rainy day
-rainy_season_bounds = c(0.1, 0.9) #fraction of total precip that defines wet season
-dry_wet_thresholds = c(1.0, 1.0) # mult. of mean annual precip. dry must <= wet threshold.
-percent_drier = 30 #try 10, 20, 30
-scenario_folder_name = "pvar_c30"
-
-P = select(ppt_hist, date, precip_m)
-S = stm_hist
-
-scc = generate_scenario_c( P, S, percent_drier = 10, dry_wet_thresholds)
-
-#Write precip to a text file for SWMB run.
-P_scc = scc[[1]]
-scc_for_txt = select(P_scc, scc, date)
-scc_for_txt$date = paste0(strftime(P_scc$date, "%d"), "/",
-                          strftime(P_scc$date, "%m"), "/",
-                          strftime(P_scc$date, "%Y"))
-txt_file_name = paste0("scc_precip", percent_drier,".txt")
-write.table(scc_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
-            col.names=FALSE, row.names=FALSE, sep = " ", quote = FALSE)
-
-S_scc = scc[[2]]
-S_scc$wy = NULL; S_scc$total_precip_multiplier = NULL; colnames(S_scc)[1] = "Month"
-
-txt_file_name = paste0("scc_streamflow_input", percent_drier,".txt")
-write.table(S_scc, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
-            col.names=TRUE, row.names=FALSE, sep = " ", quote = FALSE)
-
+if(dev_mode){
+  rain_day_threshold = 0 # Any rain counts as a rainy day
+  rainy_season_bounds = c(0.1, 0.9) #fraction of total precip that defines wet season
+  dry_wet_thresholds = c(1.0, 1.0) # mult. of mean annual precip. dry must <= wet threshold.
+  percent_drier = 30 #try 10, 20, 30
+  scenario_folder_name = "pvar_c30"
+  
+  P = select(ppt_hist, date, precip_m)
+  S = stm_hist
+  
+  scc = generate_scenario_c( P, S, percent_drier = 10, dry_wet_thresholds)
+  
+  #Write precip to a text file for SWMB run.
+  P_scc = scc[[1]]
+  scc_for_txt = select(P_scc, scc, date)
+  scc_for_txt$date = paste0(strftime(P_scc$date, "%d"), "/",
+                            strftime(P_scc$date, "%m"), "/",
+                            strftime(P_scc$date, "%Y"))
+  txt_file_name = paste0("scc_precip", percent_drier,".txt")
+  write.table(scc_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
+              col.names=FALSE, row.names=FALSE, sep = " ", quote = FALSE)
+  
+  S_scc = scc[[2]]
+  S_scc$wy = NULL; S_scc$total_precip_multiplier = NULL; colnames(S_scc)[1] = "Month"
+  
+  txt_file_name = paste0("scc_streamflow_input", percent_drier,".txt")
+  write.table(S_scc, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
+              col.names=TRUE, row.names=FALSE, sep = " ", quote = FALSE)
+  
 # Get some bare-bones analyses of new precip records
 
 # Run new records through SWBM
@@ -670,149 +678,146 @@ write.table(S_scc, file.path(swbm_dir, scenario_folder_name, txt_file_name),
 
 
 # Precip and streamflow and RefET plots ---------------------------------------------
-
-plot_by_wy_
-
-#make table of plotting parameters
-scenario = c("hist", "sca", "scb", "scc")
-scenario_descrip = c("Historical Precip","Scenario A (higher storm intensity)", 
-                     "Scenario B (shorter rainy season)", "Scenario C (wetter wet / drier dry years)")
-sc_color = c("gray25", "red", "blue", "green4")
-sc_plotting_table = data.frame(scenario, scenario_descrip, sc_color, stringsAsFactors = FALSE)
-
-plot_precip_compare = function(sc1, sc2, sc1df, sc2df){
-  col1 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc1]
-  col2 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc2]
-  leglab1 = sc_plotting_table$scenario_descrip[sc_plotting_table$scenario == sc1]
-  leglab2 = sc_plotting_table$scenario_descrip[sc_plotting_table$scenario == sc2]
+  #make table of plotting parameters
+  scenario = c("hist", "sca", "scb", "scc")
+  scenario_descrip = c("Historical Precip","Scenario A (higher storm intensity)", 
+                       "Scenario B (shorter rainy season)", "Scenario C (wetter wet / drier dry years)")
+  sc_color = c("gray25", "red", "blue", "green4")
+  sc_plotting_table = data.frame(scenario, scenario_descrip, sc_color, stringsAsFactors = FALSE)
   
-  for(i in 1:21){
-    wy = 1990 + i
-    x_limits = as.Date(c(paste0(wy-1,"-10-01"), paste0(wy,"-09-30")))
-    plot(sc2df$date, sc2df$precip_m, type = "l", lwd = 2, col = col2, 
-         xlim = x_limits, main = paste("Water Year", wy), xlab = "Date", ylab = "Daily precipitation (in)")#, ylim = c(0, 0.04))
-    lines(sc1df$date, sc1df$precip_m, type = "l", lwd = 2, col = col1, xlim = x_limits)
-    legend(x = "topright", lwd= c(2,2), col = c(col1, col2), legend = c(leglab1, leglab2))
+  plot_precip_compare = function(sc1, sc2, sc1df, sc2df){
+    col1 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc1]
+    col2 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc2]
+    leglab1 = sc_plotting_table$scenario_descrip[sc_plotting_table$scenario == sc1]
+    leglab2 = sc_plotting_table$scenario_descrip[sc_plotting_table$scenario == sc2]
+    
+    for(i in 1:21){
+      wy = 1990 + i
+      x_limits = as.Date(c(paste0(wy-1,"-10-01"), paste0(wy,"-09-30")))
+      plot(sc2df$date, sc2df$precip_m, type = "l", lwd = 2, col = col2, 
+           xlim = x_limits, main = paste("Water Year", wy), xlab = "Date", ylab = "Daily precipitation (in)")#, ylim = c(0, 0.04))
+      lines(sc1df$date, sc1df$precip_m, type = "l", lwd = 2, col = col1, xlim = x_limits)
+      legend(x = "topright", lwd= c(2,2), col = c(col1, col2), legend = c(leglab1, leglab2))
+    }
   }
+  
+  plot_precip_compare("hist", "scb", ppt_hist, P_scb)
+  
+  plot_precip_compare("hist", "scc", ppt_hist, P_scc)
+
+  
+  # Tables for Latex --------------------------------------------------------
+  
+  
+  #Rainy season stats
+  rs_for_latex = rainy_season_table(ppt_hist, c(0.1, 0.9))
+  rs_for_latex$start_date = rs_for_latex$wy_day_start + 
+    as.Date(paste0(rs_for_latex$wat_yr - 1, "-10-01"))
+  rs_for_latex$end_date = rs_for_latex$wy_day_end + 
+    as.Date(paste0(rs_for_latex$wat_yr - 1, "-10-01"))
+  rs_for_latex$total_precip_m = round(rs_for_latex$total_precip_m,3)
+  # rs_for_latex$intensity = round(rs_for_latex$intensity,4)
+  rs_for_latex$intensity = NULL
+  
+  prd_tables = precip_interval_tables(ppt_hist)
+  rain_stats = prd_tables[[2]]
+  rain_events_per_wy = aggregate(rain_stats$rain_event_id, by = list(rain_stats$start_wy), FUN = length)
+  rs_for_latex$num_rain_ev = rain_events_per_wy$x
+  
+  rs_for_txt = select(rs_for_latex, wat_yr, total_precip_m, start_date, end_date, duration_days, num_rain_ev, wat_yr_type)
+  rs_for_txt$latex_end = "\\"
+  
+  setwd(pdf_dir)
+  write.table(rs_for_txt, "rainy_season_for_latex.txt",
+              col.names = TRUE, row.names = FALSE, sep = " & ", quote = FALSE)
+  
+  
+  
+  #Rainy season stats plots
+  rs = rainy_season_table(ppt_hist, c(0.1, 0.9))
+  rs$intensity = rain_season_table$total_precip_m / rain_season_table$duration_days 
+  rs$num_rain_ev = rain_events_per_wy$x
+  # #add water year type to table - did this in the function
+  wy_type$yr_type = factor(wy_type$yr_type, levels = c("W","AN","BN","D","C"))
+  rs$wat_yr_type = wy_type$yr_type[match(rs$wat_yr, wy_type$wat_yr)]
+  
+  
+  ## What's the distribution of rainy season intensities?
+  # hist(rs$intensity * 1000, breaks=(seq(0, 6, 0.5)), col = "lightblue",
+  #      xlab = "Millimeters per day", main = "Rainy season intensity - Water Years 1991-2011")
+  setwd(pdf_dir)
+  pdf("hist_rain_plots.pdf", 6.5, 4)
+  par(mfrow = c(2,3))
+  hist(rs$total_precip_m, col = "lightblue", #breaks=(seq(0, 6, 0.5)),
+       xlab = "Total annual precip (m)", main = NULL)#"Total Annual Precip - Water Years 1991-2011")
+  text(.95,6, "a")
+  hist(rs$duration_days, col = "lightblue", #breaks=(seq(0, 6, 0.5)),
+       xlab = "Rainy season duration (days)", main =  NULL)#"Rainy Season Duration - Water Years 1991-2011")
+  text(250,4, "b")
+  hist(rs$num_rain_ev, col = "lightblue", #breaks=(seq(0, 6, 0.5)),
+       xlab = "Number of rain events", main =  NULL)#"Number of Rain Events - Water Years 1991-2011")
+  text(55,7, "c")
+  
+  # #Any relationship between water year type and intensity, or duration? make boxplots
+  plot(rs$wat_yr_type, rs$total_precip_m, col = "lightblue",
+       ylab = "Total annual rainfall (m)")
+  text(5.3,.9, "d")
+  plot(rs$wat_yr_type, rs$duration_days, col = "lightblue",
+       ylab = "Rainy season duration (days)")
+  text(0.6,245, "e")
+  plot(rs$wat_yr_type, rs$num_rain_ev, col = "lightblue",
+       ylab = "Number of rain events")
+  text(5.3,49, "f")
+  
+  dev.off()
+  
+  #Any relat between num events and total precip? No. Nor with duration.
+  # plot(rs$num_rain_ev, rs$total_precip_m, pch = 19, col = "lightblue",
+  #      main = "Number of rain events vs Total Precip")
+  # plot(rs$num_rain_ev, rs$duration_days, pch = 19, col = "lightblue",
+  #      main = "Number of rain events vs rainy season duration")
+  
+  #Rain event plots
+  prd_tables = precip_interval_tables(ppt_hist)
+  rain_stats = prd_tables[[2]]
+  dry_stats = prd_tables[[3]]
+  
+  setwd(pdf_dir)
+  pdf("rain_event_stats.pdf",6.5, 3)
+  par(mfrow = c(1,3))
+  hist(log(rain_stats$depth_m,10), 
+       xlab = "Log_10 of rainfall depth (m)", col = "lightblue",main = NULL)
+  text(-.3, 175, "a")
+  hist(as.numeric(rain_stats$duration_days), 
+       xlab = "Rain event duration (days)", col = "lightblue",main = NULL)
+  text(25, 500, "b")
+  hist(as.numeric(dry_stats$duration_days), 
+       xlab = "Dry period duration (days)", col = "goldenrod",main = NULL)
+  text(75,650, "c")
+  dev.off()
+  
+  # #Table of rain event durations
+  rain_dur_for_ltx = aggregate(rain_stats$rain_event_id, by = list(rain_stats$duration_days), FUN = length)
+  #how many days had longer duration than x?
+  sum(rain_dur_for_ltx$x[as.numeric(rain_dur_for_ltx$Group.1) > 7])
+  tot = data.frame(t(c("Total events", dim(rain_stats)[1]))); colnames(tot) = c("Group.1","x");
+  rain_dur_for_ltx = rbind(rain_dur_for_ltx, tot)
+  rain_dur_for_ltx$latex_end = "\\"
+  # setwd(pdf_dir)
+  # write.table(rain_dur_for_ltx, "rain_ev_duration_for_latex.txt",
+  #             col.names = TRUE, row.names = FALSE, sep = " & ", quote = FALSE)
+  
+  
+  
+  # Add num rain events to rainy season table for latex
+  rain_events_per_wy = aggregate(rain_stats$rain_event_id, by = list(rain_stats$start_wy), FUN = length)
+  rs_for_latex$num_rain_ev = rain_events_per_wy$x
+  
+  rs_for_txt = select(rs_for_latex, wat_yr, total_precip_m, start_date, end_date, duration_days, num_rain_ev, wat_yr_type)
+  rs_for_txt$latex_end = "\\"
+  
+  setwd(pdf_dir)
+  write.table(rs_for_txt, "rainy_season_for_latex.txt",
+              col.names = TRUE, row.names = FALSE, sep = " & ", quote = FALSE)
+  
 }
-
-plot_precip_compare("hist", "scb", ppt_hist, P_scb)
-
-plot_precip_compare("hist", "scc", ppt_hist, P_scc)
-
-
-
-# Tables for Latex --------------------------------------------------------
-
-
-#Rainy season stats
-rs_for_latex = rainy_season_table(ppt_hist, c(0.1, 0.9))
-rs_for_latex$start_date = rs_for_latex$wy_day_start + 
-  as.Date(paste0(rs_for_latex$wat_yr - 1, "-10-01"))
-rs_for_latex$end_date = rs_for_latex$wy_day_end + 
-  as.Date(paste0(rs_for_latex$wat_yr - 1, "-10-01"))
-rs_for_latex$total_precip_m = round(rs_for_latex$total_precip_m,3)
-# rs_for_latex$intensity = round(rs_for_latex$intensity,4)
-rs_for_latex$intensity = NULL
-
-prd_tables = precip_interval_tables(ppt_hist)
-rain_stats = prd_tables[[2]]
-rain_events_per_wy = aggregate(rain_stats$rain_event_id, by = list(rain_stats$start_wy), FUN = length)
-rs_for_latex$num_rain_ev = rain_events_per_wy$x
-
-rs_for_txt = select(rs_for_latex, wat_yr, total_precip_m, start_date, end_date, duration_days, num_rain_ev, wat_yr_type)
-rs_for_txt$latex_end = "\\"
-
-setwd(pdf_dir)
-write.table(rs_for_txt, "rainy_season_for_latex.txt",
-            col.names = TRUE, row.names = FALSE, sep = " & ", quote = FALSE)
-
-
-
-#Rainy season stats plots
-rs = rainy_season_table(ppt_hist, c(0.1, 0.9))
-rs$intensity = rain_season_table$total_precip_m / rain_season_table$duration_days 
-rs$num_rain_ev = rain_events_per_wy$x
-# #add water year type to table - did this in the function
-wy_type$yr_type = factor(wy_type$yr_type, levels = c("W","AN","BN","D","C"))
-rs$wat_yr_type = wy_type$yr_type[match(rs$wat_yr, wy_type$wat_yr)]
-
-
-## What's the distribution of rainy season intensities?
-# hist(rs$intensity * 1000, breaks=(seq(0, 6, 0.5)), col = "lightblue",
-#      xlab = "Millimeters per day", main = "Rainy season intensity - Water Years 1991-2011")
-setwd(pdf_dir)
-pdf("hist_rain_plots.pdf", 6.5, 4)
-par(mfrow = c(2,3))
-hist(rs$total_precip_m, col = "lightblue", #breaks=(seq(0, 6, 0.5)),
-     xlab = "Total annual precip (m)", main = NULL)#"Total Annual Precip - Water Years 1991-2011")
-text(.95,6, "a")
-hist(rs$duration_days, col = "lightblue", #breaks=(seq(0, 6, 0.5)),
-     xlab = "Rainy season duration (days)", main =  NULL)#"Rainy Season Duration - Water Years 1991-2011")
-text(250,4, "b")
-hist(rs$num_rain_ev, col = "lightblue", #breaks=(seq(0, 6, 0.5)),
-     xlab = "Number of rain events", main =  NULL)#"Number of Rain Events - Water Years 1991-2011")
-text(55,7, "c")
-
-# #Any relationship between water year type and intensity, or duration? make boxplots
-plot(rs$wat_yr_type, rs$total_precip_m, col = "lightblue",
-     ylab = "Total annual rainfall (m)")
-text(5.3,.9, "d")
-plot(rs$wat_yr_type, rs$duration_days, col = "lightblue",
-      ylab = "Rainy season duration (days)")
-text(0.6,245, "e")
-plot(rs$wat_yr_type, rs$num_rain_ev, col = "lightblue",
-     ylab = "Number of rain events")
-text(5.3,49, "f")
-
-dev.off()
-
-#Any relat between num events and total precip? No. Nor with duration.
-# plot(rs$num_rain_ev, rs$total_precip_m, pch = 19, col = "lightblue",
-#      main = "Number of rain events vs Total Precip")
-# plot(rs$num_rain_ev, rs$duration_days, pch = 19, col = "lightblue",
-#      main = "Number of rain events vs rainy season duration")
-                         
-#Rain event plots
-prd_tables = precip_interval_tables(ppt_hist)
-rain_stats = prd_tables[[2]]
-dry_stats = prd_tables[[3]]
-
-setwd(pdf_dir)
-pdf("rain_event_stats.pdf",6.5, 3)
-par(mfrow = c(1,3))
-hist(log(rain_stats$depth_m,10), 
-     xlab = "Log_10 of rainfall depth (m)", col = "lightblue",main = NULL)
-text(-.3, 175, "a")
-hist(as.numeric(rain_stats$duration_days), 
-     xlab = "Rain event duration (days)", col = "lightblue",main = NULL)
-text(25, 500, "b")
-hist(as.numeric(dry_stats$duration_days), 
-      xlab = "Dry period duration (days)", col = "goldenrod",main = NULL)
-text(75,650, "c")
-dev.off()
-
-# #Table of rain event durations
-rain_dur_for_ltx = aggregate(rain_stats$rain_event_id, by = list(rain_stats$duration_days), FUN = length)
-#how many days had longer duration than x?
-sum(rain_dur_for_ltx$x[as.numeric(rain_dur_for_ltx$Group.1) > 7])
-tot = data.frame(t(c("Total events", dim(rain_stats)[1]))); colnames(tot) = c("Group.1","x");
-rain_dur_for_ltx = rbind(rain_dur_for_ltx, tot)
-rain_dur_for_ltx$latex_end = "\\"
-# setwd(pdf_dir)
-# write.table(rain_dur_for_ltx, "rain_ev_duration_for_latex.txt",
-#             col.names = TRUE, row.names = FALSE, sep = " & ", quote = FALSE)
-
-
-
-# Add num rain events to rainy season table for latex
-rain_events_per_wy = aggregate(rain_stats$rain_event_id, by = list(rain_stats$start_wy), FUN = length)
-rs_for_latex$num_rain_ev = rain_events_per_wy$x
-
-rs_for_txt = select(rs_for_latex, wat_yr, total_precip_m, start_date, end_date, duration_days, num_rain_ev, wat_yr_type)
-rs_for_txt$latex_end = "\\"
-
-setwd(pdf_dir)
-write.table(rs_for_txt, "rainy_season_for_latex.txt",
-            col.names = TRUE, row.names = FALSE, sep = " & ", quote = FALSE)
-
