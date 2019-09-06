@@ -3,7 +3,6 @@ library(ggplot2)
 library(reshape2)
 library(dplyr)
 library(grid)
-library(rstudioapi)
 
 gages = c('FJ','AS','BY','LS')
 #FJ = Fort Jones gage (USGS)
@@ -14,22 +13,14 @@ gages = c('FJ','AS','BY','LS')
 ###########################################################################################################
 ########################                    USER INPUT                       ##############################
 ###########################################################################################################
-svihm_dir = dirname(dirname(dirname(getActiveDocumentContext()$path)))
-ref_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
-mf_results_dir = file.path(svihm_dir, "MODFLOW", "hist") # historical 1991-2018 wy 
-postproc_dir = file.path(svihm_dir, "R_Files", "Post-Processing")
-
-copy_these_files=c("SVIHM_Flow_Obs_Times.obs","Streamflow_FJ_SVIHM.dat")
-file.copy(from=file.path(c(ref_dir, mf_results_dir),copy_these_files), to = postproc_dir)
-
 units_cfs = FALSE   #If true, output units will be in cfs. If false output units will be in m^3/day
-dir.create(file.path(postproc_dir,'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
-out_dir = file.path(postproc_dir,'Results')
+dir.create(file.path(getwd(),'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
+out_dir = paste0(getwd(),'/Results')
 options(warn=-1)   # suppress warnings (set to 0 to turn warnings on)
 ###########################################################################################################
 ########################                    IMPORT STREAMFLOW                ##############################
 ###########################################################################################################
-Steamflow_Obs_Times = read.table('SVIHM_Flow_Obs_Times.obs', header = T, fill = T) #Where is this file? 
+Steamflow_Obs_Times = read.table('SVIHM_Flow_Obs_Times.obs', header = T, fill = T)
 Steamflow_Obs_Times$FJ = as.Date(Steamflow_Obs_Times$FJ, format = '%m/%d/%Y')
 Steamflow_Obs_Times$LS = as.Date(Steamflow_Obs_Times$LS, format = '%m/%d/%Y')
 Steamflow_Obs_Times$AS = as.Date(Steamflow_Obs_Times$AS, format = '%m/%d/%Y')

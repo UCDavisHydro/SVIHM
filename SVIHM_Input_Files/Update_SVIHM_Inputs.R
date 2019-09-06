@@ -20,7 +20,7 @@ library(rpostgis)
 # 1a) Set project directory. 
 #This code allows it to automatically detect the location of this R script.
 isRStudio <- Sys.getenv("RSTUDIO") == "1"
-if(isRStudio == TRUE){ library(rstudioapi); proj_dir <- dirname(getActiveDocumentContext()$path)}
+if(isRStudio == TRUE){ library(rstudioapi); proj_dir <- dirname(dirname(getActiveDocumentContext()$path))}
 if(isRStudio == FALSE){ library(here); proj_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
 
 # 1b) Set directories for data used in update and output file locations
