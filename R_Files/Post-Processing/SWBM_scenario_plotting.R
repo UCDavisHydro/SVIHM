@@ -672,6 +672,7 @@ plot_altered_rainfall_comp=function(sc1_name, sc2_name, sc_letter, P1, P2, wy){
        xlim = x_limits, xlab = paste("Month in WY", wy), ylab = NA, #"Daily Precip (in)",
        # main = paste(sc1_name, "vs", sc2_name)
        main = NULL)
+
   # color-code plot background (with a very wide line) for wet or dry
   if(wy==dry_year){abline(v=mean(x_limits), lwd = 1000, col = rgb(1,.92,.8,.5))} #blanchedalmond
   if(wy==wet_year){{abline(v=mean(x_limits), lwd = 1000, col = rgb(.68,.85,.9, 0.5))}}#lightblue
@@ -682,7 +683,7 @@ plot_altered_rainfall_comp=function(sc1_name, sc2_name, sc_letter, P1, P2, wy){
   lines(P2$date, P2[,altered_precip] * 100/2.54, col = "black", type = "l", lwd = 1)
   box()
   #Add custom y-axes. If it's a wet year (left column), add the scenario name.
-  if(wy==wet_year){mtext(text = sc2_name, side = 2, line = 3, cex = .8)}
+  # if(wy==wet_year){mtext(text = sc2_name, side = 2, line = 3, cex = .8)}
   mtext(text = "Daily Precip (in)", side = 2, line = 2, cex = .7)
   
   
@@ -697,7 +698,9 @@ plot_altered_rainfall_comp=function(sc1_name, sc2_name, sc_letter, P1, P2, wy){
     rs2_dates=as.Date(paste0(wy-1,"-10-01")) + c(rs2$wy_day_start[rs2$wat_yr==wy], rs2$wy_day_end[rs2$wat_yr==wy])
     abline(v=rs1_dates, col = c("deepskyblue2"), lty = 2, lwd = 1)  
     abline(v=rs2_dates, col = c("black"), lty = 2, lwd =  1)  
-    legend(x = "topright", cex=0.8,lwd = c(2,2,1, 1), lty = c(1,1,2,2), 
+  # }
+  # if(sc_letter == "B" & wy == wet_year){
+    legend(x = "topright", cex=1.4,lwd = c(2,2,1, 1), lty = c(1,1,2,2), 
            col = rep(c("deepskyblue2", "black"),2),
            legend = c(paste0("Historical record, water year ", wy),
                       "Altered record",
@@ -723,10 +726,10 @@ Dry_Avg_Wet_Yrs = c(2001,2015,2006)
 # sca, scb, scc extremes. wet and dry years. 
 dry_year = 2001; wet_year = 2006
 
-draft_num = 5
+draft_num = 9
 png(file.path(pdf_dir,paste0("altered_rainfall_6plot_",draft_num,".png")), 
-    width = 14.25, height = 6, units = "in", res = 200)
-par(mfrow = c(3,2), mar=c(5,4,2,2))
+    width = 11, height = 7, units = "in", res = 200)
+par(mfrow = c(3,2), mar=c(4,4,1,2))
 plot_altered_rainfall_comp(P1 = ppt_hist, sc1_name = "Historical", 
                            P2= P_sca05,   sc2_name = "Scenario A, Only 5 Storms", sc_letter = "A",
                            # P2= P_scb80,  sc2_name = "Scenario B, 80% Rainy Season Duration", sc_letter = "B",
