@@ -11,7 +11,7 @@ library(dplyr)
 library(Matrix)
 library(rpostgis)
 library(postGIStools)
-library(dplyr)
+library(dbplyr)
 library(raster)
 
 
@@ -26,19 +26,19 @@ library(raster)
 
 if(declare_dir_in_analyses_script){ 
   library(rstudioapi)
-  proj_dir <- dirname(dirname(getActiveDocumentContext()$path))
+  svihm_dir <- dirname(dirname(getActiveDocumentContext()$path))
   ## Data used in update
-  Stream_Regression_dir = file.path(proj_dir, "Streamflow_Regression_Model")
-  time_indep_dir = file.path(proj_dir, "SVIHM_Input_Files", "time_independent_input_files")
-  ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
+  Stream_Regression_dir = file.path(svihm_dir, "Streamflow_Regression_Model")
+  time_indep_dir = file.path(svihm_dir, "SVIHM_Input_Files", "time_independent_input_files")
+  ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
   ## Directory used to archive the input files for each scenario
-  model_inputs_dir = file.path(proj_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
-  scenario_dev_dir = file.path(proj_dir, "SVIHM_Input_Files", "Scenario_Development")
+  model_inputs_dir = file.path(svihm_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
+  scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
   ## Directories for running the scenarios (files copied at end of script)
-  SWBM_file_dir = file.path(proj_dir, "SWBM", "up2018")
-  MF_file_dir = file.path(proj_dir, "MODFLOW","up2018")
+  SWBM_file_dir = file.path(svihm_dir, "SWBM", "up2018")
+  MF_file_dir = file.path(svihm_dir, "MODFLOW","up2018")
   # Directory for connecting to the database
-  dms_dir = file.path(dirname(proj_dir), "SiskiyouGSP2022", "Data_Management_System")
+  dms_dir = file.path(dirname(svihm_dir), "SiskiyouGSP2022", "Data_Management_System")
   #Connect to Siskiyou DB
   source(file.path(dms_dir, "connect_to_db.R"))
   
@@ -67,12 +67,12 @@ if(declare_dir_in_analyses_script){
   
 }
 
-if(calling_from_gsp_repo){
-  proj_dir = file.path(dirname(proj_dir), "SVIHM")
-  ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
+if(exists("calling_from_gsp_repo")){
+  svihm_dir = file.path(dirname(gsp_dir), "SVIHM")
+  ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
 }
 
-# if(isRStudio == FALSE){ library(here); proj_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
+# if(isRStudio == FALSE){ library(here); svihm_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
 # here() doesn't really work on this computer.
 
 

@@ -20,24 +20,25 @@ library(rpostgis)
 # 1a) Set project directory. 
 #This code allows it to automatically detect the location of this R script.
 isRStudio <- Sys.getenv("RSTUDIO") == "1"
-if(isRStudio == TRUE){ library(rstudioapi); proj_dir <- dirname(dirname(getActiveDocumentContext()$path))}
-if(isRStudio == FALSE){ library(here); proj_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
+if(isRStudio == TRUE){ library(rstudioapi); svihm_dir <- dirname(dirname(getActiveDocumentContext()$path))}
+if(isRStudio == FALSE){ library(here); svihm_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
 
 # 1b) Set directories for data used in update and output file locations
 
-## Data used in update
-Stream_Regression_dir = file.path(proj_dir, "Streamflow_Regression_Model")
-input_files_dir = file.path(proj_dir, "SVIHM_Input_Files")
-scenario_dev_dir = file.path(proj_dir, "SVIHM_Input_Files", "Scenario_Development")
-time_indep_dir = file.path(proj_dir, "SVIHM_Input_Files", "time_independent_input_files")
-ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
-## Directory used to archive the precip and ET files for different scenarios
-scenario_dev_dir = file.path(proj_dir, "SVIHM_Input_Files", "Scenario_Development")
 ## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(proj_dir, "SWBM", "hist")
-MF_file_dir = file.path(proj_dir, "MODFLOW","hist")
+SWBM_file_dir = file.path(svihm_dir, "SWBM", "pvar_c30")
+MF_file_dir = file.path(svihm_dir, "MODFLOW","pvar_c30")
+
+## Data used in update
+Stream_Regression_dir = file.path(svihm_dir, "Streamflow_Regression_Model")
+input_files_dir = file.path(svihm_dir, "SVIHM_Input_Files")
+scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
+time_indep_dir = file.path(svihm_dir, "SVIHM_Input_Files", "time_independent_input_files")
+ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
+## Directory used to archive the precip and ET files for different scenarios
+scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
 # Directory for connecting to the database
-dms_dir = file.path(dirname(proj_dir), "SiskiyouGSP2022", "Data_Management_System")
+dms_dir = file.path(dirname(svihm_dir), "SiskiyouGSP2022", "Data_Management_System")
 #Connect to Siskiyou DB (for generating precip and eventually ET and streamflow)
 source(file.path(dms_dir, "connect_to_db.R"))
 
@@ -245,24 +246,34 @@ write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
 #  precip.txt ----------------------------------------------------
 
 #BEFORE USE: check to see that updated end model year propogates to analyses script (?)
-declare_dir_in_analyses_script = FALSE #Prevents the input_analyses script from overwriting proj_dir
-source(file.path(input_files_dir,'SVIHM_input_analyses.R'))
 
-write_swbm_precip_input_file()
 file1=file.path(scenario_dev_dir,"precip_regressed.txt")
 file2=file.path(SWBM_file_dir,"precip.txt")
-file.copy(from=file1, to = file2)
+
+if(!file.exists(file1)){
+  declare_dir_in_analyses_script = FALSE #Prevents the input_analyses script from overwriting SWBM_dir
+  source(file.path(input_files_dir,'SVIHM_input_analyses.R'))
+  write_swbm_precip_input_file()
+}
+
+file.copy(from=file1, to = file2, overwrite=T)
 
 #  ref_et.txt ----------------------------------------------------
 
 #BEFORE USE: check to see that updated end model year propogates to analyses script (?)
-# declare_dir_in_analyses_script = FALSE #Prevents the input_analyses script from overwriting proj_dir
+# declare_dir_in_analyses_script = FALSE #Prevents the input_analyses script from overwriting directories
 # source(file.path(input_files_dir,'SVIHM_input_analyses.R'))
-write_swbm_et_input_file()
 
-file.copy(from=file1, to = file2)
 file1=file.path(scenario_dev_dir,"ref_et_monthly.txt")
 file2=file.path(SWBM_file_dir,"ref_et.txt")
+
+if(!file.exists(file1)){
+  declare_dir_in_analyses_script = FALSE #Prevents the input_analyses script from overwriting SWBM_dir
+  source(file.path(input_files_dir,'SVIHM_input_analyses.R'))
+  write_swbm_et_input_file()
+}
+
+file.copy(from=file1, to = file2)
 
 
 #  streamflow_input.txt ------------------------------------------
@@ -274,22 +285,33 @@ file2=file.path(SWBM_file_dir,"ref_et.txt")
 #pull down from server, since it webscraped recently?
 #THEN: change the Fort Jones USGS file reference in the Regression script.
 
-setwd(Stream_Regression_dir)
-source(file.path(Stream_Regression_dir,'SVIHM_Streamflow_Regression_Model.R'))
-generate_streamflow_input_txt(end_date = model_end_date)
+file1=file.path(Stream_Regression_dir,'streamflow_input.txt')
+file2 = file.path(SWBM_file_dir, 'streamflow_input.txt')
+if(!file.exists(file1)){
+  source(file.path(Stream_Regression_dir,'SVIHM_Streamflow_Regression_Model.R'))
+  generate_streamflow_input_txt(end_date = model_end_date)
+}
+file.copy(file1, file2)
 
-file.copy('streamflow_input.txt', SWBM_file_dir)
+
+# SWBM.exe ----------------------------------------------------------------
+
+file.copy(file.path(svihm_dir,"SWBM","bin",'SWBM.exe'), SWBM_file_dir)
+
+
 
 
 # OPERATOR: RUN SWBM ------------------------------------------------------
 
-#After it is done running, copy the files written by SWBM into the modflow directory.
+
+#.#############################################################################
+# ### MODFLOW INPUTS ------------------------------------------------
+
+#After SWBM done running, copy the files written by SWBM into the modflow directory.
 copy_these_files = c("SVIHM.wel","SVIHM.sfr", "SVIHM.ets", "SVIHM.rch")
 setwd(SWBM_file_dir)
 file.copy(copy_these_files, MF_file_dir)
 
-#.#############################################################################
-# ### MODFLOW INPUTS ------------------------------------------------
 
 #Copy files that don't change if the time period gets extended 
 # SVIHM.bas
@@ -373,16 +395,12 @@ for (i in 1:num_stress_periods){
 #To do: pull wl down from the damn data base eventually!
 ### TO DO: Join additional wells to the model grid and add their well loc. info to reference hob_info table.
 
-### 1) Get a cleaned water level dataframe. Use same cleaning protocol as for contours
-# Get WL data from DMS folder
-# FOR NOW: Don't run the whole script; just selectively run the setup (db connection) and WL web scraper data
-# SiskiyouGSP2022/Data_Management_System/tabular_data_upload.R
-wl_items = get_wl_data(VMP = TRUE, DWR = TRUE, clean = TRUE)
-wl = wl_items[[1]]
-stations = wl_items[[2]]
+### 1) Get a cleaned water level dataframe
+wl = data.frame(tbl(siskiyou_tables, "wl_observations"))
+stations = data.frame(tbl(siskiyou_tables, "wl_data_wells"))
 
 #merge SWN (long well names) onto wl obs table.
-stations_swn = select(stations, well_code, swn)
+stations_swn = stations[,c('well_code', 'swn')]
 wl$swn = NA
 wl$swn = stations_swn$swn[match(wl$well_code, stations_swn$well_code)]
 
@@ -484,142 +502,148 @@ for(i in 1:num_stress_periods){
 
 
 
+# MF_OWHM.exe -------------------------------------------------------------
+
+file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
+
+
+
 # Scratch work ------------------------------------------------------------
 
-#plot DWR_1 through 5
-wells = read.table ("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/up2018/well_summary.txt", header = T)
-head(wells)
-
-library(raster)
-library(maptools)
-mon = shapefile("C:/Users/ckouba/Documents/UCD/SiskiyouSGMA/Data_Exploration/Scott_Legacy_GIS/Monitoring_Wells_All.shp")
-
-dwr_names = c("DWR_1","DWR_2","DWR_3","DWR_4","DWR_5")
-dwr_in = mon[mon$Well_ID %in% dwr_names,]
-dwr_not_in = mon[mon$In_SVIHM == "No",]
-plot(mon)
-plot(dwr_in, pch = 19, col = "blue", add=T)
-plot(dwr_not_in, pch = 19, col = "red", add=T)
-pointLabel(dwr_in@coords, labels = dwr_in$Well_ID)
-
-pointLabel(dwr_not_in@coords, labels = dwr_in$Well_ID_2)
-write.csv(mon@data, file.path(ref_data_dir, "Monitoring_Wells_Names.csv"), row.names = F)
-
-####################################
-# Original Precip File Writing attempt
-#to do: web scraper
-# CDEC data
-#FJN daily
-"http://cdec.water.ca.gov/dynamicapp/req/CSVDataServlet?Stations=SFJ&SensorNums=41&dur_code=D&Start=1990-10-01&End=2019-05-20"
-#CHA hourly accumulated
-"http://cdec.water.ca.gov/dynamicapp/req/CSVDataServlet?Stations=CHA&SensorNums=2&dur_code=H&Start=1990-10-01T00%3A00&End=2019-05-20"
-
-#NOAA data
-#daily data ftp site: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/
-#daily data ftp readme: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt
-#daily data documentation: https://www1.ncdc.noaa.gov/pub/data/cdo/documentation/GHCND_documentation.pdf
-
-
-#https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00041316.dly
-#https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00043182.dly
-
-
-noaa = read.csv(file.path(ref_data_dir,"noaa_precip_fjn_cal.csv"))
-noaa$DATE = as.Date(noaa$DATE)
-
-cal = subset(noaa, STATION=="USC00041316" & DATE >= model_start_date & DATE <= model_end_date)
-cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
-fj = subset(noaa, STATION=="USC00043182" & DATE >= model_start_date & DATE <= model_end_date)
-fj = data.frame(DATE = fj$DATE, PRCP = fj$PRCP)
-
-# # Compare visually
-# # plot(noaa$DATE, noaa$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
-# plot(cal$DATE, cal$PRCP, type = "l", col = "red")
-# lines(fj$DATE, fj$PRCP, #xlim = as.Date(c("1991-10-01","2018-09-01")),
-#      type = "l", col = "blue", add=T)
-
-### COMPARISON TABLE FOR 2 STATIONS
-daily_precip = data.frame(model_days)
-daily_precip = merge(x = daily_precip, y = cal, by.x = "model_days", by.y = "DATE", all=TRUE)
-daily_precip = merge(x = daily_precip, y = fj, by.x = "model_days", by.y = "DATE", all=TRUE)
-colnames(daily_precip)=c("Date","PRCP_mm_cal", "PRCP_mm_fj")
-daily_precip$mean_PRCP = apply(X = daily_precip[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
-
-#isolate the precip data after the end of the original model
-daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
-daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
-
-### HANDLE NAs
-
-# #check the NA values
-# which(is.na(daily_precip_update$mean_PRCP))
-# daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
-#shit that's a huge gap in december 2012. to do: find alternate precip data source for this gap
-#TEMPORARY SOLUTION FOR NOW: 
-#just put the average of all December dates in that window
-# dec 4-30th
-
-#calculate average precip values for that day in december over the whole model record (wy1991+)
-precip_dec = subset(daily_precip, month(Date) == 12 & day(Date) >=4 & day(Date) <=30)
-precip_dec$day = day(precip_dec$Date)
-daily_precip_dec = aggregate(precip_dec$mean_PRCP, by=list(precip_dec$day), FUN=mean, na.rm=T)
-
-#replace NAN values in Dec 2012 with average values over whole record
-daily_precip_update$mean_PRCP[daily_precip_update$Date >= as.Date("2012-12-04") 
-                              & daily_precip_update$Date <= as.Date("2012-12-30")]=daily_precip_dec$x
-
-#set remaining days with NA in both records to 0
-daily_precip_update$mean_PRCP[is.na(daily_precip_update$mean_PRCP)] = 0
-
-
-### FORMAT AND WRITE PRECIP FILE
-#Format the update to attach to the original precip file
-daily_precip_update=data.frame(mean_PRCP = daily_precip_update$mean_PRCP, Date = daily_precip_update$Date)
-daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
-                                 str_pad(month(daily_precip_update$Date), 2, pad="0"),
-                                 year(daily_precip_update$Date), sep = "/")
-daily_precip_update$mean_PRCP = daily_precip_update$mean_PRCP / 1000 #convert to meters
-
-#read in original data (wys 1991-2011)
-daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
-colnames(daily_precip_orig) = colnames(daily_precip_update)
-
-#combine and write as text file
-daily_precip_updated = rbind(daily_precip_orig, daily_precip_update)
-write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
-
-
-############################################
-# Initial RefET writing attempt
-#to do: webscrape cimis? (login?)
-#units? 
-et_dl_may2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report.csv"))
-
-##generate new et record
-et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
-et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
-et = data.frame(Date = et$Date, ETo_mm = et$ETo..mm.day.)
-
-#Update existing record
-#subset update for ET, build update dataframe in same format as original input file
-et_update_allcol = subset(et_dl_may2019, Date >= as.Date("2011-10-01") & Date <= model_end_date)
-ETo_m = et_update_allcol$ETo..mm.day./1000
-et_update = data.frame(ETo_m)
-et_update$ETo_in = et_update$ETo_m * 39.3701 #convert to inches
-et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date), 2, pad="0"),
-                                               str_pad(month(et_update_allcol$Date), 2, pad="0"),
-                                               year(et_update_allcol$Date), sep = "/")
-
-#Read in original file
-ref_et_orig = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
-# head(ref_et_orig)
-# plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
-
-#Combine into updated ET record, check for continuity, and write file
-colnames(ref_et_orig) = colnames(et_update)
-ref_et_updated = rbind(ref_et_orig, et_update)
-# plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
-# sum(is.na(ref_et_updated$ETo_m))
-write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
-            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+# #plot DWR_1 through 5
+# wells = read.table ("C:/Users/ckouba/Git/SVIHM/SVIHM/SWBM/up2018/well_summary.txt", header = T)
+# head(wells)
+# 
+# library(raster)
+# library(maptools)
+# mon = shapefile("C:/Users/ckouba/Documents/UCD/SiskiyouSGMA/Data_Exploration/Scott_Legacy_GIS/Monitoring_Wells_All.shp")
+# 
+# dwr_names = c("DWR_1","DWR_2","DWR_3","DWR_4","DWR_5")
+# dwr_in = mon[mon$Well_ID %in% dwr_names,]
+# dwr_not_in = mon[mon$In_SVIHM == "No",]
+# plot(mon)
+# plot(dwr_in, pch = 19, col = "blue", add=T)
+# plot(dwr_not_in, pch = 19, col = "red", add=T)
+# pointLabel(dwr_in@coords, labels = dwr_in$Well_ID)
+# 
+# pointLabel(dwr_not_in@coords, labels = dwr_in$Well_ID_2)
+# write.csv(mon@data, file.path(ref_data_dir, "Monitoring_Wells_Names.csv"), row.names = F)
+# 
+# ####################################
+# # Original Precip File Writing attempt
+# #to do: web scraper
+# # CDEC data
+# #FJN daily
+# "http://cdec.water.ca.gov/dynamicapp/req/CSVDataServlet?Stations=SFJ&SensorNums=41&dur_code=D&Start=1990-10-01&End=2019-05-20"
+# #CHA hourly accumulated
+# "http://cdec.water.ca.gov/dynamicapp/req/CSVDataServlet?Stations=CHA&SensorNums=2&dur_code=H&Start=1990-10-01T00%3A00&End=2019-05-20"
+# 
+# #NOAA data
+# #daily data ftp site: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/
+# #daily data ftp readme: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt
+# #daily data documentation: https://www1.ncdc.noaa.gov/pub/data/cdo/documentation/GHCND_documentation.pdf
+# 
+# 
+# #https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00041316.dly
+# #https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/all/USC00043182.dly
+# 
+# 
+# noaa = read.csv(file.path(ref_data_dir,"noaa_precip_fjn_cal.csv"))
+# noaa$DATE = as.Date(noaa$DATE)
+# 
+# cal = subset(noaa, STATION=="USC00041316" & DATE >= model_start_date & DATE <= model_end_date)
+# cal = data.frame(DATE = cal$DATE, PRCP = cal$PRCP)
+# fj = subset(noaa, STATION=="USC00043182" & DATE >= model_start_date & DATE <= model_end_date)
+# fj = data.frame(DATE = fj$DATE, PRCP = fj$PRCP)
+# 
+# # # Compare visually
+# # # plot(noaa$DATE, noaa$PRCP, xlim = as.Date(c("1991-10-01","2018-09-01")), type = "l")
+# # plot(cal$DATE, cal$PRCP, type = "l", col = "red")
+# # lines(fj$DATE, fj$PRCP, #xlim = as.Date(c("1991-10-01","2018-09-01")),
+# #      type = "l", col = "blue", add=T)
+# 
+# ### COMPARISON TABLE FOR 2 STATIONS
+# daily_precip = data.frame(model_days)
+# daily_precip = merge(x = daily_precip, y = cal, by.x = "model_days", by.y = "DATE", all=TRUE)
+# daily_precip = merge(x = daily_precip, y = fj, by.x = "model_days", by.y = "DATE", all=TRUE)
+# colnames(daily_precip)=c("Date","PRCP_mm_cal", "PRCP_mm_fj")
+# daily_precip$mean_PRCP = apply(X = daily_precip[,2:3], MARGIN = 1, FUN = mean, na.rm=T)
+# 
+# #isolate the precip data after the end of the original model
+# daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
+# daily_precip_update = subset(daily_precip, Date >= as.Date("2011-10-01"))
+# 
+# ### HANDLE NAs
+# 
+# # #check the NA values
+# # which(is.na(daily_precip_update$mean_PRCP))
+# # daily_precip_update[is.na(daily_precip_update$mean_PRCP),]
+# #shit that's a huge gap in december 2012. to do: find alternate precip data source for this gap
+# #TEMPORARY SOLUTION FOR NOW: 
+# #just put the average of all December dates in that window
+# # dec 4-30th
+# 
+# #calculate average precip values for that day in december over the whole model record (wy1991+)
+# precip_dec = subset(daily_precip, month(Date) == 12 & day(Date) >=4 & day(Date) <=30)
+# precip_dec$day = day(precip_dec$Date)
+# daily_precip_dec = aggregate(precip_dec$mean_PRCP, by=list(precip_dec$day), FUN=mean, na.rm=T)
+# 
+# #replace NAN values in Dec 2012 with average values over whole record
+# daily_precip_update$mean_PRCP[daily_precip_update$Date >= as.Date("2012-12-04") 
+#                               & daily_precip_update$Date <= as.Date("2012-12-30")]=daily_precip_dec$x
+# 
+# #set remaining days with NA in both records to 0
+# daily_precip_update$mean_PRCP[is.na(daily_precip_update$mean_PRCP)] = 0
+# 
+# 
+# ### FORMAT AND WRITE PRECIP FILE
+# #Format the update to attach to the original precip file
+# daily_precip_update=data.frame(mean_PRCP = daily_precip_update$mean_PRCP, Date = daily_precip_update$Date)
+# daily_precip_update$Date = paste(str_pad(day(daily_precip_update$Date), 2, pad="0"),
+#                                  str_pad(month(daily_precip_update$Date), 2, pad="0"),
+#                                  year(daily_precip_update$Date), sep = "/")
+# daily_precip_update$mean_PRCP = daily_precip_update$mean_PRCP / 1000 #convert to meters
+# 
+# #read in original data (wys 1991-2011)
+# daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
+# colnames(daily_precip_orig) = colnames(daily_precip_update)
+# 
+# #combine and write as text file
+# daily_precip_updated = rbind(daily_precip_orig, daily_precip_update)
+# write.table(daily_precip_updated, file = file.path(SWBM_file_dir, "precip.txt"),
+#             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+# 
+# 
+# ############################################
+# # Initial RefET writing attempt
+# #to do: webscrape cimis? (login?)
+# #units? 
+# et_dl_may2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report.csv"))
+# 
+# ##generate new et record
+# et_dl_may2019$Date = as.Date(et_dl_may2019$Date, format = "%m/%d/%Y")
+# et = subset(et_dl_may2019, Date >= model_start_date & Date <= model_end_date)
+# et = data.frame(Date = et$Date, ETo_mm = et$ETo..mm.day.)
+# 
+# #Update existing record
+# #subset update for ET, build update dataframe in same format as original input file
+# et_update_allcol = subset(et_dl_may2019, Date >= as.Date("2011-10-01") & Date <= model_end_date)
+# ETo_m = et_update_allcol$ETo..mm.day./1000
+# et_update = data.frame(ETo_m)
+# et_update$ETo_in = et_update$ETo_m * 39.3701 #convert to inches
+# et_update$Date = et_update_allcol$Date = paste(str_pad(day(et_update_allcol$Date), 2, pad="0"),
+#                                                str_pad(month(et_update_allcol$Date), 2, pad="0"),
+#                                                year(et_update_allcol$Date), sep = "/")
+# 
+# #Read in original file
+# ref_et_orig = read.table(file.path(ref_data_dir,"ref_et_orig.txt"))
+# # head(ref_et_orig)
+# # plot(as.Date(ref_et_orig$V3, format = "%d/%m/%Y"),ref_et_orig$V1, type = "l")
+# 
+# #Combine into updated ET record, check for continuity, and write file
+# colnames(ref_et_orig) = colnames(et_update)
+# ref_et_updated = rbind(ref_et_orig, et_update)
+# # plot(as.Date(ref_et_updated$Date, format = "%d/%m/%Y"),ref_et_updated$ETo_m, type = "l")
+# # sum(is.na(ref_et_updated$ETo_m))
+# write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
+#             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)

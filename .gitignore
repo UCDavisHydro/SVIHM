@@ -40,4 +40,14 @@ SWBM/pvar_c10
 SWBM/pvar_c20
 SWBM/pvar_c30
 SWBM/scenario_archive
+MODFLOW/hist
+MODFLOW/pvar_a03
+MODFLOW/pvar_a05
+MODFLOW/pvar_a10
+MODFLOW/pvar_b70
+MODFLOW/pvar_b80
+MODFLOW/pvar_b90
+MODFLOW/pvar_c10
+MODFLOW/pvar_c20
+MODFLOW/pvar_c30
 
