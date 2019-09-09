@@ -52,15 +52,27 @@ pdf_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops/201
 #   return(components)
 # }
 
-#Make more visible for powerpoint
+# #Make more visible for powerpoint
+# make_legend_symbol_table = function(){
+#   
+#   label = c("Precipitation","Surface water irrigation", "Groundwater irrigation", "Evapotranspiration","Recharge","Change in storage")
+#   color = c("deepskyblue2", "blue", "black", "orange2", "green4", "darkgray")
+#   components = data.frame(label,color)
+#   components$color = as.character(components$color)
+#   components$abbrev = c("Precip", "SW_Irr", "GW_Irr", "ET", "Recharge", "Storage")
+#   
+#   return(components)
+# }
+
+# SWBM plotting colors - coordinate with budget figure
 make_legend_symbol_table = function(){
-  
+
   label = c("Precipitation","Surface water irrigation", "Groundwater irrigation", "Evapotranspiration","Recharge","Change in storage")
-  color = c("deepskyblue2", "blue", "black", "orange2", "green4", "darkgray")
+  color = c("deepskyblue2", "blue", "midnightblue", "orange2", "green4", "mistyrose")
   components = data.frame(label,color)
   components$color = as.character(components$color)
   components$abbrev = c("Precip", "SW_Irr", "GW_Irr", "ET", "Recharge", "Storage")
-  
+
   return(components)
 }
 
