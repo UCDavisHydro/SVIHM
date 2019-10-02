@@ -1,6 +1,6 @@
 # MODFLOW Drain Package
 PARAMETER    1  2869
-        2869        50   AUX IFACE
+        2869        50   AUX IFACE NOPRINT
 DZ   DRN    1  2869
          1       121       115    835.62 1.000e+04
          1       122       112    843.72 1.000e+04
