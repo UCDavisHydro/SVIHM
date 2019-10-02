@@ -1,4 +1,4 @@
-33  TRUE  ! Number of Fields for daily output, Logical for printing daily budgets
+33  FALSE  ! Number of Fields for daily output, Logical for printing daily budgets
 171  AG_SW_Flood  ! Field ID, filename_prefix
 437  AG_SW_WL
 600  AG_SW_CP

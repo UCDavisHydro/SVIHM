@@ -654,10 +654,10 @@ end subroutine monthly_pumping
   if (im==1) then
     open(unit=213, file='SVIHM.sfr',Access = 'append', status='old')
     write(213,*)
-    write(213,'(I4,A12)')nsegs,'  0  0  0  0'
+    write(213,'(I4,A12)')nsegs,'  1  0  0  0'      ! Positive value after nsegs suppresses printing of SFR input data to listing file
   else
   	open(unit=213, file='SVIHM.sfr',Access = 'append', status='old')
-    write(213,'(I4,A12)')nsegs,'  0  0  0  0'
+    write(213,'(I4,A12)')nsegs,'  1  0  0  0'      ! Positive value after nsegs suppresses printing of SFR input data to listing file
   end if
   
   do j = 1, nsegs
