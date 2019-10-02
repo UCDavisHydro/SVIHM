@@ -1,0 +1,3 @@
+DEP_ACC_FLAG                   #Flag for condition status, -1 for pumping, 1 for recharge
+-2725.5  1000                  #Pumping rate (m^3/day), recharge rate (m^3/day)
+WELL_LAY  WELL_ROW  WELL_COL   #Cell Location
