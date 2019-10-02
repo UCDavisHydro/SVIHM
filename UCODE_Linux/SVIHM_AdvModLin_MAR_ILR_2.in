@@ -8,9 +8,7 @@ BEGIN UCODE_Control_Data Keywords
   ModelTimeUnits = d
   Sensitivities = True
   Prediction = False
-  Optimize = False
-  Linearity = False
-  LinearityAdv = Conf
+  LinearityAdv = conf
   SOSSurface = False
   CreateInitFiles = False
   DataExchange = True
@@ -22,36 +20,41 @@ BEGIN Reg_GN_Controls Keywords
 END Reg_GN_Controls
  
 BEGIN Model_Command_Lines Keywords
-  Command = ./Run_SVIHM.sh
-    Purpose = Forward
-    CommandID = ForwardModel
+  Command = ./Run_SVIHM_prediction_MAR_ILR.sh
+  Purpose = Forward
+  CommandID = ForwardModel
 END Model_Command_Lines
  
 BEGIN Parameter_Groups Files
- SVIHM.pargrp
+  SVIHM.pargrp
 END Parameter_Groups
  
 BEGIN Parameter_Data Files
- SVIHM_postcal_sensitivity.param4
+  SVIHM_postcal.param2
 END Parameter_Data
 
 BEGIN Observation_Groups Files
- SVIHM.obsgrp
+  SVIHM.obsgrp
 END Observation_Groups
  
 BEGIN Observation_Data Files
- SVIHM.flowobs
- SVIHM.headobs
+  SVIHM.flowobs
+  SVIHM.headobs
 END Observation_Data
 
 BEGIN Prediction_Groups Files
- SVIHM.predgrp
+  SVIHM.predgrp
 END Prediction_Groups
  
 BEGIN PREDICTION_DATA FILES
- SVIHM.flowpred
+  SVIHM.flowpred_bc
+  SVIHM.flowpred_scen
 END PREDICTION_DATA
 
+BEGIN Derived_Predictions Files
+  SVIHM.flowdiffpred
+END Derived_Predictions 
+ 
 BEGIN Model_Input_Files Keywords
   ModInFile = general_inputs.txt
     TemplateFile = SVIHM_SWBM_General_Inputs.jtf
@@ -81,10 +84,12 @@ BEGIN Model_Output_Files Keywords
   ModOutFile = HobData_SVIHM.dat
     InstructionFile = HobData_SVIHM.dat.jif
     Category = Obs
-  ModOutFile = Streamflow_Global.dat
-    InstructionFile = Streamflow_Global.dat.jif
+  ModOutFile = Streamflow_Global_bc.dat
+    InstructionFile = Streamflow_Global_bc.dat.jif
     Category = Pred
-
+  ModOutFile = Streamflow_Global_scen.dat
+    InstructionFile = Streamflow_Global_scen.dat.jif
+    Category = Pred
 END Model_Output_Files
  
 BEGIN Parallel_Control Keywords
