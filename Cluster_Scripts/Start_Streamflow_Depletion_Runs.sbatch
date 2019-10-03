@@ -3,7 +3,7 @@
 #SBATCH --job-name=Stream_Depletion
 #SBATCH -o ./SLURM_out/Run_%A_%a.out
 #SBATCH -e ./SLURM_err/Run_%A_%a.err
-#SBATCH --array=0-712%200   
+#SBATCH --array=0-712%200
 #SBATCH --ntasks=1
 
 #if [[ $SLURM_ARRAY_TASK_ID == 0 ]]; then   # Basecase Run
@@ -19,6 +19,7 @@
 # cp depletion_accretion_rates_basecase.txt $bc_dir/depletion_accretion_rates.txt
 # 
 # cd $bc_dir
+# echo $SLURM_ARRAY_TASK_ID > Counter.dat
 # echo 0 > SVIHM.status                           #Create status file 
 # 
 # #Run SVIHM
@@ -83,16 +84,16 @@
 #
 #
 #cd  /zeolite/dtolley/Streamflow_Depletion_Accretion/     #move back to head directory
-
-#Ensure basecase run has finished before starting calculations
-BC_status=$(cat './Basecase_out/Cal_4/SVIHM.status')
-while [ "$BC_status" -eq 0 ]; do
-	sleep 1m
-	BC_status=$(cat './Basecase_out/Cal_4/SVIHM.status')
-done     
+#
+##Ensure basecase run has finished before starting calculations
+#BC_status=$(cat './Basecase_out/Cal_4/SVIHM.status')
+#while [ "$BC_status" -eq 0 ]; do
+#	sleep 1m
+#	BC_status=$(cat './Basecase_out/Cal_4/SVIHM.status')
+#done     
 
 if [[ $SLURM_ARRAY_TASK_ID -ne 0 ]]; then
-  Rscript Streamflow_Depletion_Accretion.R $SLURM_ARRAY_TASK_ID 1837 -2725.5
+  Rscript Streamflow_Depletion_Accretion_post_processing.R $SLURM_ARRAY_TASK_ID 1837 -2725.5
 fi
 
 
