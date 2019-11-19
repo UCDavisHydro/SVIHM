@@ -507,7 +507,9 @@ calculate_fraction_precip_on_extreme_days=function(percentile_threshold = 95,
 
 }
 
-generate_scenario_a_extreme_days=function(P, big_little_divide = 0.95, storm_increase_fraction=0.07){
+generate_scenario_a_extreme_days=function(P, 
+                                          big_little_divide = 0.95, 
+                                          storm_increase_fraction=0.07){
   #Assumes P = dataframe with "date" and "precip_m" columns (date- and numeric-type respectively)
 
   # big_little_divide = 0.95 # what fraction of days with rain count as "small" (water taken from them) vs "large" (water added to them)?

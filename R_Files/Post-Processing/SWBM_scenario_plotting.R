@@ -17,12 +17,12 @@ library(gridExtra)
 rm(list = ls())
 
 #Define directories
-proj_dir = dirname(dirname(dirname(getActiveDocumentContext()$path ))) #Outer SVIHM folder
-scenario_dir = file.path(proj_dir,"SWBM")
-ref_data_dir = file.path(proj_dir, "SVIHM_Input_Files", "reference_data")
-output_dir = file.path(proj_dir,"SVIHM_Input_Files","Scenario_Development")
-pdf_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops/2019.09.17 GRA WGC/Figures"
-# pdf_dir = file.path(scenario_dir,"")#,"comparison_pdfs")
+svihm_dir = dirname(dirname(dirname(getActiveDocumentContext()$path ))) #Outer SVIHM folder
+scenario_dir = file.path(svihm_dir,"SWBM")
+ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
+output_dir = file.path(svihm_dir,"SVIHM_Input_Files","Scenario_Development")
+# pdf_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops/2019.09.17 GRA WGC/Figures"
+pdf_dir = file.path(scenario_dir,"")#,"comparison_pdfs")
 
 
 # Functions ---------------------------------------------------------------
@@ -420,6 +420,11 @@ barplots_comparison = function(scenario_totals){
 monthly_water_budget_hist = read.table(file.path(scenario_dir,"hist","monthly_water_budget.dat"), header = TRUE)
 mwb_hist = monthly_water_budget_hist
 
+#Read in Scenario A (extreme days algorithm; Nov 2019)
+monthly_water_budget_sca_95_07 = read.table(file.path(scenario_dir,"pvar_a_extr_95_07","monthly_water_budget.dat"), header = TRUE)
+mwb_sca_95_07 = monthly_water_budget_sca_95_07
+
+
 #Read in Scenario As
 monthly_water_budget_sca10 = read.table(file.path(scenario_dir,"pvar_a10","monthly_water_budget.dat"), header = TRUE)
 mwb_sca10 = monthly_water_budget_sca10
@@ -468,6 +473,7 @@ make_legend_symbol_table = function(){
 
 # generate  overview plots
 plot_water_budget_overview(mwb_hist, "Historical", output_type = "png")
+# plot_water_budget_overview(mwb_sca_95_07, "Scenario A, 95 pctile, 7 pct increase", output_type = "png")
 
 plot_water_budget_overview(mwb_sca10, "Scenario A, 10 large storms")
 plot_water_budget_overview(mwb_sca05, "Scenario A, 5 large storms", output_type = "png")
@@ -506,10 +512,13 @@ plot_water_budget_comparison(mwb_hist, mwb_scc30, c("Historical", "Scenario C, 3
 # total SW extracted
 #irrigation onset?
 
-mwbs = list(mwb_hist, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
-scenario_ids = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
-mwbs = list(mwb_hist, mwb_scb70, mwb_scb80, mwb_scb90)
-scenario_ids = c("hist","scb70", "scb80", "scb90")
+# mwbs = list(mwb_hist, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
+# scenario_ids = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
+# mwbs = list(mwb_hist, mwb_scb70, mwb_scb80, mwb_scb90)
+# scenario_ids = c("hist","scb70", "scb80", "scb90")
+mwbs = list(mwb_hist, mwb_sca_95_07)
+scenario_ids = c("hist","sca_95_07")
+
 
 scenario_totals = budget_overall(mwbs, scenario_ids)
 # barplots_overall(scenario_totals)
@@ -532,7 +541,7 @@ scenario_totals_dry = yearly_budgets[yearly_budgets$Scenario_id %in% scenario_id
 #combine into one df, for barplots (GRA poster 2019)
 scenario_totals_all = rbind(scenario_totals_wet, scenario_totals_dry, scenario_totals_avg, scenario_totals)
 scta = scenario_totals_all
-scta$year_type = rep(c("Wet (2006)", "Dry (2001)", "Avg (2015)", "Overall"), each = 10)
+scta$year_type = rep(c("Wet (2006)", "Dry (2001)", "Avg (2015)", "Overall"), each = 2)
 
 scta_m = melt(scta, id.vars = c("Scenario_id", "year_type"))
 
@@ -564,21 +573,21 @@ scta_m_rch = scta_m_chg[scta_m_chg$variable == "Recharge",]
 scta_m_sw = scta_m_chg[scta_m_chg$variable == "SW_Irr",]
 
 gw = ggplot(scta_m_gw, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
-  ylim(-20, 55)+
+  ylim(-10, 10)+#ylim(-20, 55)+
   geom_bar(stat = "identity", position = "dodge") + 
   labs(title = "Change from Historical Groundwater Pumping", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
 sw = ggplot(scta_m_sw, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
-  ylim(-20, 55)+
+  ylim(-10, 10)+#ylim(-20, 55)+
   geom_bar(stat = "identity", position = "dodge") + 
   labs(title = "Change from Historical Surface Water Irrigation", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
 rch = ggplot(scta_m_rch, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
-  ylim(-20, 55)+
+  ylim(-10, 10)+#ylim(-20, 55)+
   geom_bar(stat = "identity", position = "dodge") + 
   labs(title = "Change from Historical Recharge", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
