@@ -9,8 +9,10 @@
 ## Overall water budget term difference table by month
 
 library(ggplot2)
+library(data.table) #melt function
 library(plotly)
 library(rstudioapi)
+library(gridExtra)
 
 rm(list = ls())
 
@@ -52,29 +54,29 @@ pdf_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops/201
 #   return(components)
 # }
 
-# #Make more visible for powerpoint
-# make_legend_symbol_table = function(){
-#   
-#   label = c("Precipitation","Surface water irrigation", "Groundwater irrigation", "Evapotranspiration","Recharge","Change in storage")
-#   color = c("deepskyblue2", "blue", "black", "orange2", "green4", "darkgray")
-#   components = data.frame(label,color)
-#   components$color = as.character(components$color)
-#   components$abbrev = c("Precip", "SW_Irr", "GW_Irr", "ET", "Recharge", "Storage")
-#   
-#   return(components)
-# }
-
-# SWBM plotting colors - coordinate with budget figure
+#Make more visible for powerpoint
 make_legend_symbol_table = function(){
 
   label = c("Precipitation","Surface water irrigation", "Groundwater irrigation", "Evapotranspiration","Recharge","Change in storage")
-  color = c("deepskyblue2", "blue", "midnightblue", "orange2", "green4", "mistyrose")
+  color = c("deepskyblue2", "steelblue4", "black", "orange2", "green4", "darkgray")
   components = data.frame(label,color)
   components$color = as.character(components$color)
   components$abbrev = c("Precip", "SW_Irr", "GW_Irr", "ET", "Recharge", "Storage")
 
   return(components)
 }
+
+# # SWBM plotting colors - coordinate with budget figure
+# make_legend_symbol_table = function(){
+# 
+#   label = c("Precipitation","Surface water irrigation", "Groundwater irrigation", "Evapotranspiration","Recharge","Change in storage")
+#   color = c("deepskyblue2", "blue", "midnightblue", "orange2", "green4", "mistyrose")
+#   components = data.frame(label,color)
+#   components$color = as.character(components$color)
+#   components$abbrev = c("Precip", "SW_Irr", "GW_Irr", "ET", "Recharge", "Storage")
+# 
+#   return(components)
+# }
 
 
 plot_water_budget_overview = function(mwb, scenario_name, output_type = "pdf"){
@@ -88,7 +90,7 @@ plot_water_budget_overview = function(mwb, scenario_name, output_type = "pdf"){
   
   #Plot parameters
   vol_lim = c(min(mwb[2:7]), max(mwb[2:7]))
-  x_lim = c(1, dim(mwb)[1])
+  x_lim = c(240, dim(mwb)[1])# x_lim = c(1, dim(mwb)[1])
   #Symbols and legend labels
   components = make_legend_symbol_table()
 
@@ -100,7 +102,7 @@ plot_water_budget_overview = function(mwb, scenario_name, output_type = "pdf"){
     par(mfrow=c(2,1))
   } else if(output_type =="png"){
     pngname = paste0(scenario_name, "plot1_overview.png")
-    png(pngname, width = 9, height = 5, units = "in", res = 200) #plot for a poster
+    png(pngname, width = 8, height = 5.5, units = "in", res = 200) 
   }
   
   
@@ -113,7 +115,7 @@ plot_water_budget_overview = function(mwb, scenario_name, output_type = "pdf"){
   #Manual stylized grid lines (plotted first to not obscure data)
   abline(v = seq(from = 4, to = 336, by=12),
          lty = 3, lwd = 0.5, col = "lightgray")
-  abline(h = pretty(vol_lim), v = seq(from = 52, to = 336, by=60), # Jan of 95, 00, 05, 10
+  abline(h = pretty(vol_lim), v = seq(from = 52, to = 336, by=12),#60), # Jan of 95, 00, 05, 10
          lty = 1, col = "darkgray")
   abline(h = 0, col = "black")
   #Manual y-label and axis labels, and a box (plot border)
@@ -453,6 +455,17 @@ mwb_scc30 = monthly_water_budget_scc30
 # Generate scenario plots -------------------------------------------------
 
 
+make_legend_symbol_table = function(){
+  
+  label = c("Precipitation","Surface water irrigation", "Groundwater irrigation", "Evapotranspiration","Recharge","Change in storage")
+  color = c("deepskyblue", "blue", "gray36", "orange2", "green4", "darkgray")
+  components = data.frame(label,color)
+  components$color = as.character(components$color)
+  components$abbrev = c("Precip", "SW_Irr", "GW_Irr", "ET", "Recharge", "Storage")
+  
+  return(components)
+}
+
 # generate  overview plots
 plot_water_budget_overview(mwb_hist, "Historical", output_type = "png")
 
@@ -493,13 +506,13 @@ plot_water_budget_comparison(mwb_hist, mwb_scc30, c("Historical", "Scenario C, 3
 # total SW extracted
 #irrigation onset?
 
-# mwbs = list(mwb_hist, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
-# scenario_ids = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
-mwbs = list(mwb_hist, mwb_sca05, mwb_scb80, mwb_scc20)
-scenario_ids = c("hist","sca05", "scb80", "scc20")
+mwbs = list(mwb_hist, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
+scenario_ids = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
+mwbs = list(mwb_hist, mwb_scb70, mwb_scb80, mwb_scb90)
+scenario_ids = c("hist","scb70", "scb80", "scb90")
 
 scenario_totals = budget_overall(mwbs, scenario_ids)
-barplots_overall(scenario_totals)
+# barplots_overall(scenario_totals)
 
 #dry, wet, average years
 yearly_budgets = budget_stat_by_year(mwbs = mwbs, scenario_ids = scenario_ids, stat = "sum")
@@ -515,9 +528,79 @@ scenario_totals_avg = yearly_budgets[yearly_budgets$Scenario_id %in% scenario_id
 scenario_totals_dry = yearly_budgets[yearly_budgets$Scenario_id %in% scenario_ids &
                                        yearly_budgets$Water_year == dry_year, 
                                      colnames(yearly_budgets)[colnames(yearly_budgets)!="Water_year"]]
-scenario_totals = scenario_totals_avg
 
-barplots_overall(scenario_totals)
+#combine into one df, for barplots (GRA poster 2019)
+scenario_totals_all = rbind(scenario_totals_wet, scenario_totals_dry, scenario_totals_avg, scenario_totals)
+scta = scenario_totals_all
+scta$year_type = rep(c("Wet (2006)", "Dry (2001)", "Avg (2015)", "Overall"), each = 10)
+
+scta_m = melt(scta, id.vars = c("Scenario_id", "year_type"))
+
+#initialize table of change factors
+scta_m_chg = data.frame(matrix(data = NA, nrow = 0, ncol = 5)) ; colnames(scta_m_chg) = c(colnames(scta_m), "percent_chg_fm_hist")
+for(yrtype in c("Wet (2006)", "Dry (2001)", "Avg (2015)", "Overall")){
+  for(component in c("GW_Irr", "Recharge", "SW_Irr")){
+    scta_m_subset = scta_m[scta_m$year_type == yrtype & scta_m$variable == component,]
+    scta_m_hist = scta_m_subset[scta_m_subset$Scenario_id == "hist",]
+    scta_m_scenarios = scta_m_subset[scta_m_subset$Scenario_id != "hist",]
+    
+    scta_m_scenarios$percent_chg_fm_hist = (scta_m_scenarios$value - scta_m_hist$value)/scta_m_hist$value
+    scta_m_chg = rbind(scta_m_chg, scta_m_scenarios)
+  }
+}
+
+scta_m_chg$year_type = factor(scta_m_chg$year_type, levels=c("Wet (2006)", "Avg (2015)", "Dry (2001)", "Overall"))
+
+#add color coding for each scenario
+scid_colors = c(#"darkorchid2", "darkorchid3", "darkorchid4", 
+  "khaki2", "khaki3", "khaki4",
+  "darkseagreen2","darkseagreen3","darkseagreen4",
+                # "darkolivegreen2","darkolivegreen3","darkolivegreen4",
+                "lightpink1","lightpink3","lightpink4")
+
+#Attempts to combine barplots: by year type, by component, by scenario ID
+scta_m_gw = scta_m_chg[scta_m_chg$variable == "GW_Irr",]
+scta_m_rch = scta_m_chg[scta_m_chg$variable == "Recharge",]
+scta_m_sw = scta_m_chg[scta_m_chg$variable == "SW_Irr",]
+
+gw = ggplot(scta_m_gw, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
+  ylim(-20, 55)+
+  geom_bar(stat = "identity", position = "dodge") + 
+  labs(title = "Change from Historical Groundwater Pumping", y = "Percent change", x = NULL)+
+  scale_fill_manual(values=scid_colors)+
+  theme_bw()
+
+sw = ggplot(scta_m_sw, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
+  ylim(-20, 55)+
+  geom_bar(stat = "identity", position = "dodge") + 
+  labs(title = "Change from Historical Surface Water Irrigation", y = "Percent change", x = NULL)+
+  scale_fill_manual(values=scid_colors)+
+  theme_bw()
+
+rch = ggplot(scta_m_rch, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
+  ylim(-20, 55)+
+  geom_bar(stat = "identity", position = "dodge") + 
+  labs(title = "Change from Historical Recharge", y = "Percent change", x = NULL)+
+  scale_fill_manual(values=scid_colors)+
+  theme_bw()
+
+png("Scenario Results.png", width = 12, height = 10, units = "in", res = 300)
+grid.arrange(rch, gw, sw,  nrow = 3)
+dev.off()
+
+grid.arrange(
+  p3,
+  p3,
+  p3,
+  nrow = 1,
+  top = "Title of the page",
+  bottom = textGrob(
+    "this footnote is right-justified",
+    gp = gpar(fontface = 3, fontsize = 9),
+    hjust = 1,
+    x = 1
+  )
+)
 
 # Tables for latex --------------------------------------------------------
 
@@ -736,7 +819,8 @@ Dry_Avg_Wet_Yrs = c(2001,2015,2006)
 
 #6 plot figure
 # sca, scb, scc extremes. wet and dry years. 
-dry_year = 2001; wet_year = 2006
+# dry_year = 2001; wet_year = 2006
+dry_year = 2015; wet_year = 2016
 
 draft_num = 9
 png(file.path(pdf_dir,paste0("altered_rainfall_6plot_",draft_num,".png")), 
@@ -866,3 +950,8 @@ convertGraph(from = "C:/Users/ckouba/Documents/UCD/_Coursework/2019_Q1_Winter/EC
              path = "C:/Users/ckouba/Documents/UCD/_Coursework/2019_Q1_Winter/ECI273_WatResSysEng/project/project_data_files")
 
 # Parallel axis plot for scenarios
+
+
+
+
+# Just recharge, SW and GW irrigation change for scb70, 80, 90
