@@ -507,8 +507,11 @@ calculate_fraction_precip_on_extreme_days=function(percentile_threshold = 95,
 
 }
 
-generate_scenario_a_extreme_days=function(P, threshold_value = 0.95, percent_days_gt_hist_threshold){
+generate_scenario_a_extreme_days=function(P, big_little_divide = 0.95, storm_increase_fraction=0.07){
   #Assumes P = dataframe with "date" and "precip_m" columns (date- and numeric-type respectively)
+
+  # big_little_divide = 0.95 # what fraction of days with rain count as "small" (water taken from them) vs "large" (water added to them)?
+  # storm_increase_fraction = 0.07 # the amount of water (as a fraction of the daily total) that will get added to each large day
   
   interval_tables = precip_interval_tables(P[,c("date", "precip_m")],
                                            rain_day_threshold, return_daily = TRUE)
@@ -521,27 +524,15 @@ generate_scenario_a_extreme_days=function(P, threshold_value = 0.95, percent_day
   rain_stats = interval_tables[[2]]
   dry_stats = interval_tables[[3]]
   rsea = rainy_season_table(P[,c("date", "precip_m")], rainy_season_bounds)
-  
   wys = rsea$wat_yr
-  
-  # decide which rainy days will gain water:
-  big_little_divide = 0.95 # what fraction of days with rain count as "small" (water taken from them) vs "large" (water added to them)?
-  storm_increase_fraction = 0.07 # the amount of water (as a fraction of the daily total) that will get added to each large day
-  
+
   for(wy in wys){
     rain_wy = rain_stats[rain_stats$start_wy == wy,]
     
     #assume that what we are calculating is:
     # - the amount of rainfall arriving on days with > threshold amount ("extreme" days)
     Prd$wy = year(Prd$date); Prd$wy[month(Prd$date)>9] = Prd$wy[month(Prd$date)>9]+1
-    precip_wy = Prd$precip_m[Prd$wy == wy] * 1000 #convert to mm for comparison with threshold value
-    total_precip = sum(precip_wy)
-    precip_on_extreme_days = sum(precip_wy[precip_wy > threshold_value])
-    
-    # ugh. fraction *of rainfall* falling on days > threshold or *of days* with rainfall > threshold?
-    # -  divided by total rainfall (convert to fraction)
-    # - over the *entire record*? or calculated individually for each water year?
-    # - then, later, we will calcuate the FRACTION of annual precip CHANGE in that amount between 
+    precip_wy = Prd$precip_m[Prd$wy == wy] 
 
     precip_wy = Prd$precip_m[Prd$wy == wy]     #subset for a single water year
     #Find the precip value such that XX% (e.g. 95%) of all daily rainfall amounts have less than it
@@ -587,34 +578,42 @@ generate_scenario_a_extreme_days=function(P, threshold_value = 0.95, percent_day
   }
   return(Prd)
 }
-## CURRENT: REWRITE THIS FUNCTION TO accomodate n > percentile threshold
+
 
 #Storm threshold and rainy season bounds
 rain_day_threshold = 0 # Any rain counts as a rainy day
 rainy_season_bounds = c(0.1, 0.9)
 
-if(dev_mode){
+if(dev_mode){ 
   #Decide number of large storms and generate Scenario A records
-  num_large_storms = 5
-  scenario_folder_name = "pvar_a05"
+  scenario_folder_name = "pvar_a_extr_95_07"
   
-  P_sca = generate_scenario_a(select(ppt_hist, date, precip_m), num_large_storms)
-  # P_sca = select(P_sca, date, sca); colnames(P_sca) = c("date", "precip_m")
+  P_sca = generate_scenario_a_extreme_days(ppt_hist[,c("date", "precip_m")], 
+                                           big_little_divide = 0.95, storm_increase_fraction=0.07)
+  # P_sca = P_sca[,c("date", "sca_ext")]; colnames(P_sca) = c("date", "precip_m")
   # check_sums(ppt_hist, P_sca)
   
-  ##Plot time series of Scenario A records by water year
-  ## Track number of large storms in the column name and plot titles.
-  # scenario_name = paste0("sca_",num_large_storms,"_large")
-  # colnames(P_sca)[colnames(P_sca) == "sca"] = scenario_name
-  # plot_by_wy_type(select(P_sca, date, scenario_name))
+  #Visualize
+  for(plot_wy in 1991:2018){
+    # plot_wy = 1991
+    xlims = as.Date(c(paste0(plot_wy-1, "-10-01"), paste0(plot_wy,"-09-30")))
+    # xlims = as.Date(c(paste0(plot_wy-1, "-11-01"), paste0(plot_wy,"-04-30")))
+    
+    plot(P_sca$date, P_sca$precip_m, type = "l", lwd=3, col = "darkgoldenrod",
+         xlim = xlims, main = paste("Water year", plot_wy))
+    lines(P_sca$date, P_sca$sca_ext, type = "l", lwd=1, col = "black")
+    legend(x="topright", lwd = c(3,1), col = c("darkgoldenrod", "black"),
+           legend = c("Historical Rainfall", "Altered Rainfall"))
+  }
   
-  #Write precip to a text file for SWMB run.
-  sca_for_txt = select(P_sca, sca, date)
+  #Write precip to a text file for SWBM run.
+  sca_for_txt = P_sca[,c("sca_ext", "date")]
   sca_for_txt$date = paste0(strftime(P_sca$date, "%d"), "/",
                             strftime(P_sca$date, "%m"), "/",
                             strftime(P_sca$date, "%Y"))
   
-  txt_file_name=paste0("sca_precip_",num_large_storms,"large.txt")
+  paste0("sca_extreme_",big_little_divide, "_",storm_increase_fraction)
+  txt_file_name=paste0("sca_extreme_",big_little_divide, "_",storm_increase_fraction,".txt")
   write.table(sca_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
               col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
 }
@@ -980,3 +979,8 @@ if(dev_mode){
 # text(x=-2, y=0.95, pos = 4,
 #      labels = paste("n rainy days:", sum(!is.na(log_ppt_wy_mm))))
 # text(x=-2, y=0.9, pos = 4, labels = paste("avg bar height:"))
+
+# ugh. fraction *of rainfall* falling on days > threshold or *of days* with rainfall > threshold?
+# -  divided by total rainfall (convert to fraction)
+# - over the *entire record*? or calculated individually for each water year?
+# - then, later, we will calcuate the FRACTION of annual precip CHANGE in that amount between 
