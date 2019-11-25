@@ -169,7 +169,7 @@ plot_water_budget_overview = function(mwb, scenario_name, output_type = "pdf"){
 }
 
 plot_water_budget_comparison = function(mwb1, mwb2, scenario_names){
-  #x-values are stress periods (months; 252 months in model). 
+  #x-values are stress periods (months; 336 months in model). 
   #Each stress period is a row in the monthly water budget.
   #Assumes mwb1 and mwb2 have the column names of .dat output from the SWBM and have the same dimensions.
   
