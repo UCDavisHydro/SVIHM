@@ -485,26 +485,7 @@ if(dev_mode){
   
   txt_file_name=paste0("sca_precip_",num_large_storms,"large.txt")
   write.table(sca_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
-              col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
-}
-
-calculate_fraction_precip_on_extreme_days=function(percentile_threshold = 95,
-                                          hist_record,
-                                          comp_record){
-  # #dev mode: source SVIHM_input_analyses
-  # p_record = get_daily_precip_table()
-  # daily_precip_updated = data.frame(PRCP = p_record$stitched, Date = p_record$Date)
-  # hist_record = daily_precip_updated
-  # comp_record = hist_record
-  
-  #calculate precip value of the Xth percentile. Sort, find 95th index, and then find value.
-  hist_record_sorted = hist_record[order(hist_record$PRCP),]
-  threshold_index = round(dim(hist_record)[1] * (percentile_threshold/100))
-  threshold_value = hist_record_sorted$PRCP[threshold_index]
-  frac_days_greater_than_threshold = sum(comp_record$PRCP > threshold_value) / dim(comp_record)[1]
-  
-  return(frac_days_greater_than_threshold)
-
+              col.names=FALSE, row.names=FALSE, sep = "/t", quote = FALSE)
 }
 
 generate_scenario_a_extreme_days=function(P, 
@@ -590,7 +571,7 @@ if(dev_mode){
   #Decide number of large storms and generate Scenario A records
   scenario_folder_name = "pvar_a_extr_95_07"
   
-  P_sca = generate_scenario_a_extreme_days(ppt_hist[,c("date", "precip_m")], 
+  P_sca_ext = generate_scenario_a_extreme_days(ppt_hist[,c("date", "precip_m")], 
                                            big_little_divide = 0.95, storm_increase_fraction=0.07)
   # P_sca = P_sca[,c("date", "sca_ext")]; colnames(P_sca) = c("date", "precip_m")
   # check_sums(ppt_hist, P_sca)
@@ -617,7 +598,62 @@ if(dev_mode){
   paste0("sca_extreme_",big_little_divide, "_",storm_increase_fraction)
   txt_file_name=paste0("sca_extreme_",big_little_divide, "_",storm_increase_fraction,".txt")
   write.table(sca_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
-              col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
+              col.names=FALSE, row.names=FALSE, sep = "/t", quote = FALSE)
+}
+
+calculate_fraction_precip_on_extreme_days=function(percentile_threshold = 95,
+                                                   hist_record,
+                                                   comp_record){
+  #Assumes historical and comparison records with column "Date" and "precip_m" (in meters)
+  # Assumes both records start Oct 1st and end Sept 30 
+  
+  # #dev mode: source SVIHM_input_analyses
+  # hist_record = P #read in from above
+  # comp_record = P_sca[,c("date","sca_ext")]; colnames(comp_record)=c("date","precip_m")
+  
+  #calculate precip value of the Xth percentile. Sort, find 95th index, and then find value.
+  hist_record_sorted = hist_record[order(hist_record$precip_m),]
+  threshold_index = round(dim(hist_record)[1] * (percentile_threshold/100))
+  threshold_value = hist_record_sorted$precip_m[threshold_index]
+  
+  #For each water year, calculate proportion of rain volume
+  #falling on days with rain # X number threshold. 
+  # Average over all water years
+  comp_record$wy = year(comp_record$date)
+  comp_record$wy[month(comp_record$date)>9] = comp_record$wy[month(comp_record$date)>9]+1
+  wys = unique(comp_record$wy)
+  #initialize table
+  prop_on_ext_days=data.frame("wy" = wys); prop_on_ext_days$proportion = NA
+  for(i in 1:length(wys)){
+    wy = wys[i]
+    comp_wy = comp_record[comp_record$wy == wy,]
+    proportion = sum(comp_wy$precip_m[comp_wy$precip_m > threshold_value]) / sum(comp_wy$precip_m)
+    prop_on_ext_days$proportion[i] = proportion
+  }
+  return(prop_on_ext_days)
+}
+
+if(dev_mode){
+  
+  #read in P from above and generate P_sca extreme days
+  # P_sca = P_sca[,c("date","sca_ext")]; colnames(P_sca)=c("date","precip_m")
+  
+  
+  #Geeta analysis Nov 2019:
+  #Calculate proportion of rain falling on extreme days for historical and altered record
+  hist_prop = calculate_fraction_precip_on_extreme_days(hist_record = P, 
+                                                        comp_record = P, 
+                                                        percentile_threshold = 95)
+  sca_ext_prop = calculate_fraction_precip_on_extreme_days(hist_record = P, comp_record = P_sca, percentile_threshold = 95)
+  proportion_table = merge(hist_prop, sca_ext_prop, by="wy")
+  colnames(proportion_table) = c("wy", "historical", "ext_days_95_07")
+  
+  plot(proportion_table$wy, proportion_table$historical, type = "l", col = "blue")
+  lines(proportion_table$wy, proportion_table$ext_days_95_07, col = "red")
+  
+  proportion_table$diff = proportion_table$ext_days_95_07-proportion_table$historical
+  
+  mean(proportion_table$diff)
 }
 
 
@@ -717,7 +753,7 @@ if(dev_mode){
   
   txt_file_name = paste0("scb_precip_",fraction_season_length,"_season.txt")
   write.table(scb_for_txt, file.path(swbm_dir, scenario_folder_name, txt_file_name), 
-              col.names=FALSE, row.names=FALSE, sep = "\t", quote = FALSE)
+              col.names=FALSE, row.names=FALSE, sep = "/t", quote = FALSE)
 }
 
 ## Scenario C. More whiplash
@@ -818,12 +854,12 @@ if(dev_mode){
 
 # Precip and streamflow and RefET plots ---------------------------------------------
   #make table of plotting parameters
+  #for GRA sept 2019
   scenario = c("hist", "sca", "scb", "scc")
   scenario_descrip = c("Historical Precip","Scenario A (higher storm intensity)", 
                        "Scenario B (shorter rainy season)", "Scenario C (wetter wet / drier dry years)")
   sc_color = c("gray25", "red", "blue", "green4")
   sc_plotting_table = data.frame(scenario, scenario_descrip, sc_color, stringsAsFactors = FALSE)
-  
   plot_precip_compare = function(sc1, sc2, sc1df, sc2df){
     col1 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc1]
     col2 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc2]
@@ -833,17 +869,58 @@ if(dev_mode){
     for(i in 1:21){
       wy = 1990 + i
       x_limits = as.Date(c(paste0(wy-1,"-10-01"), paste0(wy,"-09-30")))
-      plot(sc2df$date, sc2df$precip_m, type = "l", lwd = 2, col = col2, 
+      # plot(sc2df$date, sc2df$precip_m, type = "l", lwd = 1, col = col2, 
+      #      xlim = x_limits, main = paste("Water Year", wy), xlab = "Date", ylab = "Daily precipitation (in)")#, ylim = c(0, 0.04))
+      # lines(sc1df$date, sc1df$precip_m, type = "l", lwd = 2, col = col1, xlim = x_limits)
+      plot(sc1df$date, sc1df$precip_m, type = "l", lwd = 2.5, col = col1, xlim = x_limits)
+      lines(sc2df$date, sc2df$precip_m, type = "l", lwd = 1, col = col2, 
            xlim = x_limits, main = paste("Water Year", wy), xlab = "Date", ylab = "Daily precipitation (in)")#, ylim = c(0, 0.04))
-      lines(sc1df$date, sc1df$precip_m, type = "l", lwd = 2, col = col1, xlim = x_limits)
       legend(x = "topright", lwd= c(2,2), col = c(col1, col2), legend = c(leglab1, leglab2))
     }
   }
   
-  plot_precip_compare("hist", "scb", ppt_hist, P_scb)
-  
-  plot_precip_compare("hist", "scc", ppt_hist, P_scc)
+  # plot_precip_compare("hist", "scb", ppt_hist, P_scb)
+  # plot_precip_compare("hist", "scc", ppt_hist, P_scc)
 
+  
+  
+  # For Geeta Nov 2019
+  #Generate scenario A, extreme days, 95% divider, 7% increase from function above
+  scenario = c("hist", "sca_ext")
+  scenario_descrip = c("Historical Precip","Altered Precip (7% more on extreme days)")
+  sc_color = c("gray25", "red")
+  sc_plotting_table = data.frame(scenario, scenario_descrip, sc_color, stringsAsFactors = FALSE)
+  
+  
+  plot_precip_compare_points = function(sc1, sc2, sc1df, sc2df, plot_wy=NA){
+    col1 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc1]
+    col2 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc2]
+    leglab1 = sc_plotting_table$scenario_descrip[sc_plotting_table$scenario == sc1]
+    leglab2 = sc_plotting_table$scenario_descrip[sc_plotting_table$scenario == sc2]
+    
+    if(!is.na(plot_wy)){wys = plot_wy} #if water year(s) specified, make the graph only for that/those water years
+    
+    for(wy in wys){
+      x_limits = as.Date(c(paste0(wy-1,"-10-01"), paste0(wy,"-09-30")))
+      plot(sc1df$date, sc1df$precip_m*1000, pch=1, type="o", col = col1, xlim = x_limits, 
+           xlab= paste("Month in water year",wy), ylab = "Daily Precipitation (mm)")
+      points(sc2df$date, sc2df$precip_m*1000, pch=4, lwd = 1, col = col2, 
+            xlim = x_limits, main = paste("Water Year", wy), xlab = "Date", ylab = "Daily precipitation (in)")#, ylim = c(0, 0.04))
+      grid(lty = 2, col = "darkgray")
+      abline(h=0, col="black" )
+      if(is.na(plot_wy)){
+        legend(x = "topright", pch= c(1,4), col = c(col1, col2), lwd=c(1,NA),
+             legend = c(leglab1, leglab2), bg="white")
+      }
+    }
+  }
+  
+  alteration_fig_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops or mini-projects/2019.06-12 Geeta Precip Alteration project"
+  # pdf(file.path(alteration_fig_dir, "precip water years.pdf"), width = 8.5, height = 11/2)
+  png(file.path(alteration_fig_dir, "precip water years.png"), width = 7.5, height = 6, units = "in", res = 300)
+  par(mfrow = c(2,2))
+  plot_precip_compare_points("hist", "sca_ext", P, P_sca, plot_wy = c(2014, 2017, 2010, 2015))
+  dev.off()
   
   # Tables for Latex --------------------------------------------------------
   
