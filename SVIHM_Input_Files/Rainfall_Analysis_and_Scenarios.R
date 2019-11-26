@@ -901,6 +901,13 @@ if(dev_mode){
     if(!is.na(plot_wy)){wys = plot_wy} #if water year(s) specified, make the graph only for that/those water years
     
     for(wy in wys){
+      #calculate 95% threshold
+      # sc1_wy = sc1df$precip_m[(year(sc1df$date) == wy & month(sc1df$date)),]
+      # sc1_wy = sc1df$precip_m[order(hist_record$precip_m),]
+      # threshold_index = round(dim(hist_record)[1] * (percentile_threshold/100))
+      # threshold_value = hist_record_sorted$precip_m[threshold_index]
+      
+      
       x_limits = as.Date(c(paste0(wy-1,"-10-01"), paste0(wy,"-09-30")))
       plot(sc1df$date, sc1df$precip_m*1000, pch=1, type="o", col = col1, xlim = x_limits, 
            xlab= paste("Month in water year",wy), ylab = "Daily Precipitation (mm)")
@@ -914,13 +921,48 @@ if(dev_mode){
       }
     }
   }
-  
+
   alteration_fig_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops or mini-projects/2019.06-12 Geeta Precip Alteration project"
   # pdf(file.path(alteration_fig_dir, "precip water years.pdf"), width = 8.5, height = 11/2)
   png(file.path(alteration_fig_dir, "precip water years.png"), width = 7.5, height = 6, units = "in", res = 300)
   par(mfrow = c(2,2))
   plot_precip_compare_points("hist", "sca_ext", P, P_sca, plot_wy = c(2014, 2017, 2010, 2015))
   dev.off()
+  
+  plot_precip_compare_barplot = function(sc1, sc2, sc1df, sc2df, plot_wy=NA){
+    col1 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc1]
+    col2 = sc_plotting_table$sc_color[sc_plotting_table$scenario == sc2]
+    leglab1 = sc_plotting_table$scenario_descrip[sc_plotting_table$scenario == sc1]
+    leglab2 = sc_plotting_table$scenario_descrip[sc_plotting_table$scenario == sc2]
+    
+    if(!is.na(plot_wy)){wys = plot_wy} #if water year(s) specified, make the graph only for that/those water years
+    
+    for(wy in wys){
+      x_limits = as.Date(c(paste0(wy-1,"-10-01"), paste0(wy,"-09-30")))
+      ndays = length(seq(from =x_limits[1], to=x_limits[2], by=1)) #automatic for leap years
+      sc1_subset = sc1df[sc1df$date >= x_limits[1] & sc1df$date <= x_limits[2],]
+      sc2_subset = sc2df[sc2df$date >= x_limits[1] & sc2df$date <= x_limits[2],]
+      
+      barplot(height=(sc2_subset$precip_m - sc1_subset$precip_m)*1000, col = col1, width=1, 
+              ylim = c(-1.2, 5), #xlim = c(1,ndays), 
+              title = paste("Rainfall alterations in water year", wy),
+              xlab= paste("Date in water year",wy), 
+              ylab = "Daily precip (mm) added")
+      #fiddle with axis to achieve matching between length of axis and breadth of bars
+      axis(side=1, at=round(seq(from=0, to=ndays*1.23, length.out=13)), labels = month.abb[c(10:12, 1:10)])
+      grid(lty = 2, col = "darkgray")
+      abline(h=0, col="black" )
+      text(x=ndays*1.1, y=4.5, labels = as.character(wy)) #add the water year a title in the upper right
+    }
+  }
+
+  alteration_fig_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops or mini-projects/2019.06-12 Geeta Precip Alteration project"
+  # pdf(file.path(alteration_fig_dir, "precip water years.pdf"), width = 8.5, height = 11/2)
+  png(file.path(alteration_fig_dir, "precip water years barplot2.png"), width = 7.5, height = 6, units = "in", res = 300)
+  par(mfrow = c(2,2))
+  plot_precip_compare_barplot("hist", "sca_ext", P, P_sca, plot_wy = c(2014, 2017, 2010, 2015))
+  dev.off()
+  
   
   # Tables for Latex --------------------------------------------------------
   
