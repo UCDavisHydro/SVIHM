@@ -77,6 +77,12 @@ Streamflow_colors = c('turquoise2', 'sienna3', 'green2', 'green4', 'royalblue', 
 sfr_legend = data.frame("Component" = Streamflow_flux_labels, "Color" = Streamflow_colors)
 
 
+# Sim v Obs directories
+ref_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
+mf_results_dir = file.path(svihm_dir, "MODFLOW", "hist") # historical 1991-2018 wy 
+postproc_dir = file.path(svihm_dir, "R_Files", "Post-Processing")
+
+
 # Figure 1. water budget----------------------------------------------------------------
 
 # Example of a water budget for a wet, dry, and normal year (two types of normal, 2010 and 2015)
@@ -252,7 +258,7 @@ Streamflow_Monthly_m3_melt$Month = factor(Streamflow_Monthly_m3_melt$Month, leve
 # Streamflow_Monthly_m3_melt = Streamflow_Monthly_m3_melt[order(Streamflow_Monthly_m3_melt$Month),]
 
 
-# __PLOT BUDGETS ----------------------------------------------------------
+# __1a. PLOT BUDGETS ----------------------------------------------------------
 
 
 #Plot Streamflow
@@ -320,6 +326,72 @@ vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
   print(aq_wy15, vp = vplayout(4,3))
 graphics.off()
 
+
+
+# __1b. PLOT COMPONENTS -------------------------------------------------------
+
+#subset for comparing 4 years
+agu_wys = c(2014, 2017, 2010, 2015)
+aq_monthly_melt$wy = wtr_yr(aq_monthly_melt$Month)
+aq_monthly_melt$mo = month.abb[month(aq_monthly_melt$Month)]
+aq_monthly_melt$mo = factor(x = aq_monthly_melt$mo, levels = month.abb[c(10:12, 1:9)])
+
+aq_wys = aq_monthly_melt[aq_monthly_melt$wy %in% agu_wys,]
+aq_wys$wy = factor(x = aq_wys$wy)
+
+pump_wys = aq_wys[aq_wys$variable == "Wells",]
+rch_wys = aq_wys[aq_wys$variable == "Recharge",]
+leak_wys = aq_wys[aq_wys$variable == "Stream_Leakage",]
+
+#Plot pumping
+pump=ggplot(data = pump_wys, aes(x = mo, y= -value/10^6, group = wy))+ #negative to make pumping positive for plotting
+  labs(x = "none", y = "Volume (km3/month)", title="Well Pumping")+
+  geom_line(aes(colour = wy))+#, size=2))+
+  scale_colour_manual(values = c("2014"="orangered", "2017"="deepskyblue3",
+                                 "2010"="darkgoldenrod1", "2015"="darkgoldenrod3"))+
+  theme_bw()+
+  theme(legend.position="none", axis.title.x=element_blank())
+#Plot recharge
+rch = ggplot(data = rch_wys, aes(x = mo, y= value/10^6, group = wy))+ 
+  labs(y = "Volume (km3/month)", title="Recharge")+
+  geom_line(aes(colour = wy))+#, size=2))+
+  scale_colour_manual(values = c("2014"="orangered", "2017"="deepskyblue3",
+                                 "2010"="darkgoldenrod1", "2015"="darkgoldenrod3"))+
+  theme_bw()+
+  theme(legend.position="none", axis.title.x=element_blank())
+#Plot stream leakage
+leak = ggplot(data = leak_wys, aes(x = mo, y= -value/10^6, group = wy))+ #negative to make leakage positive for plotting
+  labs(x = "Month in water year", y = "Volume (km3/month)", title="Stream Leakage")+
+  geom_line(aes(colour = wy))+#, size=2))+
+  geom_hline(yintercept=0, linetype="solid", color="black")+
+  geom_text(label="Net recharge to aquifer",x=10, y=10)+
+  geom_text(label="Net discharge to stream",x=10, y=-10)+
+  scale_colour_manual(values = c("2014"="orangered", "2017"="deepskyblue3",
+                                 "2010"="darkgoldenrod1", "2015"="darkgoldenrod3"))+
+  theme_bw()+
+  theme(legend.position="none")
+
+# #make legend for water year types for powerpoint
+# png(file.path(agu_figure_dir, "wy_type_legend.png"), height = 5, width = 7,
+#     units = "in", res = 300)
+# plot(1,0)
+# legend(x="center",lwd=rep(5,4), cex=2, title="Water year (type)",
+#        col = c("orangered", "deepskyblue3", "darkgoldenrod1", "darkgoldenrod3"),
+#        legend = c("2014 (dry)", "2017 (wet)", "2010 (average; spread)", "2015 (average; conc.)"))
+# dev.off()
+
+# agu_wys = c(2014, 2017, 2010, 2015)
+png(file.path(agu_figure_dir,"components.png"), height = 8, width = 5, 
+    units = "in", res = 300)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(3,1)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+print(pump, vp = vplayout(1,1))
+print(rch, vp = vplayout(2,1))
+print(leak, vp = vplayout(3,1))
+graphics.off()
+
+
 # Figure 2. hydrographs ----------------------------------------------------------------
 
 # Example of a river hydrograph and rainfall record in a wet, dry, and 2 types of normal year
@@ -337,6 +409,10 @@ wtr_yr <- function(dates, start_month=10) {
   # Return the water year
   adj.year
 }
+
+
+# __2b. annual precip figure ----------------------------------------------
+
 
 
 
@@ -440,16 +516,16 @@ rain$PRCP_in = rain$PRCP_m * 39.3701
 
 #make AGU figures for specific water years
 agu_wys = c(2014, 2017, 2010, 2015)
-png(file.path(agu_figure_dir, "FJ Stream and Precip_vert.png"), 
-    width = 5,height = 11, 
-    units = "in",res = 300)
+# png(file.path(agu_figure_dir, "FJ Stream and Precip_vert.png"), 
+    # width = 5,height = 11, 
+    # units = "in",res = 300)
 par(mfrow = c(4,1))
 for(wy in agu_wys){
-  # png(file.path(agu_figure_dir, paste(wy,"FJ Stream and Precip.png")), width = 8.5,height = 11/2, units = "in",res = 300)
+  png(file.path(agu_figure_dir, paste(wy,"FJ Stream and Precip.png")), width = 8.5,height = 11/2, units = "in",res = 300)
   fj_stream_and_precip(wy, legend = F)
-  # dev.off()
+  dev.off()
 }
-dev.off()
+# dev.off()
 
 # Figure 3. Sim v obs ----------------------------------------------------------------
 
@@ -464,21 +540,15 @@ gages = c('FJ','AS','BY','LS')
 
 # _user input --------------------------------------------------------------
 
-svihm_dir = dirname(dirname(dirname(getActiveDocumentContext()$path)))
-ref_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
-mf_results_dir = file.path(svihm_dir, "MODFLOW", "hist") # historical 1991-2018 wy 
-postproc_dir = file.path(svihm_dir, "R_Files", "Post-Processing")
-
-
 copy_these_files=c("SVIHM_Flow_Obs_Times.obs","Streamflow_FJ_SVIHM.dat")
 file.copy(from=file.path(c(ref_dir, mf_results_dir),copy_these_files), to = postproc_dir)
 
 units_cfs = FALSE   #If true, output units will be in cfs. If false output units will be in m^3/day
-dir.create(file.path(postproc_dir,'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
+# dir.create(file.path(postproc_dir,'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
 out_dir = file.path(postproc_dir,'Results')
-options(warn=-1)   # suppress warnings (set to 0 to turn warnings on)
+# options(warn=-1)   # suppress warnings (set to 0 to turn warnings on)
 
-Steamflow_Obs_Times = read.table('SVIHM_Flow_Obs_Times.obs', header = T, fill = T) #Where is this file? 
+Steamflow_Obs_Times = read.table(file.path(postproc_dir,'SVIHM_Flow_Obs_Times.obs'), header = T, fill = T) #Where is this file? 
 Steamflow_Obs_Times$FJ = as.Date(Steamflow_Obs_Times$FJ, format = '%m/%d/%Y')
 Steamflow_Obs_Times$LS = as.Date(Steamflow_Obs_Times$LS, format = '%m/%d/%Y')
 Steamflow_Obs_Times$AS = as.Date(Steamflow_Obs_Times$AS, format = '%m/%d/%Y')
@@ -507,6 +577,9 @@ FJ_cfs = data.frame(Date = as.Date(FJ_obs_cfs$Date, format = "%m/%d/%Y"),
 
 
 # _import other 3 mainstem flow observations -----------------------------------------------
+
+#recreate it from the .flowobs file
+
 
 for (i in 2:length(gages)){
   obs_cfs_text = readLines(file.path(postproc_dir,paste0('SVIHM_',gages[i],'.obs')))
