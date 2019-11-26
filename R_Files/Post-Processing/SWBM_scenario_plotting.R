@@ -526,28 +526,35 @@ scenario_totals = budget_overall(mwbs, scenario_ids)
 #dry, wet, average years
 yearly_budgets = budget_stat_by_year(mwbs = mwbs, scenario_ids = scenario_ids, stat = "sum")
 
-wet_year = 2006; dry_year = 2001; avg_year = 2015
+wet_year = 2017; dry_year = 2014; avg_spread_year = 2010; avg_conc_year = 2015
 #Make subset tables for the barplot graphic. Eliminate water year column
 scenario_totals_wet = yearly_budgets[yearly_budgets$Scenario_id %in% scenario_ids &
                                        yearly_budgets$Water_year == wet_year, 
                                      colnames(yearly_budgets)[colnames(yearly_budgets)!="Water_year"]]
-scenario_totals_avg = yearly_budgets[yearly_budgets$Scenario_id %in% scenario_ids &
-                                       yearly_budgets$Water_year == avg_year, 
+scenario_totals_avg_sp = yearly_budgets[yearly_budgets$Scenario_id %in% scenario_ids &
+                                       yearly_budgets$Water_year == avg_spread_year, 
                                      colnames(yearly_budgets)[colnames(yearly_budgets)!="Water_year"]]
+scenario_totals_avg_co = yearly_budgets[yearly_budgets$Scenario_id %in% scenario_ids &
+                                          yearly_budgets$Water_year == avg_conc_year, 
+                                        colnames(yearly_budgets)[colnames(yearly_budgets)!="Water_year"]]
 scenario_totals_dry = yearly_budgets[yearly_budgets$Scenario_id %in% scenario_ids &
                                        yearly_budgets$Water_year == dry_year, 
                                      colnames(yearly_budgets)[colnames(yearly_budgets)!="Water_year"]]
 
 #combine into one df, for barplots (GRA poster 2019)
-scenario_totals_all = rbind(scenario_totals_wet, scenario_totals_dry, scenario_totals_avg, scenario_totals)
+scenario_totals_all = rbind(scenario_totals_wet, scenario_totals_dry, 
+                            scenario_totals_avg_sp, scenario_totals_avg_co,
+                            scenario_totals)
 scta = scenario_totals_all
-scta$year_type = rep(c("Wet (2006)", "Dry (2001)", "Avg (2015)", "Overall"), each = 2)
+
+year_types = c("Wet (2017)", "Dry (2014)", "Avg, spread (2010)",  "Avg, conc. (2015)", "Overall")
+scta$year_type = rep(year_types, each = 2)
 
 scta_m = melt(scta, id.vars = c("Scenario_id", "year_type"))
 
 #initialize table of change factors
 scta_m_chg = data.frame(matrix(data = NA, nrow = 0, ncol = 5)) ; colnames(scta_m_chg) = c(colnames(scta_m), "percent_chg_fm_hist")
-for(yrtype in c("Wet (2006)", "Dry (2001)", "Avg (2015)", "Overall")){
+for(yrtype in c(year_types)){
   for(component in c("GW_Irr", "Recharge", "SW_Irr")){
     scta_m_subset = scta_m[scta_m$year_type == yrtype & scta_m$variable == component,]
     scta_m_hist = scta_m_subset[scta_m_subset$Scenario_id == "hist",]
@@ -558,7 +565,7 @@ for(yrtype in c("Wet (2006)", "Dry (2001)", "Avg (2015)", "Overall")){
   }
 }
 
-scta_m_chg$year_type = factor(scta_m_chg$year_type, levels=c("Wet (2006)", "Avg (2015)", "Dry (2001)", "Overall"))
+scta_m_chg$year_type = factor(scta_m_chg$year_type, levels=year_types)
 
 #add color coding for each scenario
 scid_colors = c(#"darkorchid2", "darkorchid3", "darkorchid4", 
@@ -572,22 +579,24 @@ scta_m_gw = scta_m_chg[scta_m_chg$variable == "GW_Irr",]
 scta_m_rch = scta_m_chg[scta_m_chg$variable == "Recharge",]
 scta_m_sw = scta_m_chg[scta_m_chg$variable == "SW_Irr",]
 
-gw = ggplot(scta_m_gw, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
-  ylim(-10, 10)+#ylim(-20, 55)+
+gw = ggplot(scta_m_gw, aes(factor(year_type), #percent_chg_fm_hist*100, fill = Scenario_id)) +
+                           value, fill = Scenario_id)) +
+  # ylim(-5, 12)+#ylim(-20, 55)+
+  ylim(0, 1E8)+
   geom_bar(stat = "identity", position = "dodge") + 
   labs(title = "Change from Historical Groundwater Pumping", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
 sw = ggplot(scta_m_sw, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
-  ylim(-10, 10)+#ylim(-20, 55)+
+  ylim(-5, 12)+#ylim(-20, 55)+
   geom_bar(stat = "identity", position = "dodge") + 
   labs(title = "Change from Historical Surface Water Irrigation", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
 rch = ggplot(scta_m_rch, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
-  ylim(-10, 10)+#ylim(-20, 55)+
+  ylim(-5, 12)+#ylim(-20, 55)+
   geom_bar(stat = "identity", position = "dodge") + 
   labs(title = "Change from Historical Recharge", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
