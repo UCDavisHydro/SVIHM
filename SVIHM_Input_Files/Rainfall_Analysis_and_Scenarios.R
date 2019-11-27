@@ -590,7 +590,7 @@ if(dev_mode){
   }
   
   #Write precip to a text file for SWBM run.
-  sca_for_txt = P_sca[,c("sca_ext", "date")]
+  sca_for_txt = P_sca_ext[,c("sca_ext", "date")]
   sca_for_txt$date = paste0(strftime(P_sca$date, "%d"), "/",
                             strftime(P_sca$date, "%m"), "/",
                             strftime(P_sca$date, "%Y"))
