@@ -541,14 +541,14 @@ gages = c('FJ','AS','BY','LS')
 # _user input --------------------------------------------------------------
 
 copy_these_files=c("SVIHM_Flow_Obs_Times.obs","Streamflow_FJ_SVIHM.dat")
-file.copy(from=file.path(c(ref_dir, mf_results_dir),copy_these_files), to = postproc_dir)
+file.copy(from=file.path(c(ref_dir, mf_results_dir),copy_these_files), to = file.path(postproc_dir, "Results"))
 
 units_cfs = FALSE   #If true, output units will be in cfs. If false output units will be in m^3/day
 # dir.create(file.path(postproc_dir,'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
 out_dir = file.path(postproc_dir,'Results')
 # options(warn=-1)   # suppress warnings (set to 0 to turn warnings on)
 
-Steamflow_Obs_Times = read.table(file.path(postproc_dir,'SVIHM_Flow_Obs_Times.obs'), header = T, fill = T) #Where is this file? 
+Steamflow_Obs_Times = read.table(file.path(postproc_dir,"Results",'SVIHM_Flow_Obs_Times.obs'), header = T, fill = T) #Where is this file? 
 Steamflow_Obs_Times$FJ = as.Date(Steamflow_Obs_Times$FJ, format = '%m/%d/%Y')
 Steamflow_Obs_Times$LS = as.Date(Steamflow_Obs_Times$LS, format = '%m/%d/%Y')
 Steamflow_Obs_Times$AS = as.Date(Steamflow_Obs_Times$AS, format = '%m/%d/%Y')
@@ -562,18 +562,32 @@ Steamflow_Obs_Times$BY = as.Date(Steamflow_Obs_Times$BY, format = '%m/%d/%Y')
 # FJ_obs_all = read.table(FJ_obs_file, header = T)
 # dates = as.Date(FJ_obs_all$Date, format = "%m/%d/%Y")
 # FJ_obs_1990_2018 = FJ_obs_all[dates >= as.Date("1990-10-01") & dates < as.Date("2018-10-01"),]
-# write.table(FJ_obs_1990_2018,file.path(postproc_dir,'SVIHM_FJ_1990-2011.obs'))
+# write.table(FJ_obs_1990_2018,file.path(postproc_dir,'SVIHM_FJ_1990-2018.obs'))
+
+#MAke a new one for 2018?
 
 #read 
-FJ_obs_cfs = read.table(file.path(postproc_dir,'SVIHM_FJ_1990-2011.obs'), header=TRUE)[c(1,2)]
+FJ_obs_cfs = read.table(file.path(postproc_dir,"Results",'SVIHM_FJ_1990-2018.obs'), header=TRUE)[c(1,2)]
 names(FJ_obs_cfs) = c('Date','Streamflow_obs_FJ_cfs')
 
-FJ_sim_m3day = read.table(file.path(postproc_dir,'Streamflow_FJ_SVIHM.dat'),skip=2)[c(1,3)]
+FJ_sim_m3day = read.table(file.path(postproc_dir,"Results",'Streamflow_FJ_SVIHM.dat'),skip=2)[c(1,3)]
 names(FJ_sim_m3day) = c('Date', 'm3day')
 FJ_sim_m3day$Date = as.Date(FJ_sim_m3day$Date, origin = '1990-09-30')
-FJ_cfs = data.frame(Date = as.Date(FJ_obs_cfs$Date, format = "%m/%d/%Y"), 
-                    Observed = FJ_obs_cfs$Streamflow_obs_FJ_cfs, 
-                    Simulated = FJ_sim_m3day$m3day*0.000408734569)
+FJ_m3day = data.frame(Date = as.Date(FJ_obs_cfs$Date, format = "%m/%d/%Y"), 
+                    Observed = FJ_obs_cfs$Streamflow_obs_FJ_cfs/0.000408734569, 
+                    Simulated = FJ_sim_m3day$m3day)
+
+
+#CURRENTLY: MAKING THIS BEAUTIFUL
+plot(FJ_m3day$Date, FJ_m3day$Observed, log="y",
+     lwd=2, type = "l", col = "blue", 
+     xlim = as.Date(c("1990-10-01", "2011-09-30")), ylim = c(4000,6.8E7),
+     ylab = "Average daily flow (m3 per day)",
+     xlab = "Date")
+#axis magic
+lines(FJ_m3day$Date, FJ_m3day$Simulated, lwd = 2, col = "red")
+
+#Inspect each water year
 
 
 # _import other 3 mainstem flow observations -----------------------------------------------
