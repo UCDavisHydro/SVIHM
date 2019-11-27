@@ -657,6 +657,46 @@ if(dev_mode){
 }
 
 
+calculate_fraction_precip_nov_march=function(P){
+  #Assumes historical and comparison records with column "Date" and "precip_m" (in meters)
+  # Assumes both records start Oct 1st and end Sept 30 
+  
+  #For each water year, calculate proportion of rain volume
+  #falling between Nov and March
+  P$wy = year(P$date)
+  P$wy[month(P$date)>9] = P$wy[month(P$date)>9]+1
+  wys = unique(P$wy)
+  #initialize table
+  prop_nov_mar=data.frame("wy" = wys); prop_nov_mar$proportion = NA
+  for(i in 1:length(wys)){
+    wy = wys[i]
+    P_wy = P[P$wy == wy,]
+    proportion = sum(P_wy$precip_m[month(P_wy$date) %in% c(11, 12, 1, 2, 3)])/sum(P_wy$precip_m)
+    prop_nov_mar$proportion[i] = proportion
+  }
+  return(prop_nov_mar)
+}
+
+if(dev_mode){
+  #read in P from above and generate P_sca extreme days
+  # P_sca = P_sca_ext[,c("date","sca_ext")]; colnames(P_sca)=c("date","precip_m")
+  
+  #Geeta analysis Nov 2019:
+  #Calculate proportion of rain falling on extreme days for historical and altered record
+  hist_prop = calculate_fraction_precip_nov_march(P = P)
+  sca_ext_prop = calculate_fraction_precip_nov_march(P = P_sca)
+  proportion_table = merge(hist_prop, sca_ext_prop, by="wy")
+  colnames(proportion_table) = c("wy", "historical", "ext_days_95_07")
+  
+  plot(proportion_table$wy, proportion_table$historical, type = "l", col = "blue")
+  lines(proportion_table$wy, proportion_table$ext_days_95_07, col = "red")
+  
+  proportion_table$diff = proportion_table$ext_days_95_07-proportion_table$historical
+  
+  mean(proportion_table$diff)
+}
+
+
 ## Scenario B. Shorter wet season
 ## Decision variable: fraction of historical wet season length) 
 
