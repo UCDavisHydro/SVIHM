@@ -575,35 +575,36 @@ scid_colors = c(#"darkorchid2", "darkorchid3", "darkorchid4",
                 "lightpink1","lightpink3","lightpink4")
 
 #Attempts to combine barplots: by year type, by component, by scenario ID
+scta_m_chg= scta_m_chg[scta_m_chg$year_type != "Overall",]
 scta_m_gw = scta_m_chg[scta_m_chg$variable == "GW_Irr",]
 scta_m_rch = scta_m_chg[scta_m_chg$variable == "Recharge",]
 scta_m_sw = scta_m_chg[scta_m_chg$variable == "SW_Irr",]
 
-gw = ggplot(scta_m_gw, aes(factor(year_type), #percent_chg_fm_hist*100, fill = Scenario_id)) +
-                           value, fill = Scenario_id)) +
-  # ylim(-5, 12)+#ylim(-20, 55)+
-  ylim(0, 1E8)+
-  geom_bar(stat = "identity", position = "dodge") + 
+gw = ggplot(scta_m_gw, aes(factor(year_type), percent_chg_fm_hist*100))+#, fill = Scenario_id) +
+                           # value, fill = Scenario_id)) +
+  ylim(0, 12)+#ylim(-20, 55)+
+  # ylim(0, 1E8)+
+  geom_bar(stat = "identity", position = "dodge", fill = "midnightblue") + 
   labs(title = "Change from Historical Groundwater Pumping", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
-sw = ggplot(scta_m_sw, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
-  ylim(-5, 12)+#ylim(-20, 55)+
-  geom_bar(stat = "identity", position = "dodge") + 
+sw = ggplot(scta_m_sw, aes(factor(year_type), percent_chg_fm_hist*100))+#, fill = Scenario_id) +
+  ylim(0, 12)+#ylim(-20, 55)+
+  geom_bar(stat = "identity", position = "dodge", fill = "blue") + 
   labs(title = "Change from Historical Surface Water Irrigation", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
-rch = ggplot(scta_m_rch, aes(factor(year_type), percent_chg_fm_hist*100, fill = Scenario_id)) +
-  ylim(-5, 12)+#ylim(-20, 55)+
-  geom_bar(stat = "identity", position = "dodge") + 
+rch = ggplot(scta_m_rch, aes(factor(year_type), percent_chg_fm_hist*100))+#, fill = Scenario_id) +
+  ylim(0, 12)+#ylim(-20, 55)+
+  geom_bar(stat = "identity", position = "dodge", fill = "green4") + 
   labs(title = "Change from Historical Recharge", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
-png("Scenario Results.png", width = 12, height = 10, units = "in", res = 300)
-grid.arrange(rch, gw, sw,  nrow = 3)
+png(file.path("Scenario Results.png"), width = 6, height = 8, units = "in", res = 300)
+grid.arrange(gw, sw, rch,  nrow = 3)
 dev.off()
 
 grid.arrange(
