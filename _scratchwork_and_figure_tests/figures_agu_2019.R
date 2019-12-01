@@ -87,107 +87,6 @@ postproc_dir = file.path(svihm_dir, "R_Files", "Post-Processing")
 
 # Example of a water budget for a wet, dry, and normal year (two types of normal, 2010 and 2015)
 
-make_legend_symbol_table = function(){
-  
-  label = c("Precipitation","Surface water irrigation", "Groundwater irrigation", "Evapotranspiration","Recharge","Change in storage")
-  color = c("deepskyblue", "blue", "gray36", "orange2", "green4", "darkgray")
-  components = data.frame(label,color)
-  components$color = as.character(components$color)
-  components$abbrev = c("Precip", "SW_Irr", "GW_Irr", "ET", "Recharge", "Storage")
-  
-  return(components)
-}
-
-plot_water_budget_overview = function(mwb, scenario_name, output_type = "pdf"){
-  #Label budget components
-  P = mwb$Precip
-  SW = mwb$SW_Irr
-  GW = mwb$GW_Irr
-  ET = mwb$ET
-  R = mwb$Recharge
-  S = mwb$Storage
-  
-  #Plot parameters
-  vol_lim = c(min(mwb[2:7]), max(mwb[2:7]))
-  x_lim = c(240, dim(mwb)[1])# x_lim = c(1, dim(mwb)[1])
-  #Symbols and legend labels
-  components = make_legend_symbol_table()
-  
-  #OUtput file setup
-  setwd(pdf_dir)
-  if(output_type == "pdf"){
-    pdfname = paste0(scenario_name, "_overview.pdf")
-    pdf(pdfname, 7.5,9)
-    par(mfrow=c(2,1))
-  } else if(output_type =="png"){
-    pngname = paste0(scenario_name, "plot1_overview.png")
-    png(pngname, width = 8, height = 5.5, units = "in", res = 200) 
-  }
-  
-  
-  #Initialize Panel 1
-  plot(x = NA, y = NA, xlim = x_lim,  ylim = vol_lim,
-       axes = FALSE, xlab = "Year", ylab = "", #Suppress y-axis label text
-       main = paste(scenario_name, "monthly water budget"),
-       sub = "Negative values indicate water leaving modeled soil volume", cex = 0.8)
-  
-  #Manual stylized grid lines (plotted first to not obscure data)
-  abline(v = seq(from = 4, to = 336, by=12),
-         lty = 3, lwd = 0.5, col = "lightgray")
-  abline(h = pretty(vol_lim), v = seq(from = 52, to = 336, by=12),#60), # Jan of 95, 00, 05, 10
-         lty = 1, col = "darkgray")
-  abline(h = 0, col = "black")
-  #Manual y-label and axis labels, and a box (plot border)
-  mtext(side = 2, expression(paste("Water volume (cubic meters x 10"^"7", ")")), 
-        las = 0, line = 2) #manual y-label
-  axis(1, at = seq(from = 4, to = 336, by=12), labels = 1991:2018)
-  axis(2, at = pretty(vol_lim), pretty(vol_lim)/10^7)
-  box()
-  
-  #Plot water budget components over time. Ordered to optimize visibility
-  lines(R, col = components$color[5], lwd = 2.5) 
-  lines(P, col = components$color[1], lwd = 2.5)
-  lines(GW, col = components$color[3], lwd = 2.5)
-  lines(SW, col = components$color[2], lwd = 2.5)
-  lines(ET, col = components$color[4], lwd = 2.5)
-  
-  #New png file if making pngs
-  if(output_type =="png"){
-    dev.off()
-    pngname = paste0(scenario_name, "plot2_overview.png")
-    png(pngname, width = 9, height = 5, units = "in", res = 200) #plot for a poster
-  }
-  
-  #Initialize Panel 2
-  plot(x = NA, y = NA, xlim = x_lim,  ylim = vol_lim,
-       axes = FALSE, xlab = "Year", ylab = "", #Suppress y-axis text
-       main = paste0(scenario_name, " monthly change in soil water storage"),
-       sub = "Negative values indicate water leaving modeled soil volume", cex = 0.8)
-  #Manual stylized grid lines (plotted first to not obscure data)
-  abline(v = seq(from = 4, to = 336, by=12),
-         lty = 3, lwd = 0.5, col = "lightgray")
-  abline(h = pretty(vol_lim), v = seq(from = 52, to = 336, by=60), # Jan of 95, 00, 05, 10
-         lty = 1, col = "darkgray")
-  abline(h = 0, col = "black")
-  #Manual y-label and axis labels
-  mtext(side = 2, expression(paste("Change in storage (cubic meters x 10"^"7", ")")), 
-        las = 0, line = 2) #manual y-label
-  axis(1, at = seq(from = 4, to = 336, by=12), #Jan of years ending in 5 and 0
-       labels = 1991:2018)
-  axis(2, at = pretty(vol_lim), pretty(vol_lim)/10^7)
-  box()
-  
-  #Plot change in storage over time
-  lines(S, type = "l", col = components$color[6], lwd = 2.5)
-  
-  #Add legend to the bottom panel
-  legend(x = "topleft", lwd = 2, ncol = 2, bg= "white",
-         col = components[,2], legend = components[,1])
-  
-  dev.off()
-}
-
-
 # __IMPORT BUDGETS ----------------------------------------------------------
 
 
@@ -410,12 +309,6 @@ wtr_yr <- function(dates, start_month=10) {
   adj.year
 }
 
-
-# __2b. annual precip figure ----------------------------------------------
-
-
-
-
 fj_stream_and_precip= function(wy = 1991, legend =F){
   wy_start_date = as.Date(paste0(wy-1,"-10-01"))
   nextwy_start_date = as.Date(paste0(wy,"-10-01"))
@@ -527,7 +420,7 @@ for(wy in agu_wys){
 }
 # dev.off()
 
-# Figure 3. Sim v obs ----------------------------------------------------------------
+# Fig 3. Sim v obs streamflow----------------------------------------------------------------
 
 # Example of sim vs obs river hydrograph and heads
 
@@ -540,22 +433,14 @@ gages = c('FJ','AS','BY','LS')
 
 # _user input --------------------------------------------------------------
 
-copy_these_files=c("SVIHM_Flow_Obs_Times.obs","Streamflow_FJ_SVIHM.dat")
-file.copy(from=file.path(c(ref_dir, mf_results_dir),copy_these_files), to = file.path(postproc_dir, "Results"))
-
 units_cfs = FALSE   #If true, output units will be in cfs. If false output units will be in m^3/day
 # dir.create(file.path(postproc_dir,'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
 out_dir = file.path(postproc_dir,'Results')
 # options(warn=-1)   # suppress warnings (set to 0 to turn warnings on)
 
-Steamflow_Obs_Times = read.table(file.path(postproc_dir,"Results",'SVIHM_Flow_Obs_Times.obs'), header = T, fill = T) #Where is this file? 
-Steamflow_Obs_Times$FJ = as.Date(Steamflow_Obs_Times$FJ, format = '%m/%d/%Y')
-Steamflow_Obs_Times$LS = as.Date(Steamflow_Obs_Times$LS, format = '%m/%d/%Y')
-Steamflow_Obs_Times$AS = as.Date(Steamflow_Obs_Times$AS, format = '%m/%d/%Y')
-Steamflow_Obs_Times$BY = as.Date(Steamflow_Obs_Times$BY, format = '%m/%d/%Y')
-
-# _import Fort Jones streamflow  observations -------------------------------------------------------
-
+# Do once:
+# copy_these_files=c("SVIHM_Flow_Obs_Times.obs","Streamflow_FJ_SVIHM.dat")
+# file.copy(from=file.path(c(ref_dir, mf_results_dir),copy_these_files), to = file.path(postproc_dir, "Results"))
 
 #Create .obs file in results
 # FJ_obs_file = "C:/Users/Claire/Documents/GitHub/SVIHM/Streamflow_Regression_Model/USGS_11519500_WY_1942_2018.txt"
@@ -564,31 +449,80 @@ Steamflow_Obs_Times$BY = as.Date(Steamflow_Obs_Times$BY, format = '%m/%d/%Y')
 # FJ_obs_1990_2018 = FJ_obs_all[dates >= as.Date("1990-10-01") & dates < as.Date("2018-10-01"),]
 # write.table(FJ_obs_1990_2018,file.path(postproc_dir,'SVIHM_FJ_1990-2018.obs'))
 
-#MAke a new one for 2018?
+# _import Fort Jones streamflow  observations -------------------------------------------------------
 
-#read 
+#Read in Obs Times  file (why?)
+# Steamflow_Obs_Times = read.table(file.path(postproc_dir,"Results",'SVIHM_Flow_Obs_Times.obs'), header = T, fill = T) #Where is this file? 
+# Steamflow_Obs_Times$FJ = as.Date(Steamflow_Obs_Times$FJ, format = '%m/%d/%Y')
+# Steamflow_Obs_Times$LS = as.Date(Steamflow_Obs_Times$LS, format = '%m/%d/%Y')
+# Steamflow_Obs_Times$AS = as.Date(Steamflow_Obs_Times$AS, format = '%m/%d/%Y')
+# Steamflow_Obs_Times$BY = as.Date(Steamflow_Obs_Times$BY, format = '%m/%d/%Y')
+
+#read in Flow Obs file
 FJ_obs_cfs = read.table(file.path(postproc_dir,"Results",'SVIHM_FJ_1990-2018.obs'), header=TRUE)[c(1,2)]
 names(FJ_obs_cfs) = c('Date','Streamflow_obs_FJ_cfs')
 
 FJ_sim_m3day = read.table(file.path(postproc_dir,"Results",'Streamflow_FJ_SVIHM.dat'),skip=2)[c(1,3)]
 names(FJ_sim_m3day) = c('Date', 'm3day')
 FJ_sim_m3day$Date = as.Date(FJ_sim_m3day$Date, origin = '1990-09-30')
-FJ_m3day = data.frame(Date = as.Date(FJ_obs_cfs$Date, format = "%m/%d/%Y"), 
-                    Observed = FJ_obs_cfs$Streamflow_obs_FJ_cfs/0.000408734569, 
-                    Simulated = FJ_sim_m3day$m3day)
+
+if(units_cfs){
+  # fj_cfs = data.frame(date = as.Date(FJ_obs_cfs$Date, format = "%m/%d/%Y"), 
+  #                       observed = FJ_obs_cfs$Streamflow_obs_FJ_cfs, 
+  #                       simulated = FJ_sim_m3day$m3day/2446.58)
+}
+fj_m3day = data.frame(date = as.Date(FJ_obs_cfs$Date, format = "%m/%d/%Y"), 
+                    observed = FJ_obs_cfs$Streamflow_obs_FJ_cfs*2446.58, 
+                    simulated = FJ_sim_m3day$m3day)
 
 
-#CURRENTLY: MAKING THIS BEAUTIFUL
-plot(FJ_m3day$Date, FJ_m3day$Observed, log="y",
-     lwd=2, type = "l", col = "blue", 
-     xlim = as.Date(c("1990-10-01", "2011-09-30")), ylim = c(4000,6.8E7),
-     ylab = "Average daily flow (m3 per day)",
-     xlab = "Date")
-#axis magic
-lines(FJ_m3day$Date, FJ_m3day$Simulated, lwd = 2, col = "red")
+max_flow = max(c(fj_m3day$observed, fj_m3day$simulated)) * 1.5
+min_flow = min(c(fj_m3day$observed, fj_m3day$simulated)) * 0.5
+
+fj_stream_sim_obs_wy= function(wy = 1991, legend =F){
+  wy_start_date = as.Date(paste0(wy-1,"-10-01"))
+  nextwy_start_date = as.Date(paste0(wy,"-10-01"))
+  
+  # #set margins for 2 y axes and labels
+  # par(mar = c(5,5,2,5))
+  
+  #Make river hydrograph
+  #subset stream data
+  fj_wy = fj_m3day[fj_m3day$date >= wy_start_date & fj_m3day$date < nextwy_start_date,]
+  
+  #Plot observed river hydrograph (divide by 1000 for m3/day units)
+  plot(fj_wy$date, fj_wy$observed/1000, type="l", lwd = 2, col = "blue",
+       log = "y", yaxt = "n", xaxt = "n", ylim = c(min_flow, max_flow)/1000,
+       main = paste("Water Year", wy), xlab = "Date in water year", 
+       # ylab = "Average Daily Flow (cfs)") #cfs y label
+       ylab = expression(paste("Average Daily Flow (10"^"3"," m"^"3","/day)"))) #m3 per day label
+  # Plot simulated river flow
+  lines(fj_wy$date, fj_wy$simulated/1000, lwd = 2, col = "red")
+  
+  
+  #Add yaxis ticks
+  #m3_day axes
+  axis(side = 2, at = 10^(1:5), las = 2, labels = c("1", "10", "100", "1000", "10,000"))
+  axis(side = 2, tck = -.01, at = rep(1:10, 5) * rep(10^(0:4), each = 10), labels = NA)
+  # #cfs axes
+  # axis(side = 2, at = 10^(0:4), las = 2, labels = c("1", "10", "100", "1000", "10,000"))
+  # axis(side = 2, tck = -.01, at = rep(1:10, 5) * rep(10^(0:4), each = 10), labels = NA)
+  
+  # Add x axis ticks and grid
+  x_ticks = unique(floor_date(seq(wy_start_date, nextwy_start_date, by="day"), unit = "month"))
+  x_ticks_labels = format(x_ticks, "%b %d")
+  axis(side=1, tck = -.02, srt=45, at = x_ticks, labels = x_ticks_labels)
+  # text(x = x_ticks, y = 0.5, labels = x_ticks_labels, srt = 45, pos = 1, xpd = TRUE, )
+  abline(h = 10^(0:4), v = seq(wy_start_date, nextwy_start_date, by="month"),
+         lty = 3, col = "gray")
+  # abline(h = 40, col = "brown", lty = 2, lwd = 2) # add FS water right on plot
+}
 
 #Inspect each water year
-
+wys = 1991:2018
+for(wy in wys){
+  fj_stream_sim_obs_wy(wy)
+}
 
 # _import other 3 mainstem flow observations -----------------------------------------------
 
@@ -625,10 +559,71 @@ for (i in 2:length(gages)){
 }
 
 
-# Figure 4. Nash-Sutcliffe  ---------------------------------------------------------
+
+# Fig 4. Sim v obs heads --------------------------------------------------
+
+Head_Data = read.table(file.path(mf_results_dir,'HobData_SVIHM.dat'),skip = 1)
+names(Head_Data) = c('Simulated', 'Observed', 'ID')
+Head_Data$Residual = Head_Data$Observed-Head_Data$Simulated
+
+head_regress = lm(Head_Data$Simulated~Head_Data$Observed)
+regress_eqn = paste('y = ',round(coef(head_regress)[2],2),'x + ',round(coef(head_regress)[1],2), sep = '')
+R2 <- paste("R^2 == ", round(summary(head_regress)$r.square,2))
+
+(one2one_plot = ggplot(Head_Data,aes(x = Observed*3.28, y=Simulated*3.28)) + 
+    geom_point(size = 1, color = 'navy') +
+    geom_abline(intercept=0,slope=1, col = 'black') +
+    scale_y_continuous(limits = c(2600,3100), breaks = seq(2600,3100,by=100), expand = c(0,0)) +
+    scale_x_continuous(limits = c(2600,3100), breaks = seq(2600,3100,by=100), expand = c(0,0)) +
+    ylab('Simulated (ft)') +
+    xlab('Observed (ft)') +
+    ggtitle('Groundwater Heads') +
+    theme(panel.background = element_blank(), panel.border = element_rect(fill = NA),
+          plot.title = element_text(hjust = 0.5)) +
+    coord_fixed() +
+    annotate('text', x = 2790, y = 3020, label = regress_eqn, size = 3.2) +
+    annotate('text', x = 2790, y = 2985, label = R2, parse = T, size = 3.2))
+# pdf(paste0(out_dir,'/Heads_Sim_vs_Observed_ft.pdf'),width = 8, height = 5)
+# one2one_plot
+# graphics.off()
+
+#Plot DWR_2
+
+#Plot F56
+
+#Plot K22
 
 
-# Figure 5. ET check
+
+
+# Fig 5. dry wet stream mapping -------------------------------------------
+
+sfr_glob_text = readLines(file.path( mf_results_dir, "Streamflow_Global.dat"))
+start_rows = grep("STREAM LISTING", sfr_glob_text) + 5
+n_reach = start_rows[2]-start_rows[1]-8  # 8 extra header rows at each timestep
+
+extract_cols = c(1:3, 5, 7, 9:19)
+
+reach_array = array(data=NA, dim = c(length(start_rows), n_reach, length(extract_cols)))
+
+for(i in 1:length(start_rows)){
+  start_row = start_rows[i];
+  sfr_stress = sfr_glob_text[start_row:(start_row+n_reach-1)]
+  for(j in 1:n_reach){
+    sfr_reach = unlist(strsplit(trimws(sfr_stress[i]), "  "))
+    reach_array[i,j,] = sfr_reach[extract_cols] 
+  }
+}
+
+#make a pdf appendix of each timestep of dry or wet
+
+
+
+
+# Figure 6. Nash-Sutcliffe  ---------------------------------------------------------
+
+
+# Figure 7. ET check
 
 
 
