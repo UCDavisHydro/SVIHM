@@ -31,15 +31,9 @@ svihm_dir = "C:/Users/Claire/Documents/GitHub/SVIHM"
 fig_dir = file.path(gsp_dir, "GSP_Figures")
 dms_dir = file.path(gsp_dir, "Data_Management_System")
 dms_archive_dir = "C:/Users/Claire/Box/SiskiyouGSP2022_DMS"
-
-#Budget directories
-swbm_dir = file.path(svihm_dir,"SWBM")
-budget_dir = file.path(gsp_dir, "GSP_Analyses", "Scott_Water_Budget")
-in_mf_dir =  "C:/Users/Claire/Documents/GitHub/SVIHM/MODFLOW/hist"   #directory where model ouput files are located
-
 scott_conditions_dir = file.path(gsp_dir, "GSP_Analyses", "Scott_Groundwater_Conditions")
 
-agu_figure_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops or funding/2019.12.09 AGU/figures"
+agu_figure_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops or mini-projects/2019.12.09 AGU/figures"
 
 # 1.5. Load standardized colors and units for data layer processing during data load
 source(file.path(fig_dir, "figure_color_settings.R"))
@@ -77,11 +71,18 @@ Streamflow_colors = c('turquoise2', 'sienna3', 'green2', 'green4', 'royalblue', 
 sfr_legend = data.frame("Component" = Streamflow_flux_labels, "Color" = Streamflow_colors)
 
 
+#Budget directories
+swbm_dir = file.path(svihm_dir,"SWBM")
+budget_dir = file.path(gsp_dir, "GSP_Analyses", "Scott_Water_Budget")
+in_mf_dir =  "C:/Users/Claire/Documents/GitHub/SVIHM/MODFLOW/hist"   #directory where model ouput files are located
+
 # Sim v Obs directories
 ref_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
 mf_results_dir = file.path(svihm_dir, "MODFLOW", "hist") # historical 1991-2018 wy 
 postproc_dir = file.path(svihm_dir, "R_Files", "Post-Processing")
 
+#wet-dry mapping directories
+legacy_dir = "C:/Users/Claire/Box/Scott_Only/Legacy Work Products/Scott_Legacy_GIS"
 
 # Figure 1. water budget----------------------------------------------------------------
 
@@ -598,11 +599,16 @@ R2 <- paste("R^2 == ", round(summary(head_regress)$r.square,2))
 
 # Fig 5. dry wet stream mapping -------------------------------------------
 
+
 sfr_glob_text = readLines(file.path( mf_results_dir, "Streamflow_Global.dat"))
 start_rows = grep("STREAM LISTING", sfr_glob_text) + 5
 n_reach = start_rows[2]-start_rows[1]-8  # 8 extra header rows at each timestep
 
 extract_cols = c(1:3, 5, 7, 9:19)
+colname_list = c("LAYER", "ROW","COL", "STREAM_SEG_NO", "RCH_NO", "FLOW_INTO_STRM_RCH",
+                 "FLOW_TO_AQUIFER", "FLOW_OUT_OF_STRM_RCH","OVRLND_RUNOFF","DIRECT PRECIP",
+                 "STREAM_ET","STREAM_HEAD", "STREAM_DEPTH", "STREAM_WIDTH",
+                 "STREAMBED_CONDCTNC","STREAMBED_GRADIENT")
 
 reach_array = array(data=NA, dim = c(length(start_rows), n_reach, length(extract_cols)))
 
@@ -610,17 +616,73 @@ for(i in 1:length(start_rows)){
   start_row = start_rows[i];
   sfr_stress = sfr_glob_text[start_row:(start_row+n_reach-1)]
   for(j in 1:n_reach){
-    sfr_reach = unlist(strsplit(trimws(sfr_stress[i]), "  "))
-    reach_array[i,j,] = sfr_reach[extract_cols] 
+    sfr_reach = unlist(strsplit(trimws(sfr_stress[j]), " ")) #split on space character
+    sfr_reach = sfr_reach[nchar(sfr_reach)>0] #this produces a lot of blank strings; get rid of those
+    reach_array[i,j,] = sfr_reach
   }
 }
 
+#Read in shapefile of stream nodes
+seg = readOGR(file.path(legacy_dir, "SFR_segments_sugar_pts.shp"))
+seg=spTransform(seg, crs("+init=epsg:3310"))
+
+seg$row_col = paste(seg$row, seg$column, sep="_")
+seg$flow_out = NA
+seg$color =NA
+
 #make a pdf appendix of each timestep of dry or wet
 
+#make table of months and years for each stressperiod
+sp_table = data.frame(stress_period=1:nstress)
+sp_table$water_year = rep(start_wy:end_wy, each=12)
+sp_table$month = rep(c(10:12, 1:9),(end_wy-start_wy+1))
 
+
+pdf(file.path(agu_figure_dir, "wet_dry_stream_flipbook.pdf"), width=8.5, height=11)
+for(i in 1:length(start_rows)){
+  stress_period_array = data.frame(reach_array[i,,])
+  spa = stress_period_array
+  title_text = paste(month.abb[sp_table$month[i]],"of water year",sp_table$water_year[i])
+  #process matrix a bit
+  colnames(spa)=colname_list
+  
+  spa$row_col = paste(spa$ROW, spa$COL, sep="_")
+  spa$FLOW_OUT_OF_STRM_RCH = as.numeric(as.character(spa$FLOW_OUT_OF_STRM_RCH))
+  
+  seg$flow_out = spa$FLOW_OUT_OF_STRM_RCH[match(seg$row_col, spa$row_col)]
+  seg$color = "dodgerblue"
+  #all flow segments with flow out of < 1 cfs are considered dry
+  seg$color[seg$flow_out/2446.6 < 1] = "salmon" #convert m^3/day to cfs for threshold comparison
+  seg$color[is.na(seg$row_col)]="black"
+  plot(seg, col=seg$color, pch=19, cex=0.1,main=title_text,
+       sub=paste("stress period",sp_table$stress_period[i]))
+  plot(basin, border="darkgray",add=T)
+}
+dev.off()
+
+# #visualize all segment subdivisions
+# trib_list = unique(seg$Name)
+# 
+# for(trib_name in trib_list){
+#   if(!is.na(trib_name)){
+#     plot(seg, col="white",main = trib_name)
+#     plot(seg[!is.na(seg$Name) & seg$Name==trib_name,],
+#          pch=19, cex=0.1, col="dodgerblue", add=T)
+#     plot(basin, add=T, border="black", lwd=2)
+#   } else {
+#     plot(seg, col="white",main = trib_name)
+#     plot(seg[is.na(seg$Name),],
+#          pch=19, cex=0.1, col="dodgerblue", add=T)
+#     plot(basin, add=T, border="black", lwd=2)
+#   }
+# }
 
 
 # Figure 6. Nash-Sutcliffe  ---------------------------------------------------------
+
+
+#Fort Jones
+NSE_FJ = round(1 - (sum((log10(FJ_cfs$Simulated) - log10(FJ_cfs$Observed))^2))/(sum(((log10(FJ_cfs$Observed) - mean(log10(FJ_cfs$Observed)))^2))),2)
 
 
 # Figure 7. ET check
