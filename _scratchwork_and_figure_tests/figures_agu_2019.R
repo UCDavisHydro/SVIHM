@@ -18,6 +18,7 @@ library(zoo)
 library(dataRetrieval) #for usgs data
 library(lubridate)
 library(scales) #to label water budgets
+library(colorspace)
 
 
 # 1. Set up directory names and global plot settings
@@ -520,10 +521,12 @@ fj_stream_sim_obs_wy= function(wy = 1991, legend =F){
 }
 
 #Inspect each water year
+pdf(file.path(agu_figure_dir, "sim_v_obs_flow3.pdf"), width = 8.5, height=11/2)
 wys = 1991:2018
 for(wy in wys){
   fj_stream_sim_obs_wy(wy)
 }
+dev.off()
 
 # _import other 3 mainstem flow observations -----------------------------------------------
 
@@ -604,13 +607,12 @@ sfr_glob_text = readLines(file.path( mf_results_dir, "Streamflow_Global.dat"))
 start_rows = grep("STREAM LISTING", sfr_glob_text) + 5
 n_reach = start_rows[2]-start_rows[1]-8  # 8 extra header rows at each timestep
 
-extract_cols = c(1:3, 5, 7, 9:19)
 colname_list = c("LAYER", "ROW","COL", "STREAM_SEG_NO", "RCH_NO", "FLOW_INTO_STRM_RCH",
                  "FLOW_TO_AQUIFER", "FLOW_OUT_OF_STRM_RCH","OVRLND_RUNOFF","DIRECT PRECIP",
                  "STREAM_ET","STREAM_HEAD", "STREAM_DEPTH", "STREAM_WIDTH",
                  "STREAMBED_CONDCTNC","STREAMBED_GRADIENT")
 
-reach_array = array(data=NA, dim = c(length(start_rows), n_reach, length(extract_cols)))
+reach_array = array(data=NA, dim = c(length(start_rows), n_reach, 16))
 
 for(i in 1:length(start_rows)){
   start_row = start_rows[i];
@@ -622,13 +624,48 @@ for(i in 1:length(start_rows)){
   }
 }
 
+max(as.numeric(as.character(reach_array[,,8]))) # max flow out
+breaks_flow = c(10^(0:7))
+max(as.numeric(as.character(reach_array[,,13])))
+
+#calculate breaks for depth
+depth = as.numeric(as.character(reach_array[,,13]))
+depth_sorted = sort(depth)
+n_classes = 7
+n_breaks = n_classes+1
+breaks_index = round(1:n_breaks/n_breaks*length(depth))
+breaks_values = depth_sorted[breaks_index]
+
+depth_breaks_manual_7 = c(0,0.01, 0.05, 0.1, 0.2, 0.5, 1, 4.05)
+depth_breaks_manual_5 = c(0, 0.05, 0.1, 0.3, 4.05)
+
+#calculate breaks for flow out
+flowout = as.numeric(as.character(reach_array[,,8]))
+flowout_sorted = sort(flowout)
+n_classes = 7
+n_breaks = n_classes+1
+breaks_index = round(1:n_breaks/n_breaks*length(flowout))
+breaks_values = flowout_sorted[breaks_index]
+
+flow_breaks_manual_7 = c(0, 2.5, 20, 50, 100, 300, 700, 6350)*1000
+
+
+pal = rev(sequential_hcl(n_classes, palette = "ag_GrnYl"))
+
+
+
 #Read in shapefile of stream nodes
 seg = readOGR(file.path(legacy_dir, "SFR_segments_sugar_pts.shp"))
 seg=spTransform(seg, crs("+init=epsg:3310"))
 
 seg$row_col = paste(seg$row, seg$column, sep="_")
 seg$flow_out = NA
+seg$depth = NA
 seg$color =NA
+
+#generate background color polygon
+bg_poly = buffer(x=basin, width=1e5)
+
 
 #make a pdf appendix of each timestep of dry or wet
 
@@ -638,25 +675,76 @@ sp_table$water_year = rep(start_wy:end_wy, each=12)
 sp_table$month = rep(c(10:12, 1:9),(end_wy-start_wy+1))
 
 
-pdf(file.path(agu_figure_dir, "wet_dry_stream_flipbook.pdf"), width=8.5, height=11)
-for(i in 1:length(start_rows)){
+#to make a pdf appendix
+# pdf(file.path(agu_figure_dir, "wet_dry_stream_flipbook3.pdf"), width=8.5*2, height=11)
+# for(i in 1:length(start_rows)){
+
+#to make a png figure
+png(file.path(agu_figure_dir, "wet_dry_stream_4yrs.png"), 
+    width=7.5, height=16, units = "in", res=300)
+par(mfrow=c(4,1), mar = c(1,1,1,1))
+for(i in c(287, 323, 239, 299)){ #Aug of 2014 (wet), 2017 (dry), 2010, and 2015 (avg, spread and conc) 
+  
   stress_period_array = data.frame(reach_array[i,,])
   spa = stress_period_array
   title_text = paste(month.abb[sp_table$month[i]],"of water year",sp_table$water_year[i])
   #process matrix a bit
   colnames(spa)=colname_list
-  
   spa$row_col = paste(spa$ROW, spa$COL, sep="_")
   spa$FLOW_OUT_OF_STRM_RCH = as.numeric(as.character(spa$FLOW_OUT_OF_STRM_RCH))
+  spa$STREAM_DEPTH = as.numeric(as.character(spa$STREAM_DEPTH))
+
+  # par(mfrow = c(1,2)) #if plotting both flow and depth
   
+  # Flowrate
   seg$flow_out = spa$FLOW_OUT_OF_STRM_RCH[match(seg$row_col, spa$row_col)]
-  seg$color = "dodgerblue"
+  # seg$color = "dodgerblue"
   #all flow segments with flow out of < 1 cfs are considered dry
-  seg$color[seg$flow_out/2446.6 < 1] = "salmon" #convert m^3/day to cfs for threshold comparison
+  # seg$color[seg$flow_out/2446.6 < 1] = "salmon" #convert m^3/day to cfs for threshold comparison
   seg$color[is.na(seg$row_col)]="black"
-  plot(seg, col=seg$color, pch=19, cex=0.1,main=title_text,
-       sub=paste("stress period",sp_table$stress_period[i]))
-  plot(basin, border="darkgray",add=T)
+  # plot(basin, border="darkgray", main=title_text,
+  #      sub=paste("stress period",sp_table$stress_period[i]))
+  # plot(seg, col=seg$color, pch=19, cex=0.2, add=T)
+  #plot basin polygon as background
+  plot(basin)
+  plot(bg_poly, col="burlywood1",add=T)
+  plot(basin, border="black", add=T #col = "gray20"
+       # main=title_text, sub=paste("stress period",sp_table$stress_period[i]))
+       )
+  #plot river reach centroids, colored according to depth
+  plot(seg,pch=19, cex=1, add=T,
+       col=pal[cut(na.omit(seg$flow_out), include.lowest=T,
+                   breaks = flow_breaks_manual_7)])
+  # generate legend labels and add legend
+  legend_labels = paste(flow_breaks_manual_7[1:n_classes]/1000,
+                        flow_breaks_manual_7[2:(n_classes+1)]/1000, sep="-")
+  legend(x="bottomleft", fill = pal, title="Flow (1000 m3/day)",
+         legend = legend_labels, cex=2.5)
+  
+  #legend in CFS
+  # legend_labels = paste(round(flow_breaks_manual_7[1:n_classes]/2446.6), 
+  #                       round(flow_breaks_manual_7[2:(n_classes+1)]/2446.6), sep="-")
+  # legend(x="bottomleft", fill = pal, title="Flow (cfs)",
+  #        legend = legend_labels)
+  
+  
+  # # Flow depth
+  # seg$depth = spa$STREAM_DEPTH[match(seg$row_col, spa$row_col)]
+  # # seg$color = "dodgerblue"
+  # #all flow segments with flow out of < 1 cfs are considered dry
+  # # seg$color[seg$depth*39.3701 < 3] = "salmon" #convert m to inches for threshold comparison
+  # seg$color[is.na(seg$row_col)]="black"
+  # #plot basin polygon as background
+  # plot(basin, border="darkgray", main=title_text, col = "darkgray",
+  #      sub=paste("stress period",sp_table$stress_period[i]))
+  # #plot river reach centroids, colored according to depth
+  # plot(seg, col=pal[cut(na.omit(seg$depth), breaks = depth_breaks_manual_7, include.lowest=T)], 
+  #      pch=19, cex=0.2, add=T)
+  # #generate legend labels and add legend
+  # legend_labels = paste(depth_breaks_manual_7[1:n_classes], depth_breaks_manual_7[2:(n_classes+1)], sep="-")
+  # legend(x="bottomleft", fill = pal, title="Flow depth (m)",
+  #        legend = legend_labels)
+  
 }
 dev.off()
 
@@ -686,6 +774,10 @@ NSE_FJ = round(1 - (sum((log10(FJ_cfs$Simulated) - log10(FJ_cfs$Observed))^2))/(
 
 
 # Figure 7. ET check
+
+
+# Figure 8. Total annual precip far all WYs, highlighting 4 years
+
 
 
 
