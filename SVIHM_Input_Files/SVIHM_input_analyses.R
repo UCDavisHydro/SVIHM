@@ -22,9 +22,9 @@ library(raster)
 #   Declare directories and model dates, and connect to db, in outer script. 
 
 #Option 2: this script is the active document in RStudio:
-# declare_dir_in_analyses_script = TRUE #defaults to false, when called from update_SVIHM_Inputs
+# dev_mode = TRUE #defaults to false, when called from update_SVIHM_Inputs
 
-if(declare_dir_in_analyses_script){ 
+if(dev_mode){ 
   library(rstudioapi)
   svihm_dir <- dirname(dirname(getActiveDocumentContext()$path))
   ## Data used in update
@@ -425,7 +425,19 @@ get_daily_precip_table=function(final_table_start_date=model_start_date,
   return(p_record)
 }
 
-# test = get_daily_precip_table(record_start_date = as.Date("1935-10-01"), daily_precip_end_date = as.Date("2018-09-30"))
+#Test run for AGU figures, 2019:
+# p_record_all_fj = get_daily_precip_table(final_table_start_date = as.Date("1935-10-01"), 
+#                               final_table_end_date = as.Date("2018-09-30"))
+# wy_annual_totals = aggregate(p_record_all_fj$fj_interp, by=list(p_record_all_fj$water_year), FUN="sum")
+# wyat=wy_annual_totals
+# colnames(wyat)=c("wy", "PRCP_mm")
+# plot(wyat$wy, wyat$PRCP_mm, type= "o", pch=19, lwd=2, col="darkblue")
+# grid()
+# agu_yrs = c(2010, 2014, 2015, 2017)
+# points(wyat$wy[wyat$wy %in% agu_yrs], wyat$PRCP_mm[wyat$wy %in% agu_yrs], pch=19, col="red")
+# write.csv(p_record_all_fj, file.path(agu_figure_dir, "interp_precip_1935_2018.csv"))
+
+
 write_swbm_precip_input_file=function(){
   #read in original data (wys 1991-2011)
   # daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
