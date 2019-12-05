@@ -409,8 +409,8 @@ get_daily_precip_table=function(final_table_start_date=model_start_date,
   p_record$stitched = p_record$PRCP_mm_orig
   p_record$stitched[is.na(p_record$PRCP_mm_orig)] = p_record$interp_cal_fj_mean[is.na(p_record$PRCP_mm_orig)]
   
-  orig_record_end_date = as.Date("2011-09-30")
-  orig_record = p_record$Date <= orig_record_end_date
+  orig_record_end_date = as.Date("2011-09-30"); orig_record_start_date = as.Date("1990-10-01")
+  orig_record = p_record$Date <= orig_record_end_date & p_record$Date >= orig_record_start_date  
   updated_record = p_record$Date > orig_record_end_date
   
   #Fill in 5 leap days in the original record using the gap-filled cal-FJ record
