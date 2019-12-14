@@ -85,6 +85,11 @@ postproc_dir = file.path(svihm_dir, "R_Files", "Post-Processing")
 #wet-dry mapping directories
 legacy_dir = "C:/Users/Claire/Box/Scott_Only/Legacy Work Products/Scott_Legacy_GIS"
 
+
+
+
+
+
 # water budgets----------------------------------------------------------------
 
 # Example of a water budget for a wet, dry, and normal year (two types of normal, 2010 and 2015)
@@ -340,6 +345,8 @@ wtr_yr <- function(dates, start_month=10) {
   adj.year
 }
 
+text_y = c(30000, 15000, 8000, 4000)
+
 fj_stream_and_precip= function(wy = 1991, legend =F){
   wy_start_date = as.Date(paste0(wy-1,"-10-01"))
   nextwy_start_date = as.Date(paste0(wy,"-10-01"))
@@ -375,20 +382,20 @@ fj_stream_and_precip= function(wy = 1991, legend =F){
   total_flow = fj_annual$vol_m3[fj_annual$wy == wy]
   summary_text_rain = paste("Total rainfall: ", round(total_rainfall), "mm")
   summary_text_flow = paste( "Total flow:", round(total_flow/10^6), "cubic km")
-  text(x=nextwy_start_date - 130, y = 30000, cex = 0.8, pos = 4,
+  text(x=nextwy_start_date - 100, y = text_y[1], cex = 1, pos = 4,
        labels = summary_text_rain)
-  text(x=nextwy_start_date - 130, y = 20000, cex = 0.8, pos=4, labels = summary_text_flow)
+  text(x=nextwy_start_date - 100, y = text_y[2], cex = 1, pos=4, labels = summary_text_flow)
   #b) add center of rainfall and note
   rainfall_x = as.numeric(rain_wy$date)
   rain_center = as.Date(sum(rainfall_x*rain_wy$PRCP_mm) / total_rainfall, origin = "1970-01-01")
   abline(v=rain_center, lwd = 2, lty = 2, col = "gray60")
   summary_text_center = paste("Rain center of mass:", format(as.Date(rain_center), "%b %d"))
-  text(x=nextwy_start_date - 130, y = 13000, cex = 0.8, pos=4, labels = summary_text_center)
+  text(x=nextwy_start_date - 100, y = text_y[3], cex = 1, pos=4, labels = summary_text_center)
   #c) Calculate max 30-day rainfall density and note
   percent_30day = rollapply(rain_wy$PRCP_mm, width = 30, FUN = "sum", align = "left")/total_rainfall * 100
   summary_text_density = paste0("Max rain density: ", round(max(percent_30day)),
                                "% / 30 days")
-  text(x=nextwy_start_date - 130, y = 9000, cex = 0.8, pos=4, labels = summary_text_density)
+  text(x=nextwy_start_date - 100, y = text_y[4], cex = 1, pos=4, labels = summary_text_density)
   # d) add legend
   if(legend){
     legend(x = "topleft", lwd =c(2,NA, 2), lty = c(1, NA, 2), pch = c(NA, 15, NA),
@@ -449,7 +456,7 @@ rain$PRCP_mm = rain$PRCP_m * 1000
 
 #make AGU figures for specific water years
 agu_wys = c(2014, 2017, 2010, 2015)
-png(file.path(agu_figure_dir, "FJ Stream and Precip_vert.png"),
+png(file.path(agu_figure_dir, "FJ Stream and Precip_vert2.png"),
     width = 7.9,height = 15,
     units = "in",res = 300)
 par(mfrow = c(4,1))
@@ -463,7 +470,7 @@ dev.off()
 
 
 
-# DONE. Fig 3. dry wet stream mapping -------------------------------------------
+#  Fig 3. dry wet stream mapping -------------------------------------------
 
 
 sfr_glob_text = readLines(file.path( mf_results_dir, "Streamflow_Global.dat"))
@@ -630,7 +637,7 @@ dev.off()
 
 
 
-# DONE. Fig 4. Annual precip -----------------------------------------------------------
+#  Fig 4. Annual precip -----------------------------------------------------------
 
 # Total annual precip far all WYs, highlighting 4 years
 
