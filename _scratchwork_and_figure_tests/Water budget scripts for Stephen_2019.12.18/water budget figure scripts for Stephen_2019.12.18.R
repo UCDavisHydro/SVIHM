@@ -91,29 +91,30 @@ swbm_monthly_melt = swbm_monthly_melt[order(swbm_monthly_melt$variable),]
 # 1aii) Import aquifer (MODFLOW)
 
 # #Modflow import setup
+# PRINT_BUDGET=TRUE
 # source(file.path(budget_dir, 'MODFLOW_Budget.R'))
 # LST_Name = 'SVIHM.lst'
 # WB_Components_MODFLOW = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
 # #Specify out_dir
-# aq_monthly_all = MODFLOW_Budget(mf_dir, LST_Name, WB_Components_MODFLOW, end_wy=end_wy)
+# aq_monthly_raw = MODFLOW_Budget(mf_dir, LST_Name, WB_Components_MODFLOW, end_wy=end_wy)
 # if (PRINT_BUDGET==TRUE){
-#   write.table(aq_monthly_all, file = file.path(budget_dir,'MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
+#   write.table(aq_monthly_raw, file = file.path(budget_dir,'MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
 # }
 
 # or, if you've run the modflow import setup before, you can read in:
-aq_monthly_all = read.table(file.path(budget_dir, "MODFLOW_Water_Budget.dat"),
+aq_monthly_raw = read.table(file.path(budget_dir, "MODFLOW_Water_Budget.dat"),
                         header = T)
-aq_monthly_all$Month = as.Date(paste0("01-",aq_monthly_all$Month), format = "%d-%b-%Y")
+aq_monthly_raw$Month = as.Date(paste0("01-",aq_monthly_raw$Month), format = "%d-%b-%Y")
 
 #Process for plotting
-aq_monthly = data.frame(Month = aq_monthly_all$Month,
-                        Recharge = aq_monthly_all$RECHARGE_net_m3,
-                        ET = aq_monthly_all$ET_SEGMENTS_net_m3,
-                        Storage = aq_monthly_all$STORAGE_net_m3,
-                        Drains = aq_monthly_all$DRAINS_net_m3,
-                        `Stream Leakage` = aq_monthly_all$STREAM_LEAKAGE_net_m3,
-                        Wells = -aq_monthly_all$WELLS_out_m3,              #negative sign since flux is out
-                        `Canal Seepage/MFR` = aq_monthly_all$WELLS_in_m3)
+aq_monthly = data.frame(Month = aq_monthly_raw$Month,
+                        Recharge = aq_monthly_raw$RECHARGE_net_m3,
+                        ET = aq_monthly_raw$ET_SEGMENTS_net_m3,
+                        Storage = aq_monthly_raw$STORAGE_net_m3,
+                        Drains = aq_monthly_raw$DRAINS_net_m3,
+                        `Stream Leakage` = aq_monthly_raw$STREAM_LEAKAGE_net_m3,
+                        Wells = -aq_monthly_raw$WELLS_out_m3,              #negative sign since flux is out
+                        `Canal Seepage/MFR` = aq_monthly_raw$WELLS_in_m3)
 names(aq_monthly) = c('Month', MODFLOW_flux_labels)
 aq_monthly_melt = melt(aq_monthly, id.vars = 'Month')
 aq_monthly_melt$variable = factor(aq_monthly_melt$variable, levels = MODFLOW_flux_labels)
@@ -125,7 +126,7 @@ source(file.path(budget_dir, 'SVIHM_SFR_inputs.R'))
 
 #Import streamflow budget and add columns from modflow
 Streamflow_Monthly_m3 = SVIHM_SFR_inputs(file.path(mf_dir,'SVIHM.sfr'), nstress)
-Streamflow_Monthly_m3$Stream_Leakage_m3 = -aq_monthly_all$STREAM_LEAKAGE_net_m3 #made negative to convert from MODFLOW to SFR budget
+Streamflow_Monthly_m3$Stream_Leakage_m3 = -aq_monthly_raw$STREAM_LEAKAGE_net_m3 #made negative to convert from MODFLOW to SFR budget
 FJ_Outflow = read.table(file.path(mf_dir,'Streamflow_FJ_SVIHM.dat'), skip = 2)[,3]
 FJ_Outflow = data.frame(Month = format(seq(as.Date('1990-10-01'), as.Date(paste0(end_wy,'-09-30')), by = 'day'),format = '%b-%Y'),
                         FJ_Flow_m3 = FJ_Outflow)
@@ -304,83 +305,85 @@ graphics.off()
 
 # 2. Water budget barcharts - full model period ---------------------------
 
-# Setup
-LST_Name = 'SVIHM.lst'
-RCH_Name = 'SVIHM.rch'
+# TO DO: EDIT THIS SO YOU'RE NOT IMPORTING THE SAME DATA TWICE, YOU MORON
 
-WB_Components_MODFLOW = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
-nstress = 336
-end_wy = 2018
-StartingMonths = seq(as.Date("1990/10/1"), by = "month", length.out = nstress)
-fig_format = 'png'               #output format for figures (pdf, png, or jpg)
-standardize_y_annual_taf_plot = TRUE # 
-Print_SWBM_by_landuse = FALSE     # Print 28 year average, dry year (2001), average year (2015), and wet year (2006) SWBM by landuse
-
-
-# 2a) Import budgets ------------------------------------------------------
-
-
-# 2ai) Import SWBM Budget 
-SWBM_Terms = c('Precipitation', 'SW Irrigation', 'GW Irrigation', 'ET', 'Recharge', 'Storage')
-SWBM_Monthly_m3 = read.table(file.path(swbm_dir,'monthly_water_budget.dat'), header = T)
-names(SWBM_Monthly_m3) = c('Month',SWBM_Terms)
-
-#NOTE: to print this after an update, edit the SWBM_Landuse.R file to change the ending water year and the number of years (ctrl-F for 2018 and 28)
-if (Print_SWBM_by_landuse==T){
-  source(file.path(budget_dir,'SWBM_Landuse.R'))
-  budget_terms = c('pET', 'aET', 'irrigation', 'surfacewater', 'groundwater', 'recharge', 'deficiency')
-  header_names = c('pET', 'aET', 'Irrigation', 'SW_Irrigation', 'GW_Irrigation', 'GW_Recharge', 'Deficiency')
-  landuse_cats = c('Alfalfa','Grain','Pasture','ET/NoIrr','NoET/NoIrr')
-  SWBM_Landuse(in_dir = in_swbm_dir, budget_terms, landuse_cats, header_names, end_wy)
-}
-
-# 2aii) Import MODFLOW Budget 
-
-source(file.path(budget_dir, 'MODFLOW_Budget.R'))
-MODFLOW_Monthly_m3 = MODFLOW_Budget(mf_dir, LST_Name, WB_Components_MODFLOW, end_wy=end_wy)
-if (PRINT_BUDGET==TRUE){
-  write.table(MODFLOW_Monthly_m3, file = file.path(budget_dir,'MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
-}
-
-
-# 2aiii) Import STREAMFLOW Budget 
-
-source(file.path(budget_dir, 'SVIHM_SFR_inputs.R'))
-
-Streamflow_Monthly_m3 = SVIHM_SFR_inputs(file.path(mf_dir,'SVIHM.sfr'), nstress)
-Streamflow_Monthly_m3$Stream_Leakage_m3 = -MODFLOW_Monthly_m3$STREAM_LEAKAGE_net_m3 #made negative to convert from MODFLOW to SFR budget
-FJ_Outflow = read.table(file.path(mf_dir,'Streamflow_FJ_SVIHM.dat'), skip = 2)[,3]
-FJ_Outflow = data.frame(Month = format(seq(as.Date('1990-10-01'), as.Date(paste0(end_wy,'-09-30')), by = 'day'),format = '%b-%Y'),
-                        FJ_Flow_m3 = FJ_Outflow)
-FJ_Outflow = aggregate(.~Month, FJ_Outflow, FUN = sum)
-FJ_Outflow$Month = as.Date(paste0('01-',FJ_Outflow$Month), '%d-%b-%Y')
-FJ_Outflow = FJ_Outflow[order(FJ_Outflow$Month),]
-Streamflow_Monthly_m3$Outflow_m3 = -FJ_Outflow$FJ_Flow_m3
-Streamflow_Monthly_m3$Storage = -rowSums(Streamflow_Monthly_m3[,-1])
-
-Streamflow_Monthly_m3$WY = rep(seq(1991,end_wy), each = 12)
-Streamflow_Monthly_m3_melt = melt(Streamflow_Monthly_m3, id.vars = c('Date', 'WY'))
-
-Streamflow_Monthly_m3_melt$Month = format(Streamflow_Monthly_m3_melt$Date,format = '%b')
-Streamflow_Monthly_m3_melt$Month = factor(Streamflow_Monthly_m3_melt$Month, levels = c(month.abb[10:12],month.abb[1:9]))
-Streamflow_Monthly_m3_melt = Streamflow_Monthly_m3_melt[order(Streamflow_Monthly_m3_melt$Month),]
+# # Setup
+# LST_Name = 'SVIHM.lst'
+# RCH_Name = 'SVIHM.rch'
+# 
+# WB_Components_MODFLOW = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
+# nstress = 336
+# end_wy = 2018
+# StartingMonths = seq(as.Date("1990/10/1"), by = "month", length.out = nstress)
+# fig_format = 'png'               #output format for figures (pdf, png, or jpg)
+# standardize_y_annual_taf_plot = TRUE # 
+# Print_SWBM_by_landuse = FALSE     # Print 28 year average, dry year (2001), average year (2015), and wet year (2006) SWBM by landuse
+# 
+# 
+# # 2a) Import budgets ------------------------------------------------------
+# 
+# 
+# # 2ai) Import SWBM Budget 
+# SWBM_Terms = c('Precipitation', 'SW Irrigation', 'GW Irrigation', 'ET', 'Recharge', 'Storage')
+# SWBM_Monthly_m3 = read.table(file.path(swbm_dir,'monthly_water_budget.dat'), header = T)
+# names(SWBM_Monthly_m3) = c('Month',SWBM_Terms)
+# 
+# #NOTE: to print this after an update, edit the SWBM_Landuse.R file to change the ending water year and the number of years (ctrl-F for 2018 and 28)
+# if (Print_SWBM_by_landuse==T){
+#   source(file.path(budget_dir,'SWBM_Landuse.R'))
+#   budget_terms = c('pET', 'aET', 'irrigation', 'surfacewater', 'groundwater', 'recharge', 'deficiency')
+#   header_names = c('pET', 'aET', 'Irrigation', 'SW_Irrigation', 'GW_Irrigation', 'GW_Recharge', 'Deficiency')
+#   landuse_cats = c('Alfalfa','Grain','Pasture','ET/NoIrr','NoET/NoIrr')
+#   SWBM_Landuse(in_dir = in_swbm_dir, budget_terms, landuse_cats, header_names, end_wy)
+# }
+# 
+# # 2aii) Import MODFLOW Budget
+# 
+# source(file.path(budget_dir, 'MODFLOW_Budget.R'))
+# MODFLOW_Monthly_m3 = MODFLOW_Budget(mf_dir, LST_Name, WB_Components_MODFLOW, end_wy=end_wy)
+# if (PRINT_BUDGET==TRUE){
+#   write.table(MODFLOW_Monthly_m3, file = file.path(budget_dir,'MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
+# }
+# 
+# 
+# # 2aiii) Import STREAMFLOW Budget 
+# 
+# source(file.path(budget_dir, 'SVIHM_SFR_inputs.R'))
+# 
+# Streamflow_Monthly_m3 = SVIHM_SFR_inputs(file.path(mf_dir,'SVIHM.sfr'), nstress)
+# Streamflow_Monthly_m3$Stream_Leakage_m3 = -MODFLOW_Monthly_m3$STREAM_LEAKAGE_net_m3 #made negative to convert from MODFLOW to SFR budget
+# FJ_Outflow = read.table(file.path(mf_dir,'Streamflow_FJ_SVIHM.dat'), skip = 2)[,3]
+# FJ_Outflow = data.frame(Month = format(seq(as.Date('1990-10-01'), as.Date(paste0(end_wy,'-09-30')), by = 'day'),format = '%b-%Y'),
+#                         FJ_Flow_m3 = FJ_Outflow)
+# FJ_Outflow = aggregate(.~Month, FJ_Outflow, FUN = sum)
+# FJ_Outflow$Month = as.Date(paste0('01-',FJ_Outflow$Month), '%d-%b-%Y')
+# FJ_Outflow = FJ_Outflow[order(FJ_Outflow$Month),]
+# Streamflow_Monthly_m3$Outflow_m3 = -FJ_Outflow$FJ_Flow_m3
+# Streamflow_Monthly_m3$Storage = -rowSums(Streamflow_Monthly_m3[,-1])
+# 
+# Streamflow_Monthly_m3$WY = rep(seq(1991,end_wy), each = 12)
+# Streamflow_Monthly_m3_melt = melt(Streamflow_Monthly_m3, id.vars = c('Date', 'WY'))
+# 
+# Streamflow_Monthly_m3_melt$Month = format(Streamflow_Monthly_m3_melt$Date,format = '%b')
+# Streamflow_Monthly_m3_melt$Month = factor(Streamflow_Monthly_m3_melt$Month, levels = c(month.abb[10:12],month.abb[1:9]))
+# Streamflow_Monthly_m3_melt = Streamflow_Monthly_m3_melt[order(Streamflow_Monthly_m3_melt$Month),]
 
 
 # 2b) Create monthly and annual water budgets ----------------------------------------------------------
 
 #SFR monthly was created during the read-file process above.
 
-#SWBM monthly
-SWBM_Monthly_m3$Month = format(seq(as.Date("1990/10/1"), by = "month", length.out = nstress),'%b-%Y')
-SWBM_Monthly_m3$WY = rep(seq(1991,end_wy),each = 12)
+# #SWBM monthly
+# swbm_monthly$Month = format(seq(as.Date("1990/10/1"), by = "month", length.out = nstress),'%b-%Y')
+# swbm_monthly$WY = rep(seq(1991,end_wy),each = 12)
 
-#MODFLOW monthly
-month_abbv = format(seq(as.Date('1990/10/1'), as.Date('1991/9/30'), by = 'month'),'%b')
-MODFLOW_Monthly_m3$Month = strtrim(MODFLOW_Monthly_m3$Month,3)
-for (i in 1:12){
-  eval(parse(text = paste0("MODFLOW_",month_abbv[i],"_m3 = subset(MODFLOW_Monthly_m3, select = paste0(WB_Components_MODFLOW,'_net_m3'), Month == '",month_abbv[i],"')")))
-  eval(parse(text = paste0('MODFLOW_',month_abbv[i],'_m3$WY = seq(1991,end_wy)')))
-}
+# #MODFLOW monthly
+# month_abbv = format(seq(as.Date('1990/10/1'), as.Date('1991/9/30'), by = 'month'),'%b')
+# MODFLOW_Monthly_m3$Month = strtrim(MODFLOW_Monthly_m3$Month,3)
+# for (i in 1:12){
+#   eval(parse(text = paste0("MODFLOW_",month_abbv[i],"_m3 = subset(MODFLOW_Monthly_m3, select = paste0(WB_Components_MODFLOW,'_net_m3'), Month == '",month_abbv[i],"')")))
+#   eval(parse(text = paste0('MODFLOW_',month_abbv[i],'_m3$WY = seq(1991,end_wy)')))
+# }
 
 
 #SFR Annual
@@ -597,7 +600,56 @@ graphics.off()
 
 
 
-# 3. Monthly, seasonal SWBM plot, full model period -----------------------
+# 3. Change in aquifer storage plots -------------------------------------
+
+#Open figure file
+figure_out_dir = pdf_dir # from swbm scenario plotting script
+png(file.path(figure_out_dir, 'aq_storage.png'),width = 3.2, height = 2.5, units = "in", res = 200)
+
+#only show last 11 years
+plot_start_date = as.Date('2008-10-01')
+aq_monthly_trunc = aq_monthly[aq_monthly$Month >= plot_start_date,]
+
+#Plot
+(Monthly_Storage_Plot_MODFLOW_TAF = ggplot(data = aq_monthly_trunc,
+                                           aes(x = seq(plot_start_date,as.Date(paste0(end_wy,'-09-30')),by = 'month'), 
+                                               y = -cumsum(Storage)/10^6 )) +
+    #Add annotations to reflect the appropriate water year
+    geom_rect(xmin=as.Date('2009-10-01'), xmax=as.Date('2010-09-30'), ymin = -60, ymax=-50, fill = "darkgoldenrod1", alpha = 0.7)+
+    geom_rect(xmin=as.Date('2013-10-01'), xmax=as.Date('2014-09-30'), ymin = -60, ymax=-50, fill = "orangered", alpha = 0.7)+
+    geom_rect(xmin=as.Date('2014-10-01'), xmax=as.Date('2015-09-30'), ymin = -60, ymax=-50, fill = "darkgoldenrod3", alpha = 0.4)+
+    geom_rect(xmin=as.Date('2016-10-01'), xmax=as.Date('2017-09-30'), ymin = -60, ymax=-50, fill = "deepskyblue3", alpha = 0.4)+
+    annotate(geom = "text", size = 2, x=as.Date('2010-04-01'), y=-55, label = "2010")+
+    annotate(geom = "text", size = 2, x=as.Date('2014-04-01'), y=-55, label = "2014")+
+    annotate(geom = "text", size = 2, x=as.Date('2015-04-01'), y=-55, label = "2015")+
+    annotate(geom = "text", size = 2, x=as.Date('2017-04-01'), y=-55, label = "2017")+
+    #Add gridlines, storage line and point, and edit axes
+    geom_vline(mapping=NULL, linetype = 2, size = 0.5, colour="gray", xintercept = seq(as.Date("1990-10-01"), as.Date("2018-10-01"), by = "5 year"))+
+    geom_hline(mapping=NULL, linetype = 2, size = 0.5, colour="gray", yintercept = seq(-50,50, by = 25))+
+    geom_hline(yintercept = 0, size = 0.25) +
+    geom_line(size = 0.5)  +
+    geom_point(size = 0.75) +
+    scale_x_date(limits = c(as.Date('Oct-01-2008', format = '%b-%m-%y'),
+                            as.Date(paste0('Oct-01-',end_wy), format = '%b-%m-%y')),
+                 breaks = seq(plot_start_date, by = "2 years", length.out = nstress/12+1), expand = c(0,0),
+                 date_labels = ('%b-%y'))  +
+    scale_y_continuous(limits = c(-60,60), breaks = seq(-50,50,by = 25), expand = c(0,0)) +
+    # Edit labels and themes
+    ylab(ylab(bquote('Relative Aquifer Storage (cubic km)'))) +
+    ggtitle('a) Historical Monthly Aquifer Storage') +
+    theme(#panel.background = element_blank(),
+          panel.border = element_rect(fill=NA, color = 'black'),
+          axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
+          axis.text.y = element_text(size = 8),
+          axis.ticks = element_line(size = 0.4),
+          plot.title = element_text(size = 9),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 8) 
+    )
+)
+graphics.off()
+
+# 4. Monthly, seasonal SWBM plot, full model period -----------------------
 
 
 make_legend_symbol_table = function(){

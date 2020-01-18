@@ -14,6 +14,7 @@ library(plotly)
 library(rstudioapi)
 library(gridExtra)
 
+
 rm(list = ls())
 
 #Define directories
@@ -504,13 +505,15 @@ plot_water_budget_comparison(mwb_hist, mwb_scc30, c("Historical", "Scenario C, 3
 
 
 
-# Bar graphs -------------------------------------
+# Bar graphs setup-------------------------------------
 
 #Metrics:
 # total recharge
 # total groundwater pumped
 # total SW extracted
 #irrigation onset?
+
+#Select scenarios
 
 # mwbs = list(mwb_hist, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
 # scenario_ids = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
@@ -520,11 +523,102 @@ mwbs = list(mwb_hist, mwb_sca_95_07)
 scenario_ids = c("hist","sca_95_07")
 
 
-scenario_totals = budget_overall(mwbs, scenario_ids)
-# barplots_overall(scenario_totals)
-
-#dry, wet, average years
+#Aggregate to overall totals, annual totals
+scenario_totals_allyrs = budget_overall(mwbs, scenario_ids)
 yearly_budgets = budget_stat_by_year(mwbs = mwbs, scenario_ids = scenario_ids, stat = "sum")
+
+# ratios_2015=yearly_budgets[yearly_budgets$Scenario_id=="sca_95_07" & yearly_budgets$Water_year==2015,3:8] / yearly_budgets[yearly_budgets$Scenario_id=="hist" & yearly_budgets$Water_year==2015,3:8]
+# barplots_overall(scenario_totals)
+# barplots_comparison(scenario_totals)
+
+# Geeta manuscript figures ------------------------------------------------
+
+#Plot overall, full-model-period barplots
+fig_file_name = "budget_overall_dodge2.png"
+fig_title = "b) Overall budget, water years 1991-2018"
+png(file.path(pdf_dir, fig_file_name), 3.2,2.5, units = "in", res = 200)
+# Melt data
+st_m = melt(data=scenario_totals_allyrs, id.vars = "Scenario_id")
+st_m$value = st_m$value / 10^9
+
+#plot
+ggplot(data=st_m, aes(x=variable, y=value, fill=Scenario_id)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  labs(title = fig_title, x = "Soil water budget component", y="Volume (1000 cubic km)")+
+  theme_bw()+
+  scale_fill_discrete(name="Scenario",
+                      breaks=c("hist","sca_95_07"),
+                      labels=c("Historical", "Altered Rainfall")) +
+  theme(#panel.background = element_blank(),
+    panel.border = element_rect(fill=NA, color = 'black'),
+    # axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
+    axis.text.x = element_text(size=6.5),
+    axis.text.y = element_text(size = 7),
+    axis.ticks = element_line(size = 0.4),
+    plot.title = element_text(size = 9),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 7),
+    legend.position = c(0.24, 0.3),
+    legend.text=element_text(size=7),
+    legend.title=element_text(size=7.5),
+    legend.key.size = unit(0.3, "cm")
+  )
+dev.off()
+
+#Plot barplots for 4 selected years
+wet_year = 2017; dry_year = 2014; avg_spread_year = 2010; avg_conc_year = 2015
+selected_years = c(dry_year, wet_year, avg_spread_year, avg_conc_year)
+fig_title_modifiers = c("Dry", "Wet", "Average rainfall, evenly spread", "Average rainfall, concentrated")
+
+std_y_limits = range(yearly_budgets[yearly_budgets$Water_year %in% selected_years,3:8])/10^6
+
+for(i in 1:length(selected_years)){
+  yr = selected_years[i]
+  annual_totals = yearly_budgets[yearly_budgets$Water_year == yr,]
+  annual_totals$Water_year = NULL # remove this column; we won't be plotting it
+  # Melt data
+  st_m = melt(data=annual_totals, id.vars = "Scenario_id")
+  st_m$value = st_m$value / 10^6
+  
+  #Name png file and figure title
+  fig_file_name = paste0("budget_",yr,".png")
+  fig_title = paste0("Water year ",yr, " (",fig_title_modifiers[i],")")
+  
+  #Open file
+  png(file.path(pdf_dir, fig_file_name), 3.2, 2.5, units = "in", res = 200)
+  #make barplot
+  year_plot = ggplot(data=st_m, aes(x=variable, y=value, fill=Scenario_id)) +
+    geom_bar(stat="identity", position=position_dodge()) +
+    scale_y_continuous(limits = std_y_limits)+
+    labs(title = fig_title, x = "Soil water budget component", y="Volume (cubic km)")+
+    theme_bw()+
+    theme(#panel.background = element_blank(),
+      # panel.border = element_rect(fill=NA, color = 'black'),
+      # axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
+      axis.text.x = element_text(size=6.2),
+      axis.text.y = element_text(size = 7),
+      axis.ticks = element_line(size = 0.4),
+      plot.title = element_text(size = 9),
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 7),
+      legend.position = "none",
+      # legend.text=element_text(size=7),
+      # legend.title=element_text(size=7.5),
+      # legend.key.size = unit(0.3, "cm")
+    )  
+  print(year_plot) #print to make it show up inside a barplot
+  dev.off()#close file
+}
+
+
+# #to make an appendix of all years
+# selected_years = 1991:2018
+# pdf(file.path(pdf_dir, "all_years_scen_comp.pdf"), width = 8.5, height = 11/2)
+# dev.off()
+
+
+# AGU 2019 Figures -------------------------------------------------------------
+
 
 wet_year = 2017; dry_year = 2014; avg_spread_year = 2010; avg_conc_year = 2015
 #Make subset tables for the barplot graphic. Eliminate water year column
@@ -621,7 +715,7 @@ grid.arrange(
   )
 )
 
-# Tables for latex --------------------------------------------------------
+# Tables for latex (final project March 2019) --------------------------------------------------------
 
 mwbs = list(mwb_hist, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
 scenario_ids = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
