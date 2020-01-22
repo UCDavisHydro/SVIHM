@@ -346,6 +346,7 @@ wtr_yr <- function(dates, start_month=10) {
 }
 
 text_y = c(30000, 15000, 8000, 4000)
+text_cex = 0.72
 
 fj_stream_and_precip= function(wy = 1991, legend =F){
   wy_start_date = as.Date(paste0(wy-1,"-10-01"))
@@ -364,9 +365,9 @@ fj_stream_and_precip= function(wy = 1991, legend =F){
   plot(fjd_wy$Date, fjd_wy$Flow, type="l", lwd = 2, col = "blue",
        log = "y", yaxt = "n", xaxt = "n", ylim = c(2, max_flow),
        # main = paste("Water Year", wy), 
-       xlab = "Date in water year", 
-       ylab = "Average Daily Flow (cfs)", cex.lab=1.5)
-  axis(side = 2, at = 10^(0:4), las = 2, labels = c("1", "10", "100", "1000", "10,000"))
+       xlab = paste("Date in water year",wy), 
+       ylab = "Average Daily Flow (cfs)", cex.lab=1)
+  axis(side = 2, at = 10^(0:4), las = 2, labels = c("1", "10", "100", "1000", "10,000"), cex.axis=text_cex)
   axis(side = 2, tck = -.01, at = rep(1:10, 5) * rep(10^(0:4), each = 10), labels = NA)
   x_ticks = unique(floor_date(seq(wy_start_date, nextwy_start_date, by="day"), unit = "month"))
   x_ticks_labels = format(x_ticks, "%b %d")
@@ -381,21 +382,22 @@ fj_stream_and_precip= function(wy = 1991, legend =F){
   total_rainfall = sum(rain_wy$PRCP_mm)
   total_flow = fj_annual$vol_m3[fj_annual$wy == wy]
   summary_text_rain = paste("Total rainfall: ", round(total_rainfall), "mm")
-  summary_text_flow = paste( "Total flow:", round(total_flow/10^6), "cubic km")
-  text(x=nextwy_start_date - 100, y = text_y[1], cex = 1, pos = 4,
+  # summary_text_flow = expression(round(total_flow/10^6), "10^6~~m^3"))# ARGGGG
+  summary_text_flow = paste( "Total flow:", round(total_flow/10^6), "million cubic m")
+  text(x=nextwy_start_date - 120, y = text_y[1], cex = text_cex, pos = 4,
        labels = summary_text_rain)
-  text(x=nextwy_start_date - 100, y = text_y[2], cex = 1, pos=4, labels = summary_text_flow)
+  text(x=nextwy_start_date - 120, y = text_y[2], cex = text_cex, pos=4, labels = summary_text_flow)
   #b) add center of rainfall and note
   rainfall_x = as.numeric(rain_wy$date)
   rain_center = as.Date(sum(rainfall_x*rain_wy$PRCP_mm) / total_rainfall, origin = "1970-01-01")
   abline(v=rain_center, lwd = 2, lty = 2, col = "gray60")
   summary_text_center = paste("Rain center of mass:", format(as.Date(rain_center), "%b %d"))
-  text(x=nextwy_start_date - 100, y = text_y[3], cex = 1, pos=4, labels = summary_text_center)
+  text(x=nextwy_start_date - 120, y = text_y[3], cex = text_cex, pos=4, labels = summary_text_center)
   #c) Calculate max 30-day rainfall density and note
   percent_30day = rollapply(rain_wy$PRCP_mm, width = 30, FUN = "sum", align = "left")/total_rainfall * 100
   summary_text_density = paste0("Max rain density: ", round(max(percent_30day)),
                                "% / 30 days")
-  text(x=nextwy_start_date - 100, y = text_y[4], cex = 1, pos=4, labels = summary_text_density)
+  text(x=nextwy_start_date - 120, y = text_y[4], cex = text_cex, pos=4, labels = summary_text_density)
   # d) add legend
   if(legend){
     legend(x = "topleft", lwd =c(2,NA, 2), lty = c(1, NA, 2), pch = c(NA, 15, NA),
@@ -454,12 +456,14 @@ rain$PRCP_mm = rain$PRCP_m * 1000
 # }
 # dev.off() #close pdf
 
+agu_figure_dir = "C:/Users/Claire/Documents/UCD/Presentations_Talks_Workshops_miniprojects/2019.06-12 Geeta Precip Alteration project"
 #make AGU figures for specific water years
-agu_wys = c(2014, 2017, 2010, 2015)
+agu_wys = c(#2014,2017
+  2010, 2015)
 png(file.path(agu_figure_dir, "FJ Stream and Precip_vert2.png"),
-    width = 7.9,height = 15,
+    width = 7.4,height = 8,
     units = "in",res = 300)
-par(mfrow = c(4,1))
+par(mfrow = c(2,1)) ###
 for(wy in agu_wys){
   # png(file.path(agu_figure_dir, paste(wy,"FJ Stream and Precip.png")), width = 8.5,height = 11/2, units = "in",res = 300)
   fj_stream_and_precip(wy, legend = F)

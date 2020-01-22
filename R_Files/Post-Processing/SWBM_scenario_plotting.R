@@ -527,7 +527,7 @@ scenario_ids = c("hist","sca_95_07")
 scenario_totals_allyrs = budget_overall(mwbs, scenario_ids)
 yearly_budgets = budget_stat_by_year(mwbs = mwbs, scenario_ids = scenario_ids, stat = "sum")
 
-# ratios_2015=yearly_budgets[yearly_budgets$Scenario_id=="sca_95_07" & yearly_budgets$Water_year==2015,3:8] / yearly_budgets[yearly_budgets$Scenario_id=="hist" & yearly_budgets$Water_year==2015,3:8]
+#ratios_2015=yearly_budgets[yearly_budgets$Scenario_id=="sca_95_07" & yearly_budgets$Water_year==2015,3:8] / yearly_budgets[yearly_budgets$Scenario_id=="hist" & yearly_budgets$Water_year==2015,3:8]
 # barplots_overall(scenario_totals)
 # barplots_comparison(scenario_totals)
 
