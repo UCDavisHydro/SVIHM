@@ -531,6 +531,7 @@ yearly_budgets = budget_stat_by_year(mwbs = mwbs, scenario_ids = scenario_ids, s
 # barplots_overall(scenario_totals)
 # barplots_comparison(scenario_totals)
 
+
 # Geeta manuscript figures ------------------------------------------------
 
 #Plot overall, full-model-period barplots
@@ -616,6 +617,9 @@ for(i in 1:length(selected_years)){
 # pdf(file.path(pdf_dir, "all_years_scen_comp.pdf"), width = 8.5, height = 11/2)
 # dev.off()
 
+# # Save csv of yearly values
+# setwd("C:/Users/Claire/Documents/UCD/Presentations_Talks_Workshops_miniprojects/2019.06-12 Geeta Precip Alteration project")
+# write.csv(yearly_budgets, "yearly budgets, historical and 7 percent increased extremity.csv")
 
 # AGU 2019 Figures -------------------------------------------------------------
 

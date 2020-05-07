@@ -649,6 +649,12 @@ aq_monthly_trunc = aq_monthly[aq_monthly$Month >= plot_start_date,]
 )
 graphics.off()
 
+
+# 3.1 change in storage tables --------------------------------------------
+stor_tab = aq_monthly[,c("Month", "Storage")]
+stor_tab$Storage_Cumulative = cumsum(stor_tab$Storage)
+write.csv(stor_tab, "change in storage.csv")
+
 # 4. Monthly, seasonal SWBM plot, full model period -----------------------
 
 
