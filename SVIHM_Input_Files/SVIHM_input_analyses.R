@@ -97,6 +97,9 @@ make_station_table = function(weather_table){
     station_table$lat[i] = unique(weather_table$LATITUDE[weather_table$STATION==station])
     station_table$lon[i] = unique(weather_table$LONGITUDE[weather_table$STATION==station])
   }
+  #Assign a color to each station, for later visual rep of which station is used for which precip gap filling
+  station_table$color = topo.colors(n = dim(station_table)[1])
+  #Make station_table a SpatialPointsDataFrame
   coordinates(station_table) = ~lon + lat
   
   #Use coordinates to calculate distance between all the stations
@@ -177,7 +180,7 @@ make_daily_precip_extended_stations = function(weather_table = noaa,
   
   
   #read in original data (wys 1991-2011)
-  print(ref_data_dir)
+  # print(ref_data_dir)
   daily_precip_orig = read.table(file.path(ref_data_dir,"precip_orig.txt"))
   colnames(daily_precip_orig) = c("PRCP", "Date")
   daily_precip_orig$Date = as.Date(daily_precip_orig$Date, format = "%d/%m/%Y")
@@ -219,7 +222,7 @@ make_model_coeffs_table = function(months = 1:12,
   #Add model parameter columns
   model_coeff$intercept=NA; model_coeff$coeff_m=NA; model_coeff$r2=NA
   
-  for(mnth in months)
+  for(mnth in months){
     for(y in ys){
       for(x in xs){
         if(y == x){next} #no need for autoregression
@@ -238,12 +241,15 @@ make_model_coeffs_table = function(months = 1:12,
         if(sum(!is.na(X) & !is.na(Y))==0){next}
         
         model = lm(Y~ 0 + X)
-        if(length(coef(model)) ==2){model_coeff[model_coeff_index, 4:5] = coef(model)}
+        # CASE DESCRIPTION?
+        if(length(coef(model)) ==2){print(paste("2 coeff of this model", mnth,X,Y))
+          model_coeff[model_coeff_index, 4:5] = coef(model)}
         if(length(coef(model)) ==1){
           model_coeff[model_coeff_index, 4] = 0; model_coeff[model_coeff_index, 5] = coef(model)}
         model_coeff$r2[model_coeff_index] = summary(model)$r.sq
       }
     }
+  }
   return(model_coeff)
 }
 
@@ -252,25 +258,22 @@ fill_fj_cal_gaps_regression_table = function(model_coeff,
                                              daily_precip = daily_precip,
                                              start_date = model_start_date,
                                              end_date = model_end_date){
+  #Function: use best available regression to fill in gaps in precip records for FJ and Cal
   
-  #make list of regressions (Y, X or Xes)
-  # for each month
-  # for FJ and Cal (Ys)
-  # for FJ, Cal, ET, and GV (Xs)
-  ## But not combinations of X?
-  # Then, rank each month-Y combo according to correlation coeff
-  
-  #Initialize table of model coefficients
-  
-  
-  # use regressions to generate filled-in precip records for FJ and Cal
+  #Rename daily precip table and restrict dates
   p_record = daily_precip[daily_precip$Date >= start_date & daily_precip$Date <= end_date,]
   
-  #Fill in gaps in FJ
+  ### Fill in gaps in FJ
+  # Initialize the interpolated record as the official FJ record (with gaps)
   p_record$fj_interp = p_record$PRCP_mm_fj
+  # Assign colors for the station attribution plot, indicating that we got these values from the FJ station.
+  p_record$fj_interp_color[!is.na(p_record$fj_interp)] = station_table$color[station_table$abbrev == "fj"]
+  
+  # For each NA daily precip value in the FJ record, predict the value in the FJ record using the regression 
+  # coefficients from the station with the best R^2 value for predicting FJ. 
+  # (If that station also has a gap on that day, use the one with the next-best R^2 value, until the gap is filled.)
   for(i in 1:length(p_record$fj_interp)){
     if(is.na(p_record$fj_interp[i])){
-      # figure out what case this is ()
       #find the appropriate regression coefficients for this month of fj data
       coefs = model_coeff[model_coeff$Y_var == "fj" & model_coeff$months == month(p_record$Date[i]), ]
       index_of_ranks = rev(order(coefs$r2)) # test the regressions in order of best R2 to worst
@@ -281,10 +284,13 @@ fill_fj_cal_gaps_regression_table = function(model_coeff,
           # Use coef matrix to assign X variable station for the regression, based on ranked R^2
           coef_index = index_of_ranks[j] 
           coef_x = coefs$X_var[coef_index] 
+          # Assign the column number and indicator color of the relevant predictor station
           daily_precip_column_num = station_table$col_num[station_table$abbrev == coef_x]
-          # If there's data for that X variable, use it to predict rainfall at FJ for that day
+          daily_precip_x_var_color = station_table$color[station_table$abbrev == coef_x]
+          # If there's data for that X variable, use it to predict rainfall at FJ for that day. also assign color.
           if(!is.na(p_record[i,daily_precip_column_num])){
             p_record$fj_interp[i] =  coefs$intercept[coef_index] + (p_record[i, daily_precip_column_num] * coefs$coeff_m[coef_index])
+            p_record$fj_interp_color[i] = daily_precip_x_var_color
           }
           #If there's no data for the best-ranked variable, it will go back to the beginning of the for loop and try again with other stations
         }
@@ -293,11 +299,14 @@ fill_fj_cal_gaps_regression_table = function(model_coeff,
     }
   }
   
-  #Fill in gaps in Cal
+  ### Fill in gaps in Cal
+  # Initialize the interpolated record as the official Cal record (with gaps)
   p_record$cal_interp = p_record$PRCP_mm_cal
+  # Assign colors for the station attribution plot, indicating that we got these values from the Cal station.
+  p_record$cal_interp_color[!is.na(p_record$cal_interp)] = station_table$color[station_table$abbrev == "cal"]
+  
   for(i in 1:length(p_record$cal_interp)){
     if(is.na(p_record$cal_interp[i])){
-      # figure out what case this is ()
       #find the appropriate regression coefficients for this month of Cal data
       coefs = model_coeff[model_coeff$Y_var == "cal" & model_coeff$months == month(p_record$Date[i]), ]
       index_of_ranks = rev(order(coefs$r2)) # test the regressions in order of best R2 to worst
@@ -309,9 +318,11 @@ fill_fj_cal_gaps_regression_table = function(model_coeff,
           coef_index = index_of_ranks[j] 
           coef_x = coefs$X_var[coef_index] 
           daily_precip_column_num = station_table$col_num[station_table$abbrev == coef_x]
+          daily_precip_x_var_color = station_table$color[station_table$abbrev == coef_x]
           # If there's data for that X variable, use it to predict rainfall at cal for that day
           if(!is.na(p_record[i,daily_precip_column_num])){
             p_record$cal_interp[i] =  coefs$intercept[coef_index] + (p_record[i, daily_precip_column_num] * coefs$coeff_m[coef_index])
+            p_record$cal_interp_color[i] =daily_precip_x_var_color
           }
           #If there's no data for the best-ranked variable, it will go back to the beginning of the for loop and try again with other stations
         }
@@ -384,6 +395,7 @@ get_daily_precip_table=function(final_table_start_date=model_start_date,
   station_dist = station_info[[2]]
   
   #Generate daily precip table (same daterange as in original methodology) to make model coefficients
+  #Each station is a column (plus a couple extra columns); each row is a date, WY 1944-2019
   daily_precip_regression = make_daily_precip_extended_stations(weather_table = noaa,
                                                                 daily_precip_start_date = as.Date("1943-10-01"), 
                                                                 daily_precip_end_date = as.Date("2011-09-30"))
@@ -391,16 +403,17 @@ get_daily_precip_table=function(final_table_start_date=model_start_date,
                                         station_table = station_table,
                                         daily_precip = daily_precip_regression,
                                         ys = c("fj", "cal"), 
-                                        xs = c(c("fj", "cal", "gv", "et", "yr", "y2")))
+                                        xs = c("fj", "cal", "gv", "et", "yr", "y2"))
   #Generate daily precip table to make the gap-filled records
   daily_precip_p_record = make_daily_precip_extended_stations(weather_table = noaa,
                                                               daily_precip_start_date = final_table_start_date, 
                                                               daily_precip_end_date = final_table_end_date)
   p_record = fill_fj_cal_gaps_regression_table(model_coeff=model_coeff, 
                                                station_table = station_table,
-                                                       daily_precip = daily_precip_p_record,
-                                                       start_date = final_table_start_date, 
-                                                       end_date = final_table_end_date)
+                                               daily_precip = daily_precip_p_record,
+                                               start_date = final_table_start_date, 
+                                               end_date = final_table_end_date)
+  
   # average interp-fj and interp-cal records and compare to original
   p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp), 
                                                MARGIN = 1, FUN = mean, na.rm=T)
@@ -768,6 +781,63 @@ write_swbm_et_input_file=function(){
 
 # Precip scratchwork ------------------------------------------------------
 
+# #_Visualize raw and interp records  (annual) ------------------------------------
+# # First: generate p_record going line-by-line through the "get_daily_precip_table()" function
+# cal_raw = aggregate(x = p_record$PRCP_mm_cal/25.4, by=list(p_record$water_year),FUN = sum, na.rm=T)
+# cal_interp = aggregate(x = p_record$cal_interp/25.4, by=list(p_record$water_year),FUN = sum, na.rm=T)
+# fj_raw =  aggregate(x = p_record$PRCP_mm_fj/25.4, by=list(p_record$water_year),FUN = sum, na.rm=T)
+# fj_interp =  aggregate(x = p_record$fj_interp/25.4, by=list(p_record$water_year),FUN = sum, na.rm=T)
+# 
+# wys = cal_interp$Group.1
+# plot(wys, cal_interp$x, col = "blue", lwd = 2, type = "o", ylim = c(0,35))
+# lines(wys, cal_raw$x, lty = 2,  col = "cyan")
+# lines(wys, fj_raw$x, col = "firebrick3", lty = 2)
+# lines(wys, fj_interp$x, col = "brown",lwd = 2)
+# 
+# #_Average annual rainfall for WY 1991-2018
+# round(c(mean(cal_raw$x), mean(cal_interp$x), mean(fj_raw$x), mean(fj_interp$x)), 1)
+# # Cal raw, Cal interp and FJ interp are pretty much in agreement (20.9, 20.1, and 19.9),
+# # though FJ interp is consistently about 2 inches lower than cal interp.
+# # FJ raw has so much missing data that its mean annual precip is 12.8.
+# 
+# # Test the annual averages with data from the full record running the regression
+# daily_precip_regression = make_daily_precip_extended_stations(weather_table = noaa,
+#                                                               daily_precip_start_date = as.Date("1943-10-01"), 
+#                                                               daily_precip_end_date = as.Date("2018-09-30"))
+# 
+# p_rec_test = fill_fj_cal_gaps_regression_table(model_coeff=model_coeff, 
+#                                              station_table = station_table,
+#                                              daily_precip = daily_precip_regression,
+#                                              start_date = as.Date("1943-10-01"), 
+#                                              end_date = final_table_end_date)
+# p_record = p_rec_test
+
+# Averages for WY 1944-2018: With filled-in records, cal_interp annual 
+# average is 21.0, and fj_interp annual average is 20.7.
+#This has dropped by 0.5 and 0.5, respectively.
+
+##_Color-code which station used to gap-fill -------------------------------
+## First: generate p_record going line-by-line through the "get_daily_precip_table()" function
+# x_labs = p_record$Date
+# keep_these = month(x_labs) == 10 & day(x_labs) == 1 & (year(x_labs) %% 5 == 0)
+# x_labs = x_labs[keep_these]
+# # x_labs[!keep_these] = NA
+# 
+# barplot(height = p_record$fj_interp, width = .81,
+#         border = p_record$fj_interp_color,
+#         xaxt = "n", xlim = c(0,length(p_record$fj_interp)))
+# axis(side=1,at=which(keep_these),labels=x_labs, las = 2)
+# 
+# legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
+# test1 = aggregate(p_record$fj_interp_color, by=list(p_record$fj_interp_color), FUN = length)
+# test2 = merge(station_table@data, test1, by.x = "color", by.y="Group.1")
+# 
+# plot(x = p_record$Date, y = p_record$fj_interp, 
+#         col = p_record$fj_interp_color, pch = 18,
+#      xlab = "Date", ylab = "")
+# legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
+
+# 
 # # _Did I replicate original 1991-2011 precip record ------------------------------
 # 
 # 
@@ -778,9 +848,9 @@ write_swbm_et_input_file=function(){
 # plot(p_record$PRCP_mm_fj, p_record$interp_cal_fj_mean); abline(0,1, col = "red")
 # 
 # 
-# # That is... a reasonable reproduction of the original values. 
+# # That is... a reasonable reproduction of the original values?
 # 
-# # plot monthly values to see if they match 
+# # plot monthly values to see if they match
 # monthly_interp = aggregate(p_record$interp_cal_fj_mean, by = list(p_record$month_day1), FUN = sum)
 # monthly_orig = aggregate(p_record$PRCP_mm_orig, by = list(p_record$month_day1), FUN = sum)
 # cor(monthly_orig$x, monthly_interp$x, use = "pairwise.complete.obs") #0.87
@@ -795,35 +865,47 @@ write_swbm_et_input_file=function(){
 # plot(p_record$Date, p_record$PRCP_mm_fj, type = "l", ylim = c(0, 120))
 # plot(p_record$Date, p_record$PRCP_mm_cal, type = "l", ylim = c(0, 120))
 # plot(p_record$Date, p_record$interp_cal_fj_mean, type = "l", ylim = c(0, 120))
-# 
-# 
-# 
+
+
+
 # # _exceedance curves ------------------------------------------------------
 # 
-# legend_labels = c("Callahan", "Fort Jones","Greenview", "Yreka", "Yreka NW",
+# legend_labels = c("Callahan", "Fort Jones",
+#                   "Greenview", "Yreka", "Yreka NW",
 #                   "Original 91-11", "Cal-FJ Mean",
 #                   "Gap-filled Fort Jones", "Gap-filled Callahan",
 #                   "Gap-filled Cal-FJ Mean")
+# legend_colors = c("firebrick3","gold3", 
+#                   "forestgreen", "dodgerblue4", "dodgerblue1",
+#                   "black","gray",
+#                   "gold1","firebrick1",
+#                   "green")
+# 
+# 
+# 
 # #initialize plot
 # par(mfrow = c(1,1))
-# plot(x = NA, y = NA, xlim = c(0.6, 1), ylim = c(-2.1, 5), xlab = "Exceedance probability", ylab = "log daily precip, mm")
+# plot(x = NA, y = NA, xlim = c(0.6, 1), ylim = c(-3, 5), xlab = "Exceedance probability", ylab = "log daily precip, mm")
 # 
-# col_names = colnames(p_record)[!(colnames(p_record) %in% c("Date","month_day1", "water_year", "PRCP_mm_et"))]
+# col_names = colnames(p_record)[!(colnames(p_record) %in% c("Date","month_day1", "water_year", "PRCP_mm_et","fj_interp_color","cal_interp_color"))]
 # for(i in 1:length(col_names)){
-#   i=i+1
+#   # i=i+1
 #   col_name = col_names[i]
-#   record = select(p_record, col_name)
+#   record = dplyr::select(p_record, col_name)
 #   record = log(record[!is.na(record)])
 #   record_exceedance = (record[order(record)])
 #   t = length(record_exceedance)
-#   lines(x = (1:t)/t, y = record_exceedance, type = "l", col = i, main = col_name)#,
+#   print(paste(col_name,"has", t,"non-NA and non-0 values"))
+#   lines(x = (1:t)/t, y = record_exceedance, type = "l", 
+#         col = legend_colors[i], main = col_name, lwd = 2)#,
 #   # xlab = "Exceedance probability", ylab = "log daily precip, mm")
 # }
-# legend(x = "topleft", legend = legend_labels, cex = 0.8, lwd = rep(1, length(col_names)), col = 1:length(col_names))
-# 
-# 
-# 
-# 
+# legend(x = "topleft", legend = legend_labels, cex = 0.8, 
+#        lwd = rep(5, length(col_names)), col = legend_colors)
+
+
+
+
 # # _visualize regression relationships --------------------------------------
 # 
 # par(mfrow = c(3,4))
