@@ -33,9 +33,19 @@ read_in_flow_data = function(){
   
   # Streams = c('FJ','East_Fork','South_Fork','Sugar','Etna','French','Patterson','Kidder','Moffett','Mill','Shackleford')
   
-  daily_means_all = list(FJ_daily_mean, East_Fork_daily_mean, South_Fork_daily_mean, Sugar_daily_mean, 
-                         Etna_daily_mean, French_daily_mean, Patterson_daily_mean, Kidder_daily_mean,
-                         Moffett_daily_mean, Mill_daily_mean, Shackleford_daily_mean)
+  # daily_means_all = list(fj = FJ_daily_mean, east = East_Fork_daily_mean, 
+  #                        south = South_Fork_daily_mean, sugar = Sugar_daily_mean, 
+  #                        etna = Etna_daily_mean, french = French_daily_mean,
+  #                        patterson = Patterson_daily_mean, kidder = Kidder_daily_mean,
+  #                        moffett = Moffett_daily_mean, mill = Mill_daily_mean, 
+  #                        shackleford = Shackleford_daily_mean)
+  daily_means_all = list(FJ_daily_mean, East_Fork_daily_mean,
+                         South_Fork_daily_mean, Sugar_daily_mean,
+                         Etna_daily_mean, French_daily_mean,
+                         Patterson_daily_mean,  Kidder_daily_mean,
+                         Moffett_daily_mean, Mill_daily_mean,
+                         Shackleford_daily_mean)
+  
   return(daily_means_all)
 }
 #No Data for Clark, Johnson, Crystal, or Oro Fino Creeks
