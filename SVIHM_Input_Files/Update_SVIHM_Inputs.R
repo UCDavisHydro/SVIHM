@@ -26,8 +26,8 @@ if(isRStudio == FALSE){ library(here); svihm_dir <- dirname(here::here("Update_S
 # 1b) Set directories for data used in update and output file locations
 
 ## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(svihm_dir, "SWBM", "pvar_a_extr_95_07")
-MF_file_dir = file.path(svihm_dir, "MODFLOW","pvar_a_extr_95_07")
+SWBM_file_dir = file.path(svihm_dir, "SWBM", "instream_1")
+MF_file_dir = file.path(svihm_dir, "MODFLOW","instream_1")
 
 ## Data used in update
 Stream_Regression_dir = file.path(svihm_dir, "Streamflow_Regression_Model")
