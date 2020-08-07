@@ -37,10 +37,10 @@
   REAL :: start, finish
   INTEGER, ALLOCATABLE, DIMENSION(:)  :: ndays
   CHARACTER(9) :: param_dummy
-  CHARACTER(10)  :: SFR_Template, scenario, suffix
+  CHARACTER(10)  :: SFR_Template, rch_scenario, flow_scenario, suffix
   CHARACTER(50), ALLOCATABLE, DIMENSION(:) :: daily_out_name
   INTEGER, DIMENSION(31) :: ET_Active
-  LOGICAL :: MAR_active, ILR_active, daily_out_flag
+  LOGICAL :: MAR_active, ILR_active, rec_instream_limits, daily_out_flag
   DOUBLE PRECISION :: eff_precip
  
   call cpu_time(start)
@@ -50,30 +50,46 @@
   Total_Ref_ET = 0.
   
   open(unit=10, file='general_inputs.txt', status='old')
-  read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template, scenario
-  if (trim(scenario)=='basecase' .or. trim(scenario)=='Basecase' .or. trim(scenario)=='BASECASE') then            ! Set logicals for Scenario type
+  read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template, rch_scenario, flow_scenario
+  if (trim(rch_scenario)=='basecase' .or. trim(rch_scenario)=='Basecase' .or. trim(rch_scenario)=='BASECASE') then            ! Set logicals for Recharge Scenario type
     MAR_active=  .FALSE.  
     ILR_active = .FALSE.
-  else if(trim(scenario)=='MAR' .or. trim(scenario)=='mar') then
+  else if(trim(rch_scenario)=='MAR' .or. trim(rch_scenario)=='mar') then
     MAR_active=  .TRUE. 
     ILR_active = .FALSE.
-  else if (trim(scenario)=='ILR' .or. trim(scenario)=='ilr') then
+  else if (trim(rch_scenario)=='ILR' .or. trim(rch_scenario)=='ilr') then
     MAR_active=  .FALSE.
   	ILR_active = .TRUE.
-  else if (trim(scenario)=='MAR_ILR' .or. trim(scenario)=='mar_ilr') then
-  	 MAR_active=  .TRUE.       
-     ILR_active = .TRUE.    
-  else if(trim(scenario).ne.'basecase' .or. trim(scenario).ne.'Basecase' .or. trim(scenario).ne.'BASECASE' &      ! Exit program if incorrect scenario type
-         .or. trim(scenario).ne.'MAR' .or. trim(scenario).ne.'mar' &
-         .or. trim(scenario).ne.'ILR' .or. trim(scenario).ne.'ilr' &
-         .or. trim(scenario).ne.'MAR_ILR' .or. trim(scenario).ne.'mar_ilr' ) then
-    write(*,*)'Unknown scenario input in general_inputs.txt'
-    write(800,*)'Unknown scenario input in general_inputs.txt'
+  else if (trim(rch_scenario)=='MAR_ILR' .or. trim(rch_scenario)=='mar_ilr') then
+    MAR_active=  .TRUE.       
+    ILR_active = .TRUE.    
+  else if (trim(rch_scenario).ne.'basecase' .or. trim(rch_scenario).ne.'Basecase' .or. trim(rch_scenario).ne.'BASECASE' &  ! Exit program if incorrect recharge scenario type
+         .or. trim(rch_scenario).ne.'MAR' .or. trim(rch_scenario).ne.'mar' &
+         .or. trim(rch_scenario).ne.'ILR' .or. trim(rch_scenario).ne.'ilr' &
+         .or. trim(rch_scenario).ne.'MAR_ILR' .or. trim(rch_scenario).ne.'mar_ilr' ) then
+    write(*,*)'Unknown recharge scenario input in general_inputs.txt'
+    write(800,*)'Unknown recharge scenario input in general_inputs.txt'
     call EXIT
   end if
+
+  if (trim(flow_scenario)=='basecase' .or. trim(flow_scenario)=='Basecase' .or. trim(flow_scenario)=='BASECASE') then 
+    rec_instream_limits = .FALSE.         ! Set logicals for Flow Scenario type 
+  else if (trim(flow_scenario)=='cdfw_rec' .or. trim(flow_scenario)=='CDFW_rec' &
+    .or. trim(flow_scenario)=='CDFW_Rec' .or. (flow_scenario)=='CDFW_REC')  then 
+      rec_instream_limits = .TRUE.         ! Set logicals for Flow Scenario type 
+  else if (trim(flow_scenario).ne.'basecase' .or. trim(flow_scenario).ne.'Basecase' &
+    .or. trim(flow_scenario).ne.'BASECASE' .or. trim(flow_scenario).ne.'cdfw_rec' &      ! Exit program if incorrect recharge scenario type
+    .or. trim(flow_scenario).ne.'CDFW_rec' .or. trim(flow_scenario).ne.'CDFW_Rec' &
+    .or. trim(flow_scenario).ne.'CDFW_REC') then
+      write(*,*)'Unknown flow scenario input in general_inputs.txt'
+      write(800,*)'Unknown flow scenario input in general_inputs.txt'
+      call EXIT
+    end if
     
-  write(*,'(2a10)')'Scenario: ',trim(scenario)
-  write(800,'(2a10)')'Scenario: ',trim(scenario)
+  write(*,'(2a19)')'Recharge Scenario: ',trim(rch_scenario)
+  write(800,'(2a19)')'Recharge Scenario: ',trim(rch_scenario)
+  write(*,'(2a15)')'Flow Scenario: ',trim(flow_scenario)
+  write(800,'(2a15)')'Flow Scenario: ',trim(flow_scenario)
   SFR_Template = TRIM(SFR_Template)
   write(*,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
   write(800,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
