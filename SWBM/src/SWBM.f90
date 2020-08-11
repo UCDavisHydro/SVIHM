@@ -76,7 +76,7 @@
     rec_instream_limits = .FALSE.         ! Set logicals for Flow Scenario type 
   else if (trim(flow_scenario)=='cdfw_rec' .or. trim(flow_scenario)=='CDFW_rec' &
     .or. trim(flow_scenario)=='CDFW_Rec' .or. (flow_scenario)=='CDFW_REC')  then 
-      rec_instream_limits = .TRUE.         ! Set logicals for Flow Scenario type 
+      rec_instream_limits = .TRUE.         
   else if (trim(flow_scenario).ne.'basecase' .or. trim(flow_scenario).ne.'Basecase' &
     .or. trim(flow_scenario).ne.'BASECASE' .or. trim(flow_scenario).ne.'cdfw_rec' &      ! Exit program if incorrect recharge scenario type
     .or. trim(flow_scenario).ne.'CDFW_rec' .or. trim(flow_scenario).ne.'CDFW_Rec' &
@@ -143,8 +143,19 @@
       read(215,*)MAR_fields(i), max_MAR_field_rate(i)
     end do
   end if
+
+  if (rec_instream_limits) then
+    open(unit=216,file='instream_flow_limits.txt') ! Read in CDFW recommended instream flows, m^3/day (1 value for each day)
+    read(216,*) ! Read heading line into nothing
+    write(*, SUM(ndays)) ! For troubleshooting
+    ALLOCATE(instream_flow_lim(SUM(ndays))) ! vector instream_flow_lim has 1 entry for each day (timestep) in model record
+    do i=1, SUM(ndays)
+      read(216,*) instream_flow_lim(i)
+    end do
+  end if
+
   
-  close(210)
+  close(210) ! No unit = 210; delete?
   close(212)
   close(214) 
   

@@ -294,6 +294,38 @@ if(!file.exists(file1)){
 file.copy(file1, file2)
 
 
+
+# instream_flow_limits.txt ------------------------------------------------
+
+cdfw_tab = read.csv(file.path(ref_data_dir,"cdfw_2017_instream_flows.csv"))
+
+#build calendar of cdfw rec flow start and end dates for the years covering the model period
+model_yrs = year(seq(from = model_start_date, to = model_end_date+365, by = "year")) #Add 365 to keep ending year in the sequence
+cdfw_start_dates = as.Date(paste(sort(rep(model_yrs, dim(cdfw_tab)[1])), 
+                            cdfw_tab$Start.date.month, cdfw_tab$start.date.day, sep ="-"))
+cdfw_end_dates = as.Date(paste(sort(rep(model_yrs, dim(cdfw_tab)[1])), 
+                            cdfw_tab$End.date.month, cdfw_tab$End.date.day, sep ="-"))
+leap_years = seq(from=1900, to = 2100, by = 4)
+cdfw_end_dates[day(cdfw_end_dates) == 28 & year(cdfw_end_dates) %in% leap_years] #leapdays
+cdfw_rec_flows = rep(cdfw_tab$Recommended.flow.cfs, dim(cdfw_tab)[1])
+
+instream_rec = data.frame(dates = model_days, cdfw_rec_flow_cfs = NA)
+
+for(i in 1:length(cdfw_start_dates)){
+  selector = instream_rec$dates >= cdfw_start_dates[i] &
+    instream_rec$dates <= cdfw_end_dates[i]
+  instream_rec$cdfw_rec_flow_cfs[selector] = cdfw_rec_flows[i]
+}
+
+# Convert to cubic meters per day
+cfs_to_m3d = 1/35.3147 * 86400 # 1 m3/x ft3 * x seconds/day
+instream_rec$cdfw_rec_flow_m3d = instream_rec$cdfw_rec_flow_cfs * cfs_to_m3d
+instream_rec$cdfw_rec_flow_cfs = NULL
+instream_rec$dates = NULL
+
+write.table(instream_rec, file = file.path(SWBM_file_dir, "instream_flow_limits.txt"),
+            sep = " ", quote = FALSE, col.names = TRUE, row.names = FALSE)
+
 # SWBM.exe ----------------------------------------------------------------
 
 file.copy(file.path(svihm_dir,"SWBM","bin",'SWBM.exe'), SWBM_file_dir)

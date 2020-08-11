@@ -1,2 +1,2 @@
 2119  167  336  440  210  1.4 UCODE MAR_ILR CDFW_Rec
-! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR, Basecase/CDFW_rec
+! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR, Basecase/CDFW_Rec

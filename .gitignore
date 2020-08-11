@@ -42,6 +42,7 @@ SWBM/pvar_c20
 SWBM/pvar_c30
 SWBM/pvar_a_extr_95_07
 SWBM/scenario_archive
+SWBM/instream_1
 MODFLOW/hist
 MODFLOW/pvar_a03
 MODFLOW/pvar_a05
@@ -53,5 +54,4 @@ MODFLOW/pvar_c10
 MODFLOW/pvar_c20
 MODFLOW/pvar_c30
 MODFLOW/pvar_a_extr_95_07
-
-*.rch
+MODFLOW/instream_1
