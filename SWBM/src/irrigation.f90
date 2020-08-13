@@ -123,8 +123,8 @@ MODULE irrigationmodule
    DOUBLE PRECISION, INTENT(in) :: eff_precip
         
    poly(ip)%irr_flag = 1  ! Field has started irrigating
-   if (poly(ip)%irr_type==1) then ! Flood irrigation
-     daily(ip)%irrigation=max (0.,(1/irreff_flood )*(daily(ip)%evapotrasp-eff_precip))   
+   if (poly(ip)%irr_type==1) then ! Flood irrigation (surface water)
+     daily(ip)%irrigation=max (0.,(1/irreff_flood )*(daily(ip)%evapotrasp-eff_precip))   ! Irrigation required by this field on this day
      if (poly(ip)%water_source==1) then  ! Surface-water 
        if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
          sw_irr(1) = sw_irr(1) + daily(ip)%irrigation * poly(ip)%MF_area         ! Add daily irrigation to sw_irr counter
@@ -132,7 +132,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then  ! TO DO: CHANGE THIS TO > STREAMFLOW - CDFW REC FLOW
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded

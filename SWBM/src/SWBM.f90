@@ -35,16 +35,15 @@
   REAL   :: precip, Total_Ref_ET, MAR_vol
   REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow, max_MAR_field_rate, moisture_save
   REAL :: start, finish
-  INTEGER, ALLOCATABLE, DIMENSION(:)  :: ndays
+  INTEGER, ALLOCATABLE, DIMENSION(:)  :: ndays, available_instream_flow
   CHARACTER(9) :: param_dummy
   CHARACTER(10)  :: SFR_Template, rch_scenario, flow_scenario, suffix
   CHARACTER(50), ALLOCATABLE, DIMENSION(:) :: daily_out_name
   INTEGER, DIMENSION(31) :: ET_Active
-  LOGICAL :: MAR_active, ILR_active, rec_instream_limits, daily_out_flag
+  LOGICAL :: MAR_active, ILR_active, instream_limits_active, daily_out_flag
   DOUBLE PRECISION :: eff_precip
  
   call cpu_time(start)
-  ! DATA nday / 30,31,30,31,31,28,31,30,31,30,31,31 /            ! The months are shifted by one because the first index location is zero due to use of MOD function
   open (unit=800, file='SWBM_log.rec')                         ! Open record file for screen output
   eff_precip = 0.
   Total_Ref_ET = 0.
@@ -73,14 +72,13 @@
   end if
 
   if (trim(flow_scenario)=='basecase' .or. trim(flow_scenario)=='Basecase' .or. trim(flow_scenario)=='BASECASE') then 
-    rec_instream_limits = .FALSE.         ! Set logicals for Flow Scenario type 
-  else if (trim(flow_scenario)=='cdfw_rec' .or. trim(flow_scenario)=='CDFW_rec' &
-    .or. trim(flow_scenario)=='CDFW_Rec' .or. (flow_scenario)=='CDFW_REC')  then 
-      rec_instream_limits = .TRUE.         
+    instream_limits_active = .FALSE.         ! Set logicals for Flow Scenario type 
+  else if (trim(flow_scenario)=='flow_lims' .or. trim(flow_scenario)=='Flow_Lims' &
+    .or. trim(flow_scenario)=='FLOW_LIMS')  then 
+      instream_limits_active = .TRUE.         
   else if (trim(flow_scenario).ne.'basecase' .or. trim(flow_scenario).ne.'Basecase' &
-    .or. trim(flow_scenario).ne.'BASECASE' .or. trim(flow_scenario).ne.'cdfw_rec' &      ! Exit program if incorrect recharge scenario type
-    .or. trim(flow_scenario).ne.'CDFW_rec' .or. trim(flow_scenario).ne.'CDFW_Rec' &
-    .or. trim(flow_scenario).ne.'CDFW_REC') then
+    .or. trim(flow_scenario).ne.'BASECASE' .or. trim(flow_scenario).ne.'flow_lims' &
+    .or. trim(flow_scenario).ne.'Flow_Lims' .or. trim(flow_scenario).ne.'FLOW_LIMS') then
       write(*,*)'Unknown flow scenario input in general_inputs.txt'
       write(800,*)'Unknown flow scenario input in general_inputs.txt'
       call EXIT
@@ -144,16 +142,10 @@
     end do
   end if
 
-  if (rec_instream_limits) then
-    open(unit=216,file='instream_flow_limits.txt') ! Read in CDFW recommended instream flows, m^3/day (1 value for each day)
-    read(216,*) ! Read heading line into nothing
-    write(*, SUM(ndays)) ! For troubleshooting
-    ALLOCATE(instream_flow_lim(SUM(ndays))) ! vector instream_flow_lim has 1 entry for each day (timestep) in model record
-    do i=1, SUM(ndays)
-      read(216,*) instream_flow_lim(i)
-    end do
+  if (instream_limits_active) then
+    open(unit=216,file='available_instream_flow.txt') ! Read in available flow (inflow - CDFW recommended instream flows, m^3/month) (1 value for each month)
+    ALLOCATE(available_instream_flow(nmonth)) ! vector instream_flow_lim has 1 entry for each month (stress period) in model record
   end if
-
   
   close(210) ! No unit = 210; delete?
   close(212)
@@ -320,7 +312,11 @@
      if (imonth==1) then                             ! If October:
        call zero_year                                ! Zero out yearly accumulated volume
      endif    
-     read(220,*)drain_flow(im)                       ! Read drain flow into array         
+     read(220,*) drain_flow(im)                       ! Read drain flow into array
+     if(instream_limits_active) then                  
+      read(216, *) available_instream_flow(im)        ! Read available instream flow (monthly m3) into array
+     end if
+
      do jday=1, ndays(im)                         ! Loop over days in each month
        if (jday==1) monthly%ET_active = 0            ! Set ET counter to 0 at the beginning of the month. Used for turning ET on and off in MODFLOW so it is not double counted.    
        daily%ET_active  = 0                                 ! Reset ET active counter
@@ -332,9 +328,9 @@
        read(88,*) REF_ET
        Total_Ref_ET = Total_Ref_ET + REF_ET                 
        read(79,*) kc_grain
-       read (80,*)kc_alfalfa
+       read (80,*) kc_alfalfa
        read(81,*)kc_pasture
-       read(887,*) precip
+       read(887,*) precip 
        if (precip .GE. (0.2*ref_et)) then
          eff_precip=precip
        else

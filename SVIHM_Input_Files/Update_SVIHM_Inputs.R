@@ -295,7 +295,16 @@ file.copy(file1, file2)
 
 
 
-# instream_flow_limits.txt ------------------------------------------------
+# available_instream_flow.txt ------------------------------------------------
+
+#read in FJ flow and CDFW recommended flow for FJ gauge
+library(dataRetrieval)
+library(lubridate)
+fj_num = "11519500"
+fjd_all = readNWISdv(siteNumbers = fj_num, parameterCd="00060" )
+fjd_all = renameNWISColumns(fjd_all)
+# Subset for model period
+fjd = fjd_all[fjd_all$Date >= model_start_date & fjd_all$Date <= model_end_date,]
 
 cdfw_tab = read.csv(file.path(ref_data_dir,"cdfw_2017_instream_flows.csv"))
 
@@ -306,8 +315,13 @@ cdfw_start_dates = as.Date(paste(sort(rep(model_yrs, dim(cdfw_tab)[1])),
 cdfw_end_dates = as.Date(paste(sort(rep(model_yrs, dim(cdfw_tab)[1])), 
                             cdfw_tab$End.date.month, cdfw_tab$End.date.day, sep ="-"))
 leap_years = seq(from=1900, to = 2100, by = 4)
-cdfw_end_dates[day(cdfw_end_dates) == 28 & year(cdfw_end_dates) %in% leap_years] #leapdays
-cdfw_rec_flows = rep(cdfw_tab$Recommended.flow.cfs, dim(cdfw_tab)[1])
+leapday_selector = day(cdfw_end_dates) == 28 & year(cdfw_end_dates) %in% leap_years
+cdfw_end_dates[leapday_selector] = 1 + cdfw_end_dates[leapday_selector] # adjust to include all of Feb
+cdfw_rec_flows = rep(cdfw_tab$Recommended.flow.cfs, length(model_yrs))
+
+# check for correctness
+# cdfw_expanded = data.frame(start_dates = cdfw_start_dates, end_dates = cdfw_end_dates,
+                           # cdfw_rec_flows = cdfw_rec_flows)
 
 instream_rec = data.frame(dates = model_days, cdfw_rec_flow_cfs = NA)
 
@@ -317,14 +331,30 @@ for(i in 1:length(cdfw_start_dates)){
   instream_rec$cdfw_rec_flow_cfs[selector] = cdfw_rec_flows[i]
 }
 
+# Add FJ flow to this dataframe and find difference (available flow)
+instream_rec$fj_flow_cfs = fjd$Flow[match(instream_rec$dates, fjd$Date)]
+instream_rec$avail_flow_cfs = instream_rec$fj_flow_cfs - instream_rec$cdfw_rec_flow_cfs
+instream_rec$avail_flow_cfs[instream_rec$avail_flow_cfs <0] = 0 #0 flow available if measured flow is less than recommended
+
 # Convert to cubic meters per day
 cfs_to_m3d = 1/35.3147 * 86400 # 1 m3/x ft3 * x seconds/day
-instream_rec$cdfw_rec_flow_m3d = instream_rec$cdfw_rec_flow_cfs * cfs_to_m3d
-instream_rec$cdfw_rec_flow_cfs = NULL
-instream_rec$dates = NULL
+instream_rec$avail_flow_m3day = instream_rec$avail_flow_cfs * cfs_to_m3d
 
-write.table(instream_rec, file = file.path(SWBM_file_dir, "instream_flow_limits.txt"),
-            sep = " ", quote = FALSE, col.names = TRUE, row.names = FALSE)
+# Add the stress period and day of month 
+instream_rec$month = floor_date(instream_rec$dates, unit = "month")
+
+#calculate aggregate daily average flow, by month, for whole record
+avail_monthly = aggregate(instream_rec$avail_flow_m3day, by = list(instream_rec$month), FUN = sum)
+colnames(avail_monthly) = c("stress_period","avail_flow_m3_month")
+
+# plot(avail_monthly$stress_period,avail_monthly$avail_flow_m3_month, type = "l")
+# grid()
+
+avail_monthly$stress_period = as.numeric(as.factor(avail_monthly$stress_period)) #converts to 1 to 336 for each stress period
+avail_monthly$stress_period = NULL
+
+write.table(avail_monthly, file = file.path(SWBM_file_dir, "available_instream_flow.txt"),
+            sep = " ", quote = FALSE, col.names = F, row.names = FALSE)
 
 # SWBM.exe ----------------------------------------------------------------
 
