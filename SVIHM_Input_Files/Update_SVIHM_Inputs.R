@@ -333,27 +333,34 @@ for(i in 1:length(cdfw_start_dates)){
 
 # Add FJ flow to this dataframe and find difference (available flow)
 instream_rec$fj_flow_cfs = fjd$Flow[match(instream_rec$dates, fjd$Date)]
-instream_rec$avail_flow_cfs = instream_rec$fj_flow_cfs - instream_rec$cdfw_rec_flow_cfs
-instream_rec$avail_flow_cfs[instream_rec$avail_flow_cfs <0] = 0 #0 flow available if measured flow is less than recommended
 
 # Convert to cubic meters per day
 cfs_to_m3d = 1/35.3147 * 86400 # 1 m3/x ft3 * x seconds/day
-instream_rec$avail_flow_m3day = instream_rec$avail_flow_cfs * cfs_to_m3d
+instream_rec$cdfw_rec_flow_m3d = instream_rec$cdfw_rec_flow_cfs * cfs_to_m3d
+instream_rec$fj_flow_m3d = instream_rec$fj_flow_cfs * cfs_to_m3d
 
 # Add the stress period and day of month 
 instream_rec$month = floor_date(instream_rec$dates, unit = "month")
 
 #calculate aggregate daily average flow, by month, for whole record
-avail_monthly = aggregate(instream_rec$avail_flow_m3day, by = list(instream_rec$month), FUN = sum)
-colnames(avail_monthly) = c("stress_period","avail_flow_m3_month")
+rec_monthly = aggregate(instream_rec$cdfw_rec_flow_m3d, by = list(instream_rec$month), FUN = sum)
+fj_monthly = aggregate(instream_rec$fj_flow_m3d, by = list(instream_rec$month), FUN = sum)
+avail_monthly = merge(rec_monthly, fj_monthly, by.x = "Group.1", by.y = "Group.1")
+colnames(avail_monthly) = c("month","cdfw_rec_flow_m3","fj_flow_m3")
+avail_monthly$avail_flow_m3 = avail_monthly$fj_flow_m3 - avail_monthly$cdfw_rec_flow_m3
+avail_monthly$avail_flow_m3[avail_monthly$avail_flow_m3 <0] = 0
+avail_monthly$avail_ratio = round(avail_monthly$avail_flow_m3 / avail_monthly$fj_flow_m3,3)
 
+# plot(avail_monthly$Group.1, avail_monthly$x/fj_monthly$x, type = "l", ylab = "avail / rec ratio", ylim = c(0,1))
 # plot(avail_monthly$stress_period,avail_monthly$avail_flow_m3_month, type = "l")
 # grid()
 
-avail_monthly$stress_period = as.numeric(as.factor(avail_monthly$stress_period)) #converts to 1 to 336 for each stress period
-avail_monthly$stress_period = NULL
+# avail_monthly$stress_period = as.numeric(as.factor(avail_monthly$stress_period)) #converts to 1 to 336 for each stress period
 
-write.table(avail_monthly, file = file.path(SWBM_file_dir, "available_instream_flow.txt"),
+#format for table
+avail_monthly[,colnames(avail_monthly) != "avail_ratio"] = NULL
+
+write.table(avail_monthly, file = file.path(SWBM_file_dir, "instream_flow_available_ratio.txt"),
             sep = " ", quote = FALSE, col.names = F, row.names = FALSE)
 
 # SWBM.exe ----------------------------------------------------------------

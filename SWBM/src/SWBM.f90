@@ -33,9 +33,9 @@
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
   INTEGER, ALLOCATABLE, DIMENSION(:)   :: MAR_fields, ip_daily_out
   REAL   :: precip, Total_Ref_ET, MAR_vol
-  REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow, max_MAR_field_rate, moisture_save
+  REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow, max_MAR_field_rate, moisture_save, available_instream_flow_ratio
   REAL :: start, finish
-  INTEGER, ALLOCATABLE, DIMENSION(:)  :: ndays, available_instream_flow
+  INTEGER, ALLOCATABLE, DIMENSION(:)  :: ndays
   CHARACTER(9) :: param_dummy
   CHARACTER(10)  :: SFR_Template, rch_scenario, flow_scenario, suffix
   CHARACTER(50), ALLOCATABLE, DIMENSION(:) :: daily_out_name
@@ -143,8 +143,8 @@
   end if
 
   if (instream_limits_active) then
-    open(unit=216,file='available_instream_flow.txt') ! Read in available flow (inflow - CDFW recommended instream flows, m^3/month) (1 value for each month)
-    ALLOCATE(available_instream_flow(nmonth)) ! vector instream_flow_lim has 1 entry for each month (stress period) in model record
+    open(unit=216,file='instream_flow_available_ratio.txt') ! Read in available flow (inflow - CDFW recommended instream flows, m^3/month) (1 value for each month)
+    ALLOCATE(available_instream_flow_ratio(nmonth)) ! vector instream_flow_lim has 1 entry for each month (stress period) in model record
   end if
   
   close(210) ! No unit = 210; delete?
@@ -305,7 +305,6 @@
        call do_rotation(im)	                 ! Rotate alfalfa/grain in January, except for first year since rotation happened in October   
      end if                   
      call calc_area(im)                ! Calculate area for each month due to changing alfalfa/grain
-     call read_streamflow(ndays(im))     ! Read in streamflow inputs
      write(*,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', ndays(im)
      write(800,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', ndays(im)
      call zero_month                                 ! Zero out monthly accumulated volume
@@ -314,8 +313,9 @@
      endif    
      read(220,*) drain_flow(im)                       ! Read drain flow into array
      if(instream_limits_active) then                  
-      read(216, *) available_instream_flow(im)        ! Read available instream flow (monthly m3) into array
+      read(216, *) available_instream_flow_ratio(im)        ! Read available instream flow ratio (percentage of divertible trib flow) into array
      end if
+     call read_streamflow(ndays(im), instream_limits_active, available_instream_flow_ratio(im))     ! Read in streamflow inputs
 
      do jday=1, ndays(im)                         ! Loop over days in each month
        if (jday==1) monthly%ET_active = 0            ! Set ET counter to 0 at the beginning of the month. Used for turning ET on and off in MODFLOW so it is not double counted.    
