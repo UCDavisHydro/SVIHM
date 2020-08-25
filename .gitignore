@@ -29,8 +29,7 @@ R_Files/Post-Processing/Results
 _scratchwork_and_figure_tests
 MODFLOW/up2018
 MODFLOW/orig_1991_2011
-MODFLOW/hist
-SWBM/hist
+SWBM/baseline
 SWBM/pvar_a03
 SWBM/pvar_a05
 SWBM/pvar_a10
@@ -43,6 +42,10 @@ SWBM/pvar_c30
 SWBM/pvar_a_extr_95_07
 SWBM/scenario_archive
 SWBM/instream_1
+SWBM/instream_2
+SWBM/mar
+SWBM/ilr
+SWBM/mar_ilr
 MODFLOW/hist
 MODFLOW/pvar_a03
 MODFLOW/pvar_a05
@@ -55,3 +58,4 @@ MODFLOW/pvar_c20
 MODFLOW/pvar_c30
 MODFLOW/pvar_a_extr_95_07
 MODFLOW/instream_1
+MODFLOW/instream_2

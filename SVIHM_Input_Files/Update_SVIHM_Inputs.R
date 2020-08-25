@@ -12,6 +12,15 @@ library(rpostgis)
 
 # rm(list = ls())
 
+# Scenario Selection ------------------------------------------------------
+recharge_scenario = "ILR" # Can be Basecase/MAR/ILR/MAR_ILR
+flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
+
+## Directories for running the scenarios (files copied at end of script)
+SWBM_file_dir = file.path(svihm_dir, "SWBM", "ilr")
+MF_file_dir = file.path(svihm_dir, "MODFLOW","ilr")
+
+
 # SETUP -------------------------------------------------------------------
 
 
@@ -24,10 +33,6 @@ if(isRStudio == TRUE){ library(rstudioapi); svihm_dir <- dirname(dirname(getActi
 if(isRStudio == FALSE){ library(here); svihm_dir <- dirname(here::here("Update_SVIHM_Inputs.R"))}
 
 # 1b) Set directories for data used in update and output file locations
-
-## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(svihm_dir, "SWBM", "instream_1")
-MF_file_dir = file.path(svihm_dir, "MODFLOW","instream_1")
 
 ## Data used in update
 Stream_Regression_dir = file.path(svihm_dir, "Streamflow_Regression_Model")
@@ -64,6 +69,7 @@ model_months_plus_one = seq(from = model_start_date, to = model_end_date_plus_on
 num_days = diff(model_months_plus_one) #number of days in each stress period/month
 
 num_stress_periods = length(model_months)
+
 
 
 #.#############################################################################
@@ -120,8 +126,9 @@ write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_initial_m3day
 #  general_inputs.txt ------------------------------------------------
 
 #Update number of stress periods
-gen_inputs = c(paste0("2119  167  ", num_stress_periods, "  440  210  1.4 UCODE Basecase"),
-"! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR")
+gen_inputs = 
+    c(paste0("2119  167  ", num_stress_periods, "  440  210  1.4 UCODE ", recharge_scenario, " " ,flow_scenario),
+"! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims")
 write.table(gen_inputs, file = file.path(SWBM_file_dir, "general_inputs.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
@@ -295,7 +302,7 @@ file.copy(file1, file2)
 
 
 
-# available_instream_flow.txt ------------------------------------------------
+# instream_flow_available_ratio.txt ------------------------------------------------
 
 #read in FJ flow and CDFW recommended flow for FJ gauge
 library(dataRetrieval)
