@@ -132,7 +132,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then  ! TO DO: CHANGE THIS TO > STREAMFLOW - CDFW REC FLOW
+       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then  
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -171,7 +171,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -210,7 +210,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -309,9 +309,9 @@ MODULE irrigationmodule
   REAL                         :: irreff_wl, irreff_cp
   
   if (sum(poly%irr_flag).ge.250) irrigating = .true.      ! If 20% of the fields are irrigating (by number, not area; 1251 irrigated fields), set logical to true
-  if (sum(sw_irr) .LT. sum(streamflow_in) .and. poly(ip)%ILR_Flag == 1) then
+  if (sum(sw_irr) .LT. sum(streamflow_avail) .and. poly(ip)%ILR_Flag == 1) then
     poly(ip)%ILR_Active = .true.                                                    
-  else if (sum(sw_irr) .GE. sum(streamflow_in) .or. poly(ip)%ILR_Flag == 0) then
+  else if (sum(sw_irr) .GE. sum(streamflow_avail) .or. poly(ip)%ILR_Flag == 0) then
   	poly(ip)%ILR_Active = .false.
   else
   	write(*,*)'Invalid ILR Flag in Polygon Input File'
@@ -387,7 +387,7 @@ MODULE irrigationmodule
         else
           sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
         end if
-        if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+        if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
           if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
         	  sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
             sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -403,7 +403,7 @@ MODULE irrigationmodule
         else
         	sw_irr( poly(ip)%subwn ) = sw_irr( poly(ip)%subwn ) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
         end if 
-        if ( sw_irr(poly(ip)%subwn)>streamflow_in(poly(ip)%subwn ) ) then
+        if ( sw_irr(poly(ip)%subwn)>streamflow_avail(poly(ip)%subwn ) ) then
           if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
             sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
             sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -425,7 +425,7 @@ MODULE irrigationmodule
         else
           sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
         end if
-        if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+        if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
           if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
         	  sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
             sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -441,7 +441,7 @@ MODULE irrigationmodule
         else
         	sw_irr( poly(ip)%subwn ) = sw_irr( poly(ip)%subwn ) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
         end if 
-        if ( sw_irr(poly(ip)%subwn)>streamflow_in(poly(ip)%subwn ) ) then
+        if ( sw_irr(poly(ip)%subwn)>streamflow_avail(poly(ip)%subwn ) ) then
           if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
             sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
             sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -463,7 +463,7 @@ MODULE irrigationmodule
         else
           sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
         end if
-        if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+        if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
           if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
         	  sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
             sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -479,7 +479,7 @@ MODULE irrigationmodule
         else
         	sw_irr( poly(ip)%subwn ) = sw_irr( poly(ip)%subwn ) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
         end if 
-        if ( sw_irr(poly(ip)%subwn)>streamflow_in(poly(ip)%subwn ) ) then
+        if ( sw_irr(poly(ip)%subwn)>streamflow_avail(poly(ip)%subwn ) ) then
           if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
             sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
             sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -503,7 +503,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -521,7 +521,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -542,7 +542,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -560,7 +560,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -581,7 +581,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
@@ -599,7 +599,7 @@ MODULE irrigationmodule
        else
          sw_irr(poly(ip)%subwn) = sw_irr(poly(ip)%subwn) + daily(ip)%irrigation * poly(ip)%MF_area  ! Add daily irrigation to sw_irr counter
        end if
-       if (sw_irr(poly(ip)%subwn) > streamflow_in(poly(ip)%subwn)) then 
+       if (sw_irr(poly(ip)%subwn) > streamflow_avail(poly(ip)%subwn)) then 
          if (poly(ip)%subwn == 1 .or. poly(ip)%subwn == 9) then ! Subwatersheds 1 and 9 both pull from EF+SF, so this stops double counting of water
            sw_irr(1) = sw_irr(1) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded
            sw_irr(9) = sw_irr(9) - daily(ip)%irrigation * poly(ip)%MF_area         ! Revert Surface Water Irrgation Volume back to previous amount because surface water supplied have been exceeded

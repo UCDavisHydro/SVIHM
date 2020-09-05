@@ -13,12 +13,12 @@ library(rpostgis)
 # rm(list = ls())
 
 # Scenario Selection ------------------------------------------------------
-recharge_scenario = "ILR" # Can be Basecase/MAR/ILR/MAR_ILR
+recharge_scenario = "Basecase" # Can be Basecase/MAR/ILR/MAR_ILR
 flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
+irr_demand_mult = 0.9 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
 
-## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(svihm_dir, "SWBM", "ilr")
-MF_file_dir = file.path(svihm_dir, "MODFLOW","ilr")
+# Scenario name for SWBM and MODFLOW
+scenario_name = "irrig_0.9"
 
 
 # SETUP -------------------------------------------------------------------
@@ -46,6 +46,12 @@ scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Developme
 dms_dir = file.path(dirname(svihm_dir), "SiskiyouGSP2022", "Data_Management_System")
 #Connect to Siskiyou DB (for generating precip and eventually ET and streamflow)
 source(file.path(dms_dir, "connect_to_db.R"))
+
+## Directories for running the scenarios (files copied at end of script)
+
+SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
+MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
+
 
 #To do: incorporate web-scraping into streamflow and ET record generation
 
@@ -126,9 +132,9 @@ write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_initial_m3day
 #  general_inputs.txt ------------------------------------------------
 
 #Update number of stress periods
-gen_inputs = 
-    c(paste0("2119  167  ", num_stress_periods, "  440  210  1.4 UCODE ", recharge_scenario, " " ,flow_scenario),
-"! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims")
+gen_inputs = c(paste("2119  167", num_stress_periods, "440  210  1.4 UCODE", 
+            recharge_scenario,flow_scenario, irr_demand_mult, sep = "  "),
+"! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims, irr_demand_mult")
 write.table(gen_inputs, file = file.path(SWBM_file_dir, "general_inputs.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
@@ -162,6 +168,9 @@ kc_alfalfa_df$day = paste(str_pad(day(model_days), 2, pad = "0"),
                           str_pad(month(model_days), 2, pad = "0"), 
                           year(model_days), sep = "/")
 
+# Multiply the k_c by the demand multiplier (if irr_demand_mult!= 1, assumes land use change from alfalfa)
+kc_alfalfa_df$kc_alf_days = kc_alfalfa_df$kc_alf_days * irr_demand_mult
+
 #write alfalfa kc file
 write.table(kc_alfalfa_df, file = file.path(SWBM_file_dir, "kc_alfalfa.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
@@ -189,6 +198,9 @@ kc_pasture_df = data.frame(kc_pas_days)
 kc_pasture_df$day = paste(str_pad(day(model_days), 2, pad = "0"), 
                           str_pad(month(model_days), 2, pad = "0"), 
                           year(model_days), sep = "/")
+
+# Multiply the k_c by the demand multiplier (if irr_demand_mult!= 1, assumes land use change from pasture)
+kc_pasture_df$kc_pas_days = kc_pasture_df$kc_pas_days * irr_demand_mult
 
 #write pasture kc file
 write.table(kc_pasture_df, file = file.path(SWBM_file_dir, "kc_pasture.txt"),
@@ -240,6 +252,9 @@ kc_grain_df = data.frame(kc_grain_days)
 kc_grain_df$day = paste(str_pad(day(model_days), 2, pad = "0"), 
                           str_pad(month(model_days), 2, pad = "0"), 
                           year(model_days), sep = "/")
+
+# Multiply the k_c by the demand multiplier (if irr_demand_mult!= 1, assumes land use change from grain)
+kc_grain_df$kc_grain_days = kc_grain_df$kc_grain_days * irr_demand_mult
 
 #write grain kc file
 write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
@@ -584,6 +599,17 @@ file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 # Scratch work ------------------------------------------------------------
 
 # #plot DWR_1 through 5
@@ -605,7 +631,7 @@ file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 # pointLabel(dwr_not_in@coords, labels = dwr_in$Well_ID_2)
 # write.csv(mon@data, file.path(ref_data_dir, "Monitoring_Wells_Names.csv"), row.names = F)
 # 
-# ####################################
+#. ####################################
 # # Original Precip File Writing attempt
 # #to do: web scraper
 # # CDEC data
@@ -690,7 +716,7 @@ file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 #             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 # 
 # 
-# ############################################
+#. ############################################
 # # Initial RefET writing attempt
 # #to do: webscrape cimis? (login?)
 # #units? 
