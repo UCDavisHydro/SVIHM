@@ -19,11 +19,11 @@ rm(list = ls())
 
 #Define directories
 svihm_dir = dirname(dirname(dirname(getActiveDocumentContext()$path ))) #Outer SVIHM folder
-scenario_dir = file.path(svihm_dir,"SWBM")
+swbm_scenario_dir = file.path(svihm_dir,"SWBM")
 ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
 output_dir = file.path(svihm_dir,"SVIHM_Input_Files","Scenario_Development")
 # pdf_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops/2019.09.17 GRA WGC/Figures"
-pdf_dir = file.path(scenario_dir,"")#,"comparison_pdfs")
+pdf_dir = "C:/Users/Claire/Box/Siskiyou_ALL/Outreach/2020.09.16 Scott and Shasta AC meetings/figures"
 
 
 # Functions ---------------------------------------------------------------
@@ -79,6 +79,8 @@ make_legend_symbol_table = function(){
 #   return(components)
 # }
 
+
+# SWBM functions ----------------------------------------------------------
 
 plot_water_budget_overview = function(mwb, scenario_name, output_type = "pdf"){
   #Label budget components
@@ -418,41 +420,46 @@ barplots_comparison = function(scenario_totals){
 }
 
 
+
+# MODFLOW functions -------------------------------------------------------
+
+
+
 # Read in scenario budgets ------------------------------------------------
 
 #Read in SWBM scenario outputs: monthly water budget 
 
-monthly_water_budget_basecase = read.table(file.path(scenario_dir,"basecase","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_basecase = read.table(file.path(swbm_scenario_dir,"basecase","monthly_water_budget.dat"), header = TRUE)
 mwb_basecase = monthly_water_budget_basecase
 
 #Read in reduced irrigation demand scenarios
-monthly_water_budget_irrdem_0.9 = read.table(file.path(scenario_dir,"irrig_0.9","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_irrdem_0.9 = read.table(file.path(swbm_scenario_dir,"irrig_0.9","monthly_water_budget.dat"), header = TRUE)
 mwb_i0.9 = monthly_water_budget_irrdem_0.9
 
-monthly_water_budget_irrdem_0.8 = read.table(file.path(scenario_dir,"irrig_0.8","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_irrdem_0.8 = read.table(file.path(swbm_scenario_dir,"irrig_0.8","monthly_water_budget.dat"), header = TRUE)
 mwb_i0.8 = monthly_water_budget_irrdem_0.8
 
 #Read in recharge scenarios (with no flow limits)
-monthly_water_budget_mar = read.table(file.path(scenario_dir,"mar","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_mar = read.table(file.path(swbm_scenario_dir,"mar","monthly_water_budget.dat"), header = TRUE)
 mwb_mar = monthly_water_budget_mar
 
-monthly_water_budget_ilr = read.table(file.path(scenario_dir,"ilr","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_ilr = read.table(file.path(swbm_scenario_dir,"ilr","monthly_water_budget.dat"), header = TRUE)
 mwb_ilr = monthly_water_budget_ilr
 
-monthly_water_budget_mar_ilr = read.table(file.path(scenario_dir,"mar_ilr","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_mar_ilr = read.table(file.path(swbm_scenario_dir,"mar_ilr","monthly_water_budget.dat"), header = TRUE)
 mwb_mar_ilr = monthly_water_budget_mar_ilr 
 
 #Read in flow-limits scenarios
-monthly_water_budget_flowlims = read.table(file.path(scenario_dir,"flowlims","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_flowlims = read.table(file.path(swbm_scenario_dir,"flowlims","monthly_water_budget.dat"), header = TRUE)
 mwb_fl = monthly_water_budget_flowlims # Flow lims, no MAR or ILR
 
-monthly_water_budget_mar_flowlim = read.table(file.path(scenario_dir,"mar_flowlims","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_mar_flowlim = read.table(file.path(swbm_scenario_dir,"mar_flowlims","monthly_water_budget.dat"), header = TRUE)
 mwb_mar_fl = monthly_water_budget_mar_flowlim# Flow lims, MAR recharge
 
-monthly_water_budget_ilr_flowlim = read.table(file.path(scenario_dir,"ilr_flowlims","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_ilr_flowlim = read.table(file.path(swbm_scenario_dir,"ilr_flowlims","monthly_water_budget.dat"), header = TRUE)
 mwb_ilr_fl = monthly_water_budget_mar_flowlim# Flow lims, ILR recharge
 
-monthly_water_budget_mar_ilr_flowlim = read.table(file.path(scenario_dir,"mar_ilr_flowlims","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_mar_ilr_flowlim = read.table(file.path(swbm_scenario_dir,"mar_ilr_flowlims","monthly_water_budget.dat"), header = TRUE)
 mwb_mar_ilr_fl = monthly_water_budget_mar_ilr_flowlim # Flow lims with MAR_ILR
 
 
@@ -517,9 +524,9 @@ mwbs = list(mwb_basecase, mwb_i0.9, mwb_i0.8)
 scenario_ids = c("basecase","irrig_0.9","irrig_0.8")
 
 
-mwbs = list(mwb_basecase, mwb_mar, mwb_ilr, mwb_mar_ilr, 
-            mwb_fl, mwb_mar_fl, mwb_ilr_fl, mwb_mar_ilr_fl)
-scenario_ids = c("basecase","mar","ilr","mar_ilr","flowlims","mar_flowlim", "ilr_flowlim", "mar_ilr_flowlim")
+# mwbs = list(mwb_basecase, mwb_mar, mwb_ilr, mwb_mar_ilr, 
+#             mwb_fl, mwb_mar_fl, mwb_ilr_fl, mwb_mar_ilr_fl)
+# scenario_ids = c("basecase","mar","ilr","mar_ilr","flowlims","mar_flowlim", "ilr_flowlim", "mar_ilr_flowlim")
 
 #Aggregate to overall totals, annual totals
 scenario_totals_allyrs = budget_overall(mwbs, scenario_ids)
@@ -530,7 +537,7 @@ barplots_overall(scenario_totals_allyrs)
 # barplots_comparison(scenario_totals_allyrs)
 
 
-# Geeta manuscript figures ------------------------------------------------
+# SWBM overall, one plot, dodged barplot ------------------------------------------------
 
 #Plot overall, full-model-period barplots
 fig_file_name = "budget_overall_dodge2.png"
@@ -1073,33 +1080,33 @@ convertGraph(from = "C:/Users/ckouba/Documents/UCD/_Coursework/2019_Q1_Winter/EC
 #Read in Scenario A (extreme days algorithm; Nov 2019)
 
 # #Read in Scenario As
-# monthly_water_budget_sca10 = read.table(file.path(scenario_dir,"pvar_a10","monthly_water_budget.dat"), header = TRUE)
+# monthly_water_budget_sca10 = read.table(file.path(swbm_scenario_dir,"pvar_a10","monthly_water_budget.dat"), header = TRUE)
 # mwb_sca10 = monthly_water_budget_sca10
 # 
-# monthly_water_budget_sca05 = read.table(file.path(scenario_dir,"pvar_a05","monthly_water_budget.dat"), header = TRUE)
+# monthly_water_budget_sca05 = read.table(file.path(swbm_scenario_dir,"pvar_a05","monthly_water_budget.dat"), header = TRUE)
 # mwb_sca05 = monthly_water_budget_sca05
 # 
-# monthly_water_budget_sca03 = read.table(file.path(scenario_dir,"pvar_a03","monthly_water_budget.dat"), header = TRUE)
+# monthly_water_budget_sca03 = read.table(file.path(swbm_scenario_dir,"pvar_a03","monthly_water_budget.dat"), header = TRUE)
 # mwb_sca03 = monthly_water_budget_sca03
 # 
 # #Read in Scenario Bs
-# monthly_water_budget_scb70 = read.table(file.path(scenario_dir,"pvar_b70","monthly_water_budget.dat"), header = TRUE)
+# monthly_water_budget_scb70 = read.table(file.path(swbm_scenario_dir,"pvar_b70","monthly_water_budget.dat"), header = TRUE)
 # mwb_scb70 = monthly_water_budget_scb70
 # 
-# monthly_water_budget_scb80 = read.table(file.path(scenario_dir,"pvar_b80","monthly_water_budget.dat"), header = TRUE)
+# monthly_water_budget_scb80 = read.table(file.path(swbm_scenario_dir,"pvar_b80","monthly_water_budget.dat"), header = TRUE)
 # mwb_scb80 = monthly_water_budget_scb80
 # 
-# monthly_water_budget_scb90 = read.table(file.path(scenario_dir,"pvar_b90","monthly_water_budget.dat"), header = TRUE)
+# monthly_water_budget_scb90 = read.table(file.path(swbm_scenario_dir,"pvar_b90","monthly_water_budget.dat"), header = TRUE)
 # mwb_scb90 = monthly_water_budget_scb90
 # 
 # #Read in Scenario Cs
-# monthly_water_budget_scc10 = read.table(file.path(scenario_dir,"pvar_c10","monthly_water_budget.dat"), header = TRUE)
+# monthly_water_budget_scc10 = read.table(file.path(swbm_scenario_dir,"pvar_c10","monthly_water_budget.dat"), header = TRUE)
 # mwb_scc10 = monthly_water_budget_scc10
 # 
-# monthly_water_budget_scc20 = read.table(file.path(scenario_dir,"pvar_c20","monthly_water_budget.dat"), header = TRUE)
+# monthly_water_budget_scc20 = read.table(file.path(swbm_scenario_dir,"pvar_c20","monthly_water_budget.dat"), header = TRUE)
 # mwb_scc20 = monthly_water_budget_scc20
 # 
-# monthly_water_budget_scc30 = read.table(file.path(scenario_dir,"pvar_c30","monthly_water_budget.dat"), header = TRUE)
+# monthly_water_budget_scc30 = read.table(file.path(swbm_scenario_dir,"pvar_c30","monthly_water_budget.dat"), header = TRUE)
 # mwb_scc30 = monthly_water_budget_scc30
 
 
