@@ -13,12 +13,12 @@ library(rpostgis)
 # rm(list = ls())
 
 # Scenario Selection ------------------------------------------------------
-recharge_scenario = "Basecase" # Can be Basecase/MAR/ILR/MAR_ILR
+recharge_scenario = "ILR" # Can be Basecase/MAR/ILR/MAR_ILR
 flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
-irr_demand_mult = 0.9 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
+irr_demand_mult = 1 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
 
 # Scenario name for SWBM and MODFLOW
-scenario_name = "irrig_0.9"
+scenario_name = "ilr"
 
 
 # SETUP -------------------------------------------------------------------
@@ -37,14 +37,15 @@ if(isRStudio == FALSE){ library(here); svihm_dir <- dirname(here::here("Update_S
 ## Data used in update
 Stream_Regression_dir = file.path(svihm_dir, "Streamflow_Regression_Model")
 input_files_dir = file.path(svihm_dir, "SVIHM_Input_Files")
-scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
 time_indep_dir = file.path(svihm_dir, "SVIHM_Input_Files", "time_independent_input_files")
 ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
 ## Directory used to archive the precip and ET files for different scenarios
 scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
 # Directory for connecting to the database
 dms_dir = file.path(dirname(svihm_dir), "SiskiyouGSP2022", "Data_Management_System")
-#Connect to Siskiyou DB (for generating precip and eventually ET and streamflow)
+# Folder for collecting outputs from various scenarios for comparison plots
+results_dir = file.path(svihm_dir, "R_Files","Post-Processing","Results")
+#Connect to Siskiyou DB (for generating SVIHM.hob. And precip, eventually ET and streamflow)
 source(file.path(dms_dir, "connect_to_db.R"))
 
 ## Directories for running the scenarios (files copied at end of script)
@@ -598,8 +599,17 @@ for(i in 1:num_stress_periods){
 file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 
 
+# OPERATOR: RUN MODFLOW ------------------------------------------------------
 
 
+# OPTIONAL: copy output to Results folder for post-processing -------------
+
+file.copy(from = file.path(MF_file_dir,"Streamflow_FJ_SVIHM.dat"), 
+          to = file.path(results_dir,paste0("Streamflow_FJ_SVIHM_",scenario_name,".dat")))
+file.copy(from = file.path(MF_file_dir,"SVIHM.sfr"), 
+          to = file.path(results_dir,paste0("SVIHM_",scenario_name,".sfr")))
+file.copy(from = file.path(svihm_dir,"SWBM",scenario_name,"monthly_groundwater_by_luse.dat"), 
+          to = file.path(results_dir,paste0("monthly_groundwater_by_luse_",scenario_name,".dat")))
 
 
 
