@@ -17,26 +17,26 @@ graphics_type = 'png'    #output type for graphics, currently pdf or png
 #############################################################################################
 ############################             IMPORT DATA             ############################
 #############################################################################################
-FJ_Basecase_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                         # Import Basecase flow data
-                           Flow_m3day = read.table('Streamflow_FJ_SVIHM.dat', skip = 2)[,3],
-                           Flow_cfs = read.table('Streamflow_FJ_SVIHM.dat', skip = 2)[,3]*0.000408734569)
-FJ_MAR_flow = data.frame(#Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                              # Import MAR flow data
+FJ_Basecase_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2018/9/30"), "days"),                         # Import Basecase flow data
+                           Flow_m3day = read.table('Streamflow_FJ_SVIHM_basecase.dat', skip = 2)[,3],
+                           Flow_cfs = read.table('Streamflow_FJ_SVIHM_basecase.dat', skip = 2)[,3]*0.000408734569)
+FJ_MAR_flow = data.frame(#Date = seq(as.Date("1990/10/1"), as.Date("2018/9/30"), "days"),                              # Import MAR flow data
                            Flow_m3day = read.table('Streamflow_FJ_SVIHM_MAR.dat', skip = 2)[,3],
                            Flow_cfs = read.table('Streamflow_FJ_SVIHM_MAR.dat', skip = 2)[,3]*0.000408734569)
-FJ_ILR_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                              # Import ILR flow data
+FJ_ILR_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2018/9/30"), "days"),                              # Import ILR flow data
                            Flow_m3day = read.table('Streamflow_FJ_SVIHM_ILR.dat', skip = 2)[,3],
                            Flow_cfs = read.table('Streamflow_FJ_SVIHM_ILR.dat', skip = 2)[,3]*0.000408734569)
-FJ_MAR_ILR_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"),                          # Import MAR_ILR flow data
+FJ_MAR_ILR_flow = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2018/9/30"), "days"),                          # Import MAR_ILR flow data
                          Flow_m3day = read.table('Streamflow_FJ_SVIHM_MAR_ILR.dat', skip = 2)[,3],
                          Flow_cfs = read.table('Streamflow_FJ_SVIHM_MAR_ILR.dat', skip = 2)[,3]*0.000408734569)
 
-Inflow_Basecase = readLines('SVIHM.sfr')
+Inflow_Basecase = readLines('SVIHM_basecase.sfr')
 Inflow_Seg1_Basecase = as.numeric(sapply(lapply(strsplit(Inflow_Basecase[grep(x = Inflow_Basecase, pattern = '1  1  3  0')],' '),function(x){x[!x ==""]}),"[[",5))
-MODFLOW_Seg1_Inflows = data.frame(Date = seq(as.Date("1990/10/1"), by = "month", length.out = 252),
+MODFLOW_Seg1_Inflows = data.frame(Date = seq(as.Date("1990/10/1"), by = "month", length.out = 336),
                                   Basecase = Inflow_Seg1_Basecase)
 
 Inflow_Seg32_Basecase = as.numeric(sapply(lapply(strsplit(Inflow_Basecase[grep(x = Inflow_Basecase, pattern = '32  1  0  10  0')],' '),function(x){x[!x ==""]}),"[[",6))
-MODFLOW_Seg32_Inflows = data.frame(Date = seq(as.Date("1990/10/1"), by = "month", length.out = 252),
+MODFLOW_Seg32_Inflows = data.frame(Date = seq(as.Date("1990/10/1"), by = "month", length.out = 336),
                                   Basecase = Inflow_Seg32_Basecase)
 if (COMPARE_MAR==TRUE){
   Inflow_MAR = readLines('SVIHM_MAR.sfr')
@@ -75,15 +75,15 @@ if (COMPARE_MAR_ILR==TRUE){
   MODFLOW_Seg32_Inflows$MAR_ILR_diff = Inflow_Seg32_MAR_ILR_diff
   }
 
-pumping_bc = read.table('monthly_groundwater_by_luse.dat', header = T)
+pumping_bc = read.table('monthly_groundwater_by_luse_basecase.dat', header = T)
 pumping_MAR = read.table('monthly_groundwater_by_luse_MAR.dat', header = T)
 pumping_ILR = read.table('monthly_groundwater_by_luse_ILR.dat', header = T)
 pumping_MAR_ILR = read.table('monthly_groundwater_by_luse_MAR_ILR.dat', header = T)
 
-pumping_bc$Stress_Period = rep(seq(1991,2011),each = 12)
-pumping_MAR$Stress_Period = rep(seq(1991,2011),each = 12)
-pumping_ILR$Stress_Period = rep(seq(1991,2011),each = 12)
-pumping_MAR_ILR$Stress_Period = rep(seq(1991,2011),each = 12)
+pumping_bc$Stress_Period = rep(seq(1991,2018),each = 12)
+pumping_MAR$Stress_Period = rep(seq(1991,2018),each = 12)
+pumping_ILR$Stress_Period = rep(seq(1991,2018),each = 12)
+pumping_MAR_ILR$Stress_Period = rep(seq(1991,2018),each = 12)
 
 pumping_bc = aggregate(.~Stress_Period, pumping_bc, FUN = sum)
 pumping_bc = rowSums(pumping_bc[,-1])*0.000000810714
@@ -95,7 +95,7 @@ pumping_MAR_ILR = aggregate(.~Stress_Period, pumping_MAR_ILR, FUN = sum)
 pumping_MAR_ILR = rowSums(pumping_MAR_ILR[,-1])*0.000000810714
 
 MAR_pumping_diff = pumping_bc - pumping_MAR
-ILR_GW_Reduction = data.frame(Year=seq(1991,2011),
+ILR_GW_Reduction = data.frame(Year=seq(1991,2018),
                               Reduction_TAF = (pumping_bc - pumping_ILR),
                               Reduction_pct = (pumping_bc - pumping_ILR)/pumping_bc*100)
 
@@ -105,7 +105,7 @@ MAR_ILR_pumping_diff = pumping_bc - pumping_MAR_ILR
 #############################################################################################
 ##########################             DATA PROCESSING             ##########################
 #############################################################################################
-Flow_Diff_Daily = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2011/9/30"), "days"))                          # Calculate daily difference from basecase condition
+Flow_Diff_Daily = data.frame(Date = seq(as.Date("1990/10/1"), as.Date("2018/9/30"), "days"))                          # Calculate daily difference from basecase condition
 if (COMPARE_MAR==TRUE){
   Flow_Diff_Daily$MAR_difference_m3day = FJ_MAR_flow$Flow_m3day - FJ_Basecase_flow$Flow_m3day
   Flow_Diff_Daily$MAR_difference_cfs = FJ_MAR_flow$Flow_cfs - FJ_Basecase_flow$Flow_cfs
@@ -162,7 +162,7 @@ MAR_ILR_geom_ribbon_data = data.frame(x = c(1,2,3,MAR_ILR_xintercept_1_cfs,4,MAR
 #############################################################################################
 ########################             MODFLOW INPUT PLOTS             ########################
 #############################################################################################
-MODFLOW_Seg1_Inflows_diff_melt = melt(MODFLOW_Seg1_Inflows%>%select('Date','MAR_diff','ILR_diff','MAR_ILR_diff'),id.vars = 'Date')
+MODFLOW_Seg1_Inflows_diff_melt = reshape2::melt(MODFLOW_Seg1_Inflows%>%select('Date','MAR_diff','ILR_diff','MAR_ILR_diff'),id.vars = 'Date')
 (Seg1_Inflow_diff_Plot = ggplot(data = MODFLOW_Seg1_Inflows_diff_melt, aes(x = Date, y = value*0.000408734569, group = variable, color = variable)) +
     geom_line() +
     geom_point() +
@@ -171,7 +171,7 @@ MODFLOW_Seg1_Inflows_diff_melt = melt(MODFLOW_Seg1_Inflows%>%select('Date','MAR_
                  breaks = seq(as.Date("1990/10/1"), by = "2 years", length.out = 22), expand = c(0,0),
                  date_labels = ('%b-%y'))
   )
-MODFLOW_Seg32_Inflows_diff_melt = melt(MODFLOW_Seg32_Inflows%>%select('Date','MAR_diff','ILR_diff','MAR_ILR_diff'),id.vars = 'Date')
+MODFLOW_Seg32_Inflows_diff_melt = reshape2::melt(MODFLOW_Seg32_Inflows%>%select('Date','MAR_diff','ILR_diff','MAR_ILR_diff'),id.vars = 'Date')
 (Seg32_Inflow_diff_Plot = ggplot(data = MODFLOW_Seg32_Inflows_diff_melt, aes(x = Date, y = value*0.000408734569, group = variable, color = variable)) +
     geom_line() +
     geom_point() +

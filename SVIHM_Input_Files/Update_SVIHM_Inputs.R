@@ -14,11 +14,11 @@ library(rpostgis)
 
 # Scenario Selection ------------------------------------------------------
 recharge_scenario = "ILR" # Can be Basecase/MAR/ILR/MAR_ILR
-flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
+flow_scenario = "Flow_Lims" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
 irr_demand_mult = 1 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
 
 # Scenario name for SWBM and MODFLOW
-scenario_name = "ilr"
+scenario_name = "ilr_flowlims" #also makes the directory name; must match folder
 
 
 # SETUP -------------------------------------------------------------------
@@ -608,7 +608,7 @@ file.copy(from = file.path(MF_file_dir,"Streamflow_FJ_SVIHM.dat"),
           to = file.path(results_dir,paste0("Streamflow_FJ_SVIHM_",scenario_name,".dat")))
 file.copy(from = file.path(MF_file_dir,"SVIHM.sfr"), 
           to = file.path(results_dir,paste0("SVIHM_",scenario_name,".sfr")))
-file.copy(from = file.path(svihm_dir,"SWBM",scenario_name,"monthly_groundwater_by_luse.dat"), 
+file.copy(from = file.path(SWBM_file_dir,"monthly_groundwater_by_luse.dat"), 
           to = file.path(results_dir,paste0("monthly_groundwater_by_luse_",scenario_name,".dat")))
 
 

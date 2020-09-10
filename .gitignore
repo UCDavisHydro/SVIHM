@@ -65,5 +65,8 @@ MODFLOW/mar
 MODFLOW/ilr
 MODFLOW/mar_ilr
 MODFLOW/mar_ilr_flowlims
+MODFLOW/flowlims
+MODFLOW/mar_flowlims
+MODFLOW/ilr_flowlims
 MODFLOW/irrig_0.8
 MODFLOW/irrig_0.9

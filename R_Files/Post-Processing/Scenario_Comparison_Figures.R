@@ -524,9 +524,9 @@ mwbs = list(mwb_basecase, mwb_i0.9, mwb_i0.8)
 scenario_ids = c("basecase","irrig_0.9","irrig_0.8")
 
 
-# mwbs = list(mwb_basecase, mwb_mar, mwb_ilr, mwb_mar_ilr, 
-#             mwb_fl, mwb_mar_fl, mwb_ilr_fl, mwb_mar_ilr_fl)
-# scenario_ids = c("basecase","mar","ilr","mar_ilr","flowlims","mar_flowlim", "ilr_flowlim", "mar_ilr_flowlim")
+mwbs = list(mwb_basecase, mwb_mar, mwb_ilr, mwb_mar_ilr,
+            mwb_fl, mwb_mar_fl, mwb_ilr_fl, mwb_mar_ilr_fl)
+scenario_ids = c("basecase","mar","ilr","mar_ilr","flowlims","mar_flowlim", "ilr_flowlim", "mar_ilr_flowlim")
 
 #Aggregate to overall totals, annual totals
 scenario_totals_allyrs = budget_overall(mwbs, scenario_ids)
