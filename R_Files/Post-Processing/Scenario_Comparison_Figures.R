@@ -432,6 +432,12 @@ barplots_comparison = function(scenario_totals){
 monthly_water_budget_basecase = read.table(file.path(swbm_scenario_dir,"basecase","monthly_water_budget.dat"), header = TRUE)
 mwb_basecase = monthly_water_budget_basecase
 
+# Read in alfalfa irrigation schedule change scenarios
+
+monthly_water_budget_alf_stop_jul10 = read.table(file.path(swbm_scenario_dir,"alf_irr_stop_jul10","monthly_water_budget.dat"), header = TRUE)
+mwb_asjul10 = monthly_water_budget_alf_stop_jul10
+
+
 #Read in reduced irrigation demand scenarios
 monthly_water_budget_irrdem_0.9 = read.table(file.path(swbm_scenario_dir,"irrig_0.9","monthly_water_budget.dat"), header = TRUE)
 mwb_i0.9 = monthly_water_budget_irrdem_0.9
@@ -493,6 +499,8 @@ plot_water_budget_overview(mwb_ilr_fl, "ILR with CDFW limits", output_type = "pn
 plot_water_budget_overview(mwb_mar_ilr_fl, "MAR and ILR with CDFW limits", output_type = "png")
 
 plot_water_budget_overview(mwb_i0.8, "80 percent Irrigation Demand", output_type = "png")
+
+plot_water_budget_overview(mwb_asjul10, "Alfalfa Irrigation ends Jul 10", output_type = "png")
 
 
 # Comparison plots
