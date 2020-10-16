@@ -50,6 +50,7 @@ SWBM/ilr_flowlims
 SWBM/mar_ilr_flowlims
 SWBM/irrig_0.8
 SWBM/irrig_0.9
+SWBM/alf_irr_stop_jul10
 MODFLOW/basecase
 MODFLOW/pvar_a03
 MODFLOW/pvar_a05
@@ -70,3 +71,4 @@ MODFLOW/mar_flowlims
 MODFLOW/ilr_flowlims
 MODFLOW/irrig_0.8
 MODFLOW/irrig_0.9
+MODFLOW/alf_irr_stop_jul10

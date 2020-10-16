@@ -29,7 +29,8 @@
   
   IMPLICIT NONE
 
-  INTEGER  :: nmonth, imonth,jday,i,im,ip, nrows, ncols, dummy, nsegs, n_wel_param, num_daily_out, unit_num, num_MAR_fields
+  INTEGER  :: nmonth, imonth, jday, i, im, ip, nrows, ncols
+  INTEGER  :: dummy, nsegs, n_wel_param, num_daily_out, unit_num, num_MAR_fields, alf_irr_stop_mo, alf_irr_stop_day
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
   INTEGER, ALLOCATABLE, DIMENSION(:)   :: MAR_fields, ip_daily_out
   REAL   :: precip, Total_Ref_ET, MAR_vol
@@ -49,7 +50,8 @@
   Total_Ref_ET = 0.
   
   open(unit=10, file='general_inputs.txt', status='old')
-  read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template, rch_scenario, flow_scenario
+  read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template
+  read(10, *) rch_scenario, flow_scenario, alf_irr_stop_mo, alf_irr_stop_day
   if (trim(rch_scenario)=='basecase' .or. trim(rch_scenario)=='Basecase' .or. trim(rch_scenario)=='BASECASE') then            ! Set logicals for Recharge Scenario type
     MAR_active=  .FALSE.  
     ILR_active = .FALSE.
@@ -127,6 +129,7 @@
   close(888)
   
   call READ_KC_IRREFF                                ! Read in crop coefficients and irrigation efficiencies
+  call read_scenario_specs                           ! Read management actionsfor this scenario
   call readpoly(npoly, nrows, ncols, output_zone_matrix) ! Read in field info
   call read_well                                     ! Read in well info
   
@@ -313,7 +316,7 @@
      endif    
      read(220,*) drain_flow(im)                       ! Read drain flow into array
      if(instream_limits_active) then                  
-      read(216, *) available_instream_flow_ratio(im)        ! Read available instream flow ratio (percentage of divertible trib flow) into array
+      read(216, *) available_instream_flow_ratio(im)        ! Read monthly available instream flow ratio (% of divertible trib flow) into array
      end if
      call read_streamflow(ndays(im), instream_limits_active, available_instream_flow_ratio(im))     ! Read in streamflow inputs
 

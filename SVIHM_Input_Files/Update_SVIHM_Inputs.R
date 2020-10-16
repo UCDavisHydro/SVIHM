@@ -13,12 +13,23 @@ library(rpostgis)
 # rm(list = ls())
 
 # Scenario Selection ------------------------------------------------------
-recharge_scenario = "ILR" # Can be Basecase/MAR/ILR/MAR_ILR
-flow_scenario = "Flow_Lims" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
+recharge_scenario = "Basecase" # Can be Basecase/MAR/ILR/MAR_ILR
+flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
+# Irrigation demand: Different from the kc_CROP_mult values in crop_coeff_mult.txt, which is used for calibrating.
 irr_demand_mult = 1 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
+# Month and day of the final day of alfalfa irrigation season. 
+# Default is Aug 31, 8/31
+alf_irr_stop_mo = 7 # Month as month of year (7 = July)
+alf_irr_stop_day = 10 
+# Convert to month of wy (Oct=1, Nov=2, ..., Jul = 10, Aug=11, Sep=0)
+if(alf_irr_stop_mo<9){
+  alf_irr_stop_mo = alf_irr_stop_mo + 3
+}else{
+  alf_irr_stop_mo = alf_irr_stop_mo - 9
+}
 
 # Scenario name for SWBM and MODFLOW
-scenario_name = "ilr_flowlims" #also makes the directory name; must match folder
+scenario_name = "alf_irr_stop_jul10" #also makes the directory name; must match folder
 
 
 # SETUP -------------------------------------------------------------------
@@ -132,10 +143,19 @@ write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_initial_m3day
 
 #  general_inputs.txt ------------------------------------------------
 
-#Update number of stress periods
-gen_inputs = c(paste("2119  167", num_stress_periods, "440  210  1.4 UCODE", 
-            recharge_scenario,flow_scenario, irr_demand_mult, sep = "  "),
-"! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims, irr_demand_mult")
+#Update number of stress periods and scenario information
+# Does not include irr_demand_mult, since that gets incorporated into the kc files
+gen_inputs = c(
+  paste("2119  167", num_stress_periods, 
+        "440  210  1.4 UCODE",
+        "! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST", 
+        sep = "  "),
+  paste(recharge_scenario, flow_scenario,     
+        alf_irr_stop_mo, alf_irr_stop_day,
+        "! Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims, alf_irr_stop_mo  alf_irr_stop_day",
+        sep = "  ")
+  )
+
 write.table(gen_inputs, file = file.path(SWBM_file_dir, "general_inputs.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
@@ -485,6 +505,8 @@ for (i in 1:num_stress_periods){
 
 #Currently, hacking in a hard-coded contour drive on my local computer. non-transferrable.
 #To do: pull wl down from the damn data base eventually!
+
+
 ### TO DO: Join additional wells to the model grid and add their well loc. info to reference hob_info table.
 
 ### 1) Get a cleaned water level dataframe
@@ -604,8 +626,27 @@ file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 
 # OPTIONAL: copy output to Results folder for post-processing -------------
 
-file.copy(from = file.path(MF_file_dir,"Streamflow_FJ_SVIHM.dat"), 
-          to = file.path(results_dir,paste0("Streamflow_FJ_SVIHM_",scenario_name,".dat")))
+# # Scenario Selection ------------------------------------------------------
+# recharge_scenario = "Basecase" # Can be Basecase/MAR/ILR/MAR_ILR
+# flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
+# irr_demand_mult = 0.9 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
+# 
+# # Scenario name for SWBM and MODFLOW
+# scenario_name = "irrig_0.9" #also makes the directory name; must match folder
+# 
+# ## Directories for running the scenarios (files copied at end of script)
+# 
+# SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
+# MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
+
+#Copy flow tables on the mainstem
+# file.copy(from = file.path(MF_file_dir,"Streamflow_FJ_SVIHM.dat"), 
+#           to = file.path(results_dir,paste0("Streamflow_FJ_SVIHM_",scenario_name,".dat")))
+file.copy(from = file.path(MF_file_dir,"Streamflow_Pred_Loc_2.dat"), 
+          to = file.path(results_dir,paste0("Streamflow_Pred_Loc_2_",scenario_name,".dat")))
+file.copy(from = file.path(MF_file_dir,"Streamflow_Pred_Loc_3.dat"), 
+          to = file.path(results_dir,paste0("Streamflow_Pred_Loc_3_",scenario_name,".dat")))
+
 file.copy(from = file.path(MF_file_dir,"SVIHM.sfr"), 
           to = file.path(results_dir,paste0("SVIHM_",scenario_name,".sfr")))
 file.copy(from = file.path(SWBM_file_dir,"monthly_groundwater_by_luse.dat"), 

@@ -61,7 +61,7 @@ MODULE irrigationmodule
 
   SUBROUTINE IRRIGATION(ip, imonth, jday, eff_precip)
 
-  INTEGER :: imonth, jday
+  INTEGER :: imonth, jday, alf_irr_stop_mo, alf_irr_stop_day 
   INTEGER, INTENT(in) :: ip
   DOUBLE PRECISION, INTENT(in) :: eff_precip
   REAL             :: irreff_wl, irreff_cp
@@ -75,7 +75,9 @@ MODULE irrigationmodule
         daily(ip)%evapotrasp=REF_ET*Kc_alfalfa*kc_alfalfa_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
         irreff_cp = irreff_cp_LU25
-        if ((imonth==6 .and. jday.ge.25 ) .or. (imonth>6)) then  ! If  March 25 - August 31
+        if ((imonth==6 .and. jday.ge.25) .or. & ! If  March 25 - end of alfalfa irrigation season. Default is August 31. Covers alfalfa irrigation stop April-Nov. 
+          (alf_irr_stop_mo>6 .and. imonth>6 .and. imonth.le.alf_irr_stop_mo .and. jday.le.alf_irr_stop_day) .or. & ! If during season, when Alf Irr stops Apr1-Aug31, (imonths 7-11)
+          (alf_irr_stop_mo<3 .and. imonth<3 .and. imonth.le.alf_irr_stop_mo .and. jday.le.alf_irr_stop_day)) then  ! If during season, when Alf Irr stops Sep-Nov, (imonths 0-2)
           if ((daily(ip)%moisture.LT.(0.625*poly(ip)%WC8)) .or. (imonth==8 .and. jday.ge.15) .or. (imonth>8) .or. irrigating) then  ! If soil moisture is < 37.5% total soil moisture storage, or after May 15th, or 20% of fields have started irrigating  
             call IRRIGATION_RULESET(imonth, jday, ip, irreff_wl, irreff_cp, eff_precip)
           end if
@@ -303,7 +305,7 @@ MODULE irrigationmodule
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   SUBROUTINE IRRIGATION_ILR(ip, imonth, jday, eff_precip)
 
-  INTEGER                      :: imonth, jday
+  INTEGER                      :: imonth, jday, alf_irr_stop_mo, alf_irr_stop_day
   INTEGER, INTENT(in)          :: ip
   DOUBLE PRECISION, INTENT(in) :: eff_precip
   REAL                         :: irreff_wl, irreff_cp
@@ -328,7 +330,9 @@ MODULE irrigationmodule
         daily(ip)%evapotrasp=REF_ET*Kc_alfalfa*kc_alfalfa_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU25
         irreff_cp = irreff_cp_LU25
-        if ((imonth==6 .and. jday.ge.25 ) .or. (imonth>6)) then  ! If  March 25 - August 31
+        if ((imonth==6 .and. jday.ge.25) .or. & ! If  March 25 - end of alfalfa irrigation season. Default is August 31. Covers alfalfa irrigation stop April-Nov. 
+          (alf_irr_stop_mo>6 .and. imonth>6 .and. imonth.le.alf_irr_stop_mo .and. jday.le.alf_irr_stop_day) .or. & ! If during season, when Alf Irr stops Apr1-Aug31, (imonths 7-11)
+          (alf_irr_stop_mo<3 .and. imonth<3 .and. imonth.le.alf_irr_stop_mo .and. jday.le.alf_irr_stop_day)) then  ! If during season, when Alf Irr stops Sep-Nov, (imonths 0-2)
           if ((daily(ip)%moisture.LT.(0.625*poly(ip)%WC8)) .or. (imonth==8 .and. jday.ge.15) .or. (imonth>8) .or. irrigating) then  ! If soil moisture is < 37.5% total soil moisture storage, or after May 15th, or 20% of fields have started irrigating  
             call IRRIGATION_RULESET_ILR(imonth, jday, ip, irreff_wl, irreff_cp, eff_precip)
           end if
