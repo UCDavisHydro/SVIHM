@@ -925,35 +925,35 @@ write_swbm_et_input_file=function(){
 # average is 21.0, and fj_interp annual average is 20.7.
 #This has dropped by 0.5 and 0.5, respectively.
 
-##_Color-code which station used to gap-fill -------------------------------
-## First: generate p_record going line-by-line through the "get_daily_precip_table()" function
-# x_labs = p_record$Date
-# keep_these = month(x_labs) == 10 & day(x_labs) == 1 & (year(x_labs) %% 5 == 0)
-# x_labs = x_labs[keep_these]
+#_Color-code which station used to gap-fill -------------------------------
+# First: generate p_record going line-by-line through the "get_daily_precip_table()" function
+x_labs = p_record$Date
+keep_these = month(x_labs) == 10 & day(x_labs) == 1 & (year(x_labs) %% 5 == 0)
+x_labs = x_labs[keep_these]
 # x_labs[!keep_these] = NA
-# 
-# barplot(height = p_record$fj_interp, width = .81,
-#         border = p_record$fj_interp_color,
-#         xaxt = "n", xlim = c(0,length(p_record$fj_interp)))
-# axis(side=1,at=which(keep_these),labels=x_labs, las = 2)
-# 
-# legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
-# test1 = aggregate(p_record$fj_interp_color, by=list(p_record$fj_interp_color), FUN = length)
-# test2 = merge(station_table@data, test1, by.x = "color", by.y="Group.1")
-# 
-# plot(x = p_record$Date, y = p_record$fj_interp, main = "FJ daily precip data source",
-#         col = p_record$fj_interp_color, pch = 18,
-#      xlab = "Date", ylab = "")
-# legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
-# how_many_each_stn = aggregate(p_record$fj_interp_color, by=list(p_record$fj_interp_color), FUN = length)
-# colnames(how_many_each_stn) = c("color","num_fj_interp")
-# how_many_each_stn = merge(how_many_each_stn, station_table, by.x = "color",by.y="color")
-# 
-# plot(x = p_record$Date, y = p_record$cal_interp,
-#      col = p_record$cal_interp_color, pch = 18,
-#      xlab = "Date", ylab = "")
-# legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
-# 
+
+barplot(height = p_record$fj_interp, width = .81,
+        border = p_record$fj_interp_color,
+        xaxt = "n", xlim = c(0,length(p_record$fj_interp)))
+axis(side=1,at=which(keep_these),labels=x_labs, las = 2)
+
+legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
+test1 = aggregate(p_record$fj_interp_color, by=list(p_record$fj_interp_color), FUN = length)
+test2 = merge(station_table@data, test1, by.x = "color", by.y="Group.1")
+
+plot(x = p_record$Date, y = p_record$fj_interp, main = "FJ daily precip data source",
+        col = p_record$fj_interp_color, pch = 18,
+     xlab = "Date", ylab = "")
+legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
+how_many_each_stn = aggregate(p_record$fj_interp_color, by=list(p_record$fj_interp_color), FUN = length)
+colnames(how_many_each_stn) = c("color","num_fj_interp")
+how_many_each_stn = merge(how_many_each_stn, station_table, by.x = "color",by.y="color")
+
+plot(x = p_record$Date, y = p_record$cal_interp,
+     col = p_record$cal_interp_color, pch = 18,
+     xlab = "Date", ylab = "")
+legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
+
 # # 
 # # # _Did I replicate original 1991-2011 precip record ------------------------------
 # # 
