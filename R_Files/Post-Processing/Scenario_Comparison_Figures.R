@@ -738,6 +738,8 @@ mwbs = list(mwb_basecase, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80,
 scenario_ids = c("basecase","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
 # mwbs = list(mwb_basecase, mwb_sca05, mwb_scb80, mwb_scc20)
 # scenario_ids = c("basecase","sca05", "scb80", "scc20")
+# mwbs = list(mwb_basecase, mwb_sca_95_07)
+# scenario_ids = c("basecase","mwb_sca_95_07")
 
 scenario_totals = budget_overall(mwbs, scenario_ids)
 
@@ -1087,6 +1089,14 @@ convertGraph(from = "C:/Users/ckouba/Documents/UCD/_Coursework/2019_Q1_Winter/EC
 # Just recharge, SW and GW irrigation change for scb70, 80, 90
 #Read in Scenario A (extreme days algorithm; Nov 2019)
 
+monthly_water_budget_sca_95_07 = read.table(file.path(swbm_scenario_dir,"scenario_archive","pvar_a_extr_95_07","monthly_water_budget.dat"), header = TRUE)
+P_sca_extr_95_07 = read.table(file.path(swbm_scenario_dir,"scenario_archive","pvar_a_extr_95_07","precip.txt"), header = F)
+P_sca = P_sca_extr_95_07
+colnames(P_sca) = c("precip_m","date")
+P_sca$date= as.Date(P_sca$date, format = "%d/%m/%Y")
+mwb_sca_95_07 = monthly_water_budget_sca_95_07
+
+
 # #Read in Scenario As
 # monthly_water_budget_sca10 = read.table(file.path(swbm_scenario_dir,"pvar_a10","monthly_water_budget.dat"), header = TRUE)
 # mwb_sca10 = monthly_water_budget_sca10
@@ -1119,7 +1129,7 @@ convertGraph(from = "C:/Users/ckouba/Documents/UCD/_Coursework/2019_Q1_Winter/EC
 
 
 # 
-# # plot_water_budget_overview(mwb_sca_95_07, "Scenario A, 95 pctile, 7 pct increase", output_type = "png")
+## plot_water_budget_overview(mwb_sca_95_07, "Scenario A, 95 pctile, 7 pct increase", output_type = "png")
 # 
 # plot_water_budget_overview(mwb_sca10, "Scenario A, 10 large storms")
 # plot_water_budget_overview(mwb_sca05, "Scenario A, 5 large storms", output_type = "png")
