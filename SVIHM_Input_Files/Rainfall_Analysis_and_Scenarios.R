@@ -644,7 +644,9 @@ if(dev_mode){
   hist_prop = calculate_fraction_precip_on_extreme_days(hist_record = P, 
                                                         comp_record = P, 
                                                         percentile_threshold = 95)
-  sca_ext_prop = calculate_fraction_precip_on_extreme_days(hist_record = P, comp_record = P_sca, percentile_threshold = 95)
+  sca_ext_prop = calculate_fraction_precip_on_extreme_days(hist_record = P, 
+                                                           comp_record = P_sca, 
+                                                           percentile_threshold = 95)
   proportion_table = merge(hist_prop, sca_ext_prop, by="wy")
   colnames(proportion_table) = c("wy", "historical", "ext_days_95_07")
   
@@ -653,7 +655,7 @@ if(dev_mode){
   
   proportion_table$diff = proportion_table$ext_days_95_07-proportion_table$historical
   
-  mean(proportion_table$diff)
+  mean(proportion_table$diff)*100
 }
 
 
