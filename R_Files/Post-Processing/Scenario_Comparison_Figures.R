@@ -1,10 +1,10 @@
 # Plot Scenario Comparisons
 
-# Input: two monthly_water_budget.dat type files, (commonly, one historical and one a scenario)
+# Input: two monthly_water_budget.dat type files, (commonly, one basecase and one a scenario)
 # Output: One pdf with:
-## Overview of historical
+## Overview of basecase
 ## Overview of scenario
-## Historical-scenario comparisons for each water budget component
+## Basecase-scenario comparisons for each water budget component
 ## Overall water budget term difference table
 ## Overall water budget term difference table by month
 
@@ -19,11 +19,11 @@ rm(list = ls())
 
 #Define directories
 svihm_dir = dirname(dirname(dirname(getActiveDocumentContext()$path ))) #Outer SVIHM folder
-scenario_dir = file.path(svihm_dir,"SWBM")
+swbm_scenario_dir = file.path(svihm_dir,"SWBM")
 ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
 output_dir = file.path(svihm_dir,"SVIHM_Input_Files","Scenario_Development")
 # pdf_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops/2019.09.17 GRA WGC/Figures"
-pdf_dir = file.path(scenario_dir,"")#,"comparison_pdfs")
+pdf_dir = "C:/Users/Claire/Box/Siskiyou_ALL/Outreach/2020.09.16 Scott and Shasta AC meetings/figures"
 
 
 # Functions ---------------------------------------------------------------
@@ -79,6 +79,8 @@ make_legend_symbol_table = function(){
 #   return(components)
 # }
 
+
+# SWBM functions ----------------------------------------------------------
 
 plot_water_budget_overview = function(mwb, scenario_name, output_type = "pdf"){
   #Label budget components
@@ -183,7 +185,7 @@ plot_water_budget_comparison = function(mwb1, mwb2, scenario_names){
   
   setwd(pdf_dir)
   pdfname = paste0("comparisons_",scenario_names[1], "_", scenario_names[2],".pdf")
-  # vol_lim = c(min(R), max(P)) # set above, from historical obs.
+  # vol_lim = c(min(R), max(P)) # set above, from basecase obs.
   pdf(pdfname, 8.5,11)
   
   par(mfrow = c(2, 1))
@@ -220,7 +222,7 @@ plot_water_budget_comparison = function(mwb1, mwb2, scenario_names){
     box()
     #Plot data
     lines(y_1, type = "l", col = line_col, lwd = 2, lty = 1) 
-    lines(y_2, type = "l", col = "black", lwd = 1, lty = 2) #distinguish from baseline
+    lines(y_2, type = "l", col = "black", lwd = 1, lty = 2) #distinguish from basecase
     # Legend
     legend(x = "topleft", ncol = 2, bg= "white", col = c(line_col, "black"), 
            lwd = c(2,1), lty = c(1,2), #y_1 = weight 2, solid; y_2 = weight 1, dashed
@@ -322,7 +324,7 @@ barplots_overall = function(scenario_totals){
   #One barplot for each component
   setwd(pdf_dir)
   # pdf("budget_stack_overall.pdf", 6,4)
-  png("budget_stack_overall.png", 6,3, units = "in", res = 200)
+  png("budget_stack_overall.png", 6,5, units = "in", res = 200)
   par(mfrow = c(2,3))
   
   axis_names = c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)
@@ -347,6 +349,8 @@ barplots_overall = function(scenario_totals){
                main = components$label[i],
                ylim = c(min(scenario_totals[,2:7]), max(scenario_totals[,2:7])) / denominator[1]
       )
+      abline(h = pretty(c(min(scenario_totals[,2:7]), max(scenario_totals[,2:7])) / denominator[1]),
+             col = alpha(rgb(0,0,0),0.3), )
     } else {
       barplot( names = as.factor(scenario_totals$Scenario_id), 
                height = scenario_totals[, i + 1] / denominator[i],
@@ -358,6 +362,8 @@ barplots_overall = function(scenario_totals){
                main = components$label[i],
                ylim = c(min(scenario_totals[,2:7]), max(scenario_totals[,2:7])) / denominator[1]
       )
+      abline(h = pretty(c(min(scenario_totals[,2:7]), max(scenario_totals[,2:7])) / denominator[1]),
+             col = alpha(rgb(0,0,0),0.3))
     }
   }
   
@@ -414,47 +420,56 @@ barplots_comparison = function(scenario_totals){
 }
 
 
+
+# MODFLOW functions -------------------------------------------------------
+
+
+
 # Read in scenario budgets ------------------------------------------------
 
 #Read in SWBM scenario outputs: monthly water budget 
 
-monthly_water_budget_hist = read.table(file.path(scenario_dir,"hist","monthly_water_budget.dat"), header = TRUE)
-mwb_hist = monthly_water_budget_hist
+monthly_water_budget_basecase = read.table(file.path(swbm_scenario_dir,"basecase","monthly_water_budget.dat"), header = TRUE)
+mwb_basecase = monthly_water_budget_basecase
 
-#Read in Scenario A (extreme days algorithm; Nov 2019)
-monthly_water_budget_sca_95_07 = read.table(file.path(scenario_dir,"pvar_a_extr_95_07","monthly_water_budget.dat"), header = TRUE)
-mwb_sca_95_07 = monthly_water_budget_sca_95_07
+# Read in alfalfa irrigation schedule change scenarios
+
+monthly_water_budget_alf_stop_jul10 = read.table(file.path(swbm_scenario_dir,"alf_irr_stop_jul10","monthly_water_budget.dat"), header = TRUE)
+mwb_asjul10 = monthly_water_budget_alf_stop_jul10
 
 
-#Read in Scenario As
-monthly_water_budget_sca10 = read.table(file.path(scenario_dir,"pvar_a10","monthly_water_budget.dat"), header = TRUE)
-mwb_sca10 = monthly_water_budget_sca10
+#Read in reduced irrigation demand scenarios
+monthly_water_budget_irrdem_0.9 = read.table(file.path(swbm_scenario_dir,"irrig_0.9","monthly_water_budget.dat"), header = TRUE)
+mwb_i0.9 = monthly_water_budget_irrdem_0.9
 
-monthly_water_budget_sca05 = read.table(file.path(scenario_dir,"pvar_a05","monthly_water_budget.dat"), header = TRUE)
-mwb_sca05 = monthly_water_budget_sca05
+monthly_water_budget_irrdem_0.8 = read.table(file.path(swbm_scenario_dir,"irrig_0.8","monthly_water_budget.dat"), header = TRUE)
+mwb_i0.8 = monthly_water_budget_irrdem_0.8
 
-monthly_water_budget_sca03 = read.table(file.path(scenario_dir,"pvar_a03","monthly_water_budget.dat"), header = TRUE)
-mwb_sca03 = monthly_water_budget_sca03
+#Read in recharge scenarios (with no flow limits)
+monthly_water_budget_mar = read.table(file.path(swbm_scenario_dir,"mar","monthly_water_budget.dat"), header = TRUE)
+mwb_mar = monthly_water_budget_mar
 
-#Read in Scenario Bs
-monthly_water_budget_scb70 = read.table(file.path(scenario_dir,"pvar_b70","monthly_water_budget.dat"), header = TRUE)
-mwb_scb70 = monthly_water_budget_scb70
+monthly_water_budget_ilr = read.table(file.path(swbm_scenario_dir,"ilr","monthly_water_budget.dat"), header = TRUE)
+mwb_ilr = monthly_water_budget_ilr
 
-monthly_water_budget_scb80 = read.table(file.path(scenario_dir,"pvar_b80","monthly_water_budget.dat"), header = TRUE)
-mwb_scb80 = monthly_water_budget_scb80
+monthly_water_budget_mar_ilr = read.table(file.path(swbm_scenario_dir,"mar_ilr","monthly_water_budget.dat"), header = TRUE)
+mwb_mar_ilr = monthly_water_budget_mar_ilr 
 
-monthly_water_budget_scb90 = read.table(file.path(scenario_dir,"pvar_b90","monthly_water_budget.dat"), header = TRUE)
-mwb_scb90 = monthly_water_budget_scb90
+#Read in flow-limits scenarios
+monthly_water_budget_flowlims = read.table(file.path(swbm_scenario_dir,"flowlims","monthly_water_budget.dat"), header = TRUE)
+mwb_fl = monthly_water_budget_flowlims # Flow lims, no MAR or ILR
 
-#Read in Scenario Cs
-monthly_water_budget_scc10 = read.table(file.path(scenario_dir,"pvar_c10","monthly_water_budget.dat"), header = TRUE)
-mwb_scc10 = monthly_water_budget_scc10
+monthly_water_budget_mar_flowlim = read.table(file.path(swbm_scenario_dir,"mar_flowlims","monthly_water_budget.dat"), header = TRUE)
+mwb_mar_fl = monthly_water_budget_mar_flowlim# Flow lims, MAR recharge
 
-monthly_water_budget_scc20 = read.table(file.path(scenario_dir,"pvar_c20","monthly_water_budget.dat"), header = TRUE)
-mwb_scc20 = monthly_water_budget_scc20
+monthly_water_budget_ilr_flowlim = read.table(file.path(swbm_scenario_dir,"ilr_flowlims","monthly_water_budget.dat"), header = TRUE)
+mwb_ilr_fl = monthly_water_budget_mar_flowlim# Flow lims, ILR recharge
 
-monthly_water_budget_scc30 = read.table(file.path(scenario_dir,"pvar_c30","monthly_water_budget.dat"), header = TRUE)
-mwb_scc30 = monthly_water_budget_scc30
+monthly_water_budget_mar_ilr_flowlim = read.table(file.path(swbm_scenario_dir,"mar_ilr_flowlims","monthly_water_budget.dat"), header = TRUE)
+mwb_mar_ilr_fl = monthly_water_budget_mar_ilr_flowlim # Flow lims with MAR_ILR
+
+
+
 
 
 
@@ -473,36 +488,28 @@ make_legend_symbol_table = function(){
 }
 
 # generate  overview plots
-plot_water_budget_overview(mwb_hist, "Historical", output_type = "png")
-# plot_water_budget_overview(mwb_sca_95_07, "Scenario A, 95 pctile, 7 pct increase", output_type = "png")
+plot_water_budget_overview(mwb_basecase, "Basecase", output_type = "png")
+plot_water_budget_overview(mwb_mar, "MAR", output_type = "png")
+plot_water_budget_overview(mwb_ilr, "ILR", output_type = "png")
+plot_water_budget_overview(mwb_mar_ilr, "MAR_ILR", output_type = "png")
 
-plot_water_budget_overview(mwb_sca10, "Scenario A, 10 large storms")
-plot_water_budget_overview(mwb_sca05, "Scenario A, 5 large storms", output_type = "png")
-plot_water_budget_overview(mwb_sca03, "Scenario A, 3 large storms")
+plot_water_budget_overview(mwb_fl, "Basecase Irrigation with CDFW limits", output_type = "png")
+plot_water_budget_overview(mwb_mar_fl, "MAR with CDFW limits", output_type = "png")
+plot_water_budget_overview(mwb_ilr_fl, "ILR with CDFW limits", output_type = "png")
+plot_water_budget_overview(mwb_mar_ilr_fl, "MAR and ILR with CDFW limits", output_type = "png")
 
-plot_water_budget_overview(mwb_scb90, "Scenario B, 90 percent wet season duration")
-plot_water_budget_overview(mwb_scb80, "Scenario B, 80 percent wet season duration", output_type = "png")
-plot_water_budget_overview(mwb_scb70, "Scenario B, 70 percent wet season duration")
+plot_water_budget_overview(mwb_i0.8, "80 percent Irrigation Demand", output_type = "png")
 
-plot_water_budget_overview(mwb_scc10, "Scenario C, 10 percent wet season duration")
-plot_water_budget_overview(mwb_scc20, "Scenario C, 20 percent wet season duration", output_type = "png")
-plot_water_budget_overview(mwb_scc30, "Scenario C, 30 percent wet season duration")
-
-
-#Generate comparison plots - historical vs 3 scenarios
-plot_water_budget_comparison(mwb_hist, mwb_sca10, c("Historical", "Scenario A, 10 large storms"))
-plot_water_budget_comparison(mwb_hist, mwb_sca05, c("Historical", "Scenario A, 5 large storms"))
-plot_water_budget_comparison(mwb_hist, mwb_sca03, c("Historical", "Scenario A, 3 large storms"))
-
-plot_water_budget_comparison(mwb_hist, mwb_scb90, c("Historical", "Scenario B, 90 percent wet season duration"))
-plot_water_budget_comparison(mwb_hist, mwb_scb80, c("Historical", "Scenario B, 80 percent wet season duration"))
-plot_water_budget_comparison(mwb_hist, mwb_scb70, c("Historical", "Scenario B, 70 percent wet season duration"))
-
-plot_water_budget_comparison(mwb_hist, mwb_scc10, c("Historical", "Scenario C, 10 percent drier dry years"))
-plot_water_budget_comparison(mwb_hist, mwb_scc20, c("Historical", "Scenario C, 20 percent drier dry years"))
-plot_water_budget_comparison(mwb_hist, mwb_scc30, c("Historical", "Scenario C, 30 percent drier dry years"))
+plot_water_budget_overview(mwb_asjul10, "Alfalfa Irrigation ends Jul 10", output_type = "png")
 
 
+# Comparison plots
+plot_water_budget_comparison(mwb_basecase, mwb_fl, c("Basecase", "Basecase Irrigation, CDFW Instream limits"))
+plot_water_budget_comparison(mwb_basecase, mwb_mar_ilr, c("Basecase", "MAR and ILR, no flow limits"))
+plot_water_budget_comparison(mwb_fl, mwb_mar_ilr_fl, c("Basecase Irrigation, CDFW Instream limits", "MAR and ILR, CDFW Instream limits"))
+plot_water_budget_comparison(mwb_mar_ilr, mwb_mar_ilr_fl, c("MAR and ILR, no flow limits", "MAR and ILR, CDFW Instream limits"))
+
+plot_water_budget_comparison(mwb_basecase, mwb_i0.8, c("Basecase", "80 percent Irrigation Demand"))
 
 
 # Bar graphs setup-------------------------------------
@@ -510,28 +517,35 @@ plot_water_budget_comparison(mwb_hist, mwb_scc30, c("Historical", "Scenario C, 3
 #Metrics:
 # total recharge
 # total groundwater pumped
-# total SW extracted
+# total SW diverted
 #irrigation onset?
 
 #Select scenarios
 
-# mwbs = list(mwb_hist, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
-# scenario_ids = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
-# mwbs = list(mwb_hist, mwb_scb70, mwb_scb80, mwb_scb90)
-# scenario_ids = c("hist","scb70", "scb80", "scb90")
-mwbs = list(mwb_hist, mwb_sca_95_07)
-scenario_ids = c("hist","sca_95_07")
+# mwbs = list(mwb_basecase, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
+# scenario_ids = c("basecase","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
+# mwbs = list(mwb_basecase, mwb_scb70, mwb_scb80, mwb_scb90)
+# scenario_ids = c("basecase","scb70", "scb80", "scb90")
+# mwbs = list(mwb_basecase, mwb_sca_95_07)
+# scenario_ids = c("basecase","sca_95_07")
+mwbs = list(mwb_basecase, mwb_i0.9, mwb_i0.8)
+scenario_ids = c("basecase","irrig_0.9","irrig_0.8")
 
+
+mwbs = list(mwb_basecase, mwb_mar, mwb_ilr, mwb_mar_ilr,
+            mwb_fl, mwb_mar_fl, mwb_ilr_fl, mwb_mar_ilr_fl)
+scenario_ids = c("basecase","mar","ilr","mar_ilr","flowlims","mar_flowlim", "ilr_flowlim", "mar_ilr_flowlim")
 
 #Aggregate to overall totals, annual totals
 scenario_totals_allyrs = budget_overall(mwbs, scenario_ids)
 yearly_budgets = budget_stat_by_year(mwbs = mwbs, scenario_ids = scenario_ids, stat = "sum")
 
-# ratios_2015=yearly_budgets[yearly_budgets$Scenario_id=="sca_95_07" & yearly_budgets$Water_year==2015,3:8] / yearly_budgets[yearly_budgets$Scenario_id=="hist" & yearly_budgets$Water_year==2015,3:8]
-# barplots_overall(scenario_totals)
-# barplots_comparison(scenario_totals)
+#ratios_2015=yearly_budgets[yearly_budgets$Scenario_id=="sca_95_07" & yearly_budgets$Water_year==2015,3:8] / yearly_budgets[yearly_budgets$Scenario_id=="basecase" & yearly_budgets$Water_year==2015,3:8]
+barplots_overall(scenario_totals_allyrs)
+# barplots_comparison(scenario_totals_allyrs)
 
-# Geeta manuscript figures ------------------------------------------------
+
+# SWBM overall, one plot, dodged barplot ------------------------------------------------
 
 #Plot overall, full-model-period barplots
 fig_file_name = "budget_overall_dodge2.png"
@@ -547,8 +561,8 @@ ggplot(data=st_m, aes(x=variable, y=value, fill=Scenario_id)) +
   labs(title = fig_title, x = "Soil water budget component", y="Volume (1000 cubic km)")+
   theme_bw()+
   scale_fill_discrete(name="Scenario",
-                      breaks=c("hist","sca_95_07"),
-                      labels=c("Historical", "Altered Rainfall")) +
+                      breaks=c("basecase","sca_95_07"),
+                      labels=c("Basecase", "Altered Rainfall")) +
   theme(#panel.background = element_blank(),
     panel.border = element_rect(fill=NA, color = 'black'),
     # axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
@@ -616,6 +630,9 @@ for(i in 1:length(selected_years)){
 # pdf(file.path(pdf_dir, "all_years_scen_comp.pdf"), width = 8.5, height = 11/2)
 # dev.off()
 
+# # Save csv of yearly values
+# setwd("C:/Users/Claire/Documents/UCD/Presentations_Talks_Workshops_miniprojects/2019.06-12 Geeta Precip Alteration project")
+# write.csv(yearly_budgets, "yearly budgets, basecase and 7 percent increased extremity.csv")
 
 # AGU 2019 Figures -------------------------------------------------------------
 
@@ -647,14 +664,14 @@ scta$year_type = rep(year_types, each = 2)
 scta_m = melt(scta, id.vars = c("Scenario_id", "year_type"))
 
 #initialize table of change factors
-scta_m_chg = data.frame(matrix(data = NA, nrow = 0, ncol = 5)) ; colnames(scta_m_chg) = c(colnames(scta_m), "percent_chg_fm_hist")
+scta_m_chg = data.frame(matrix(data = NA, nrow = 0, ncol = 5)) ; colnames(scta_m_chg) = c(colnames(scta_m), "percent_chg_fm_basecase")
 for(yrtype in c(year_types)){
   for(component in c("GW_Irr", "Recharge", "SW_Irr")){
     scta_m_subset = scta_m[scta_m$year_type == yrtype & scta_m$variable == component,]
-    scta_m_hist = scta_m_subset[scta_m_subset$Scenario_id == "hist",]
-    scta_m_scenarios = scta_m_subset[scta_m_subset$Scenario_id != "hist",]
+    scta_m_basecase = scta_m_subset[scta_m_subset$Scenario_id == "basecase",]
+    scta_m_scenarios = scta_m_subset[scta_m_subset$Scenario_id != "basecase",]
     
-    scta_m_scenarios$percent_chg_fm_hist = (scta_m_scenarios$value - scta_m_hist$value)/scta_m_hist$value
+    scta_m_scenarios$percent_chg_fm_basecase = (scta_m_scenarios$value - scta_m_basecase$value)/scta_m_basecase$value
     scta_m_chg = rbind(scta_m_chg, scta_m_scenarios)
   }
 }
@@ -674,26 +691,26 @@ scta_m_gw = scta_m_chg[scta_m_chg$variable == "GW_Irr",]
 scta_m_rch = scta_m_chg[scta_m_chg$variable == "Recharge",]
 scta_m_sw = scta_m_chg[scta_m_chg$variable == "SW_Irr",]
 
-gw = ggplot(scta_m_gw, aes(factor(year_type), percent_chg_fm_hist*100))+#, fill = Scenario_id) +
+gw = ggplot(scta_m_gw, aes(factor(year_type), percent_chg_fm_basecase*100))+#, fill = Scenario_id) +
                            # value, fill = Scenario_id)) +
   ylim(0, 12)+#ylim(-20, 55)+
   # ylim(0, 1E8)+
   geom_bar(stat = "identity", position = "dodge", fill = "midnightblue") + 
-  labs(title = "Change from Historical Groundwater Pumping", y = "Percent change", x = NULL)+
+  labs(title = "Change from Basecase Groundwater Pumping", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
-sw = ggplot(scta_m_sw, aes(factor(year_type), percent_chg_fm_hist*100))+#, fill = Scenario_id) +
+sw = ggplot(scta_m_sw, aes(factor(year_type), percent_chg_fm_basecase*100))+#, fill = Scenario_id) +
   ylim(0, 12)+#ylim(-20, 55)+
   geom_bar(stat = "identity", position = "dodge", fill = "blue") + 
-  labs(title = "Change from Historical Surface Water Irrigation", y = "Percent change", x = NULL)+
+  labs(title = "Change from Basecase Surface Water Irrigation", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
-rch = ggplot(scta_m_rch, aes(factor(year_type), percent_chg_fm_hist*100))+#, fill = Scenario_id) +
+rch = ggplot(scta_m_rch, aes(factor(year_type), percent_chg_fm_basecase*100))+#, fill = Scenario_id) +
   ylim(0, 12)+#ylim(-20, 55)+
   geom_bar(stat = "identity", position = "dodge", fill = "green4") + 
-  labs(title = "Change from Historical Recharge", y = "Percent change", x = NULL)+
+  labs(title = "Change from Basecase Recharge", y = "Percent change", x = NULL)+
   scale_fill_manual(values=scid_colors)+
   theme_bw()
 
@@ -717,10 +734,12 @@ grid.arrange(
 
 # Tables for latex (final project March 2019) --------------------------------------------------------
 
-mwbs = list(mwb_hist, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
-scenario_ids = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
-# mwbs = list(mwb_hist, mwb_sca05, mwb_scb80, mwb_scc20)
-# scenario_ids = c("hist","sca05", "scb80", "scc20")
+mwbs = list(mwb_basecase, mwb_sca10, mwb_sca05, mwb_sca03, mwb_scb90, mwb_scb80, mwb_scb70, mwb_scc10, mwb_scc20, mwb_scc30)
+scenario_ids = c("basecase","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
+# mwbs = list(mwb_basecase, mwb_sca05, mwb_scb80, mwb_scc20)
+# scenario_ids = c("basecase","sca05", "scb80", "scc20")
+# mwbs = list(mwb_basecase, mwb_sca_95_07)
+# scenario_ids = c("basecase","mwb_sca_95_07")
 
 scenario_totals = budget_overall(mwbs, scenario_ids)
 
@@ -746,24 +765,24 @@ setwd(pdf_dir)
 write.table(scenario_totals_km3, "scenario_totals_for_latex.txt",
             col.names = TRUE, row.names = FALSE, sep = " & ", quote = FALSE)
 
-#Changes from historical - overall water budget terms
-change_from_hist = scenario_totals[2:10,]
-for(i in 1:dim(change_from_hist)[1]){
-  change_from_hist[i,2:7] = round(as.matrix(scenario_totals[i+1,2:7]) / 
+#Changes from basecase - overall water budget terms
+change_from_basecase = scenario_totals[2:10,]
+for(i in 1:dim(change_from_basecase)[1]){
+  change_from_basecase[i,2:7] = round(as.matrix(scenario_totals[i+1,2:7]) / 
                                         as.numeric(scenario_totals[1,2:7]), 2)
 }
 
-# #Changes from historical - dry, avg, and wet years
-# change_from_hist_dry = scenario_totals_dry[2:10,]
-# change_from_hist_avg = scenario_totals_avg[2:10,]
-# change_from_hist_wet = scenario_totals_wet[2:10,]
+# #Changes from basecase - dry, avg, and wet years
+# change_from_basecase_dry = scenario_totals_dry[2:10,]
+# change_from_basecase_avg = scenario_totals_avg[2:10,]
+# change_from_basecase_wet = scenario_totals_wet[2:10,]
 # 
-# for(i in 1:dim(change_from_hist)[1]){
-#   change_from_hist_dry[i,2:7] = round(as.matrix(scenario_totals_dry[i+1,2:7]) / 
+# for(i in 1:dim(change_from_basecase)[1]){
+#   change_from_basecase_dry[i,2:7] = round(as.matrix(scenario_totals_dry[i+1,2:7]) / 
 #                                     as.numeric(scenario_totals_dry[1,2:7]), 2)
-#   change_from_hist_avg[i,2:7] = round(as.matrix(scenario_totals_avg[i+1,2:7]) / 
+#   change_from_basecase_avg[i,2:7] = round(as.matrix(scenario_totals_avg[i+1,2:7]) / 
 #                                         as.numeric(scenario_totals_avg[1,2:7]), 2)
-#   change_from_hist_wet[i,2:7] = round(as.matrix(scenario_totals_wet[i+1,2:7]) / 
+#   change_from_basecase_wet[i,2:7] = round(as.matrix(scenario_totals_wet[i+1,2:7]) / 
 #                                         as.numeric(scenario_totals_wet[1,2:7]), 2)
 # }
 # 
@@ -772,26 +791,26 @@ for(i in 1:dim(change_from_hist)[1]){
 #                    'scb90','scb80','scb70',
 #                    'scc10','scc20','scc30')
 # #Make sure they're in order for the poster
-# change_from_hist_dry$Scenario_id = factor(change_from_hist_dry$Scenario_id, levels =scenario_order)
-# change_from_hist_dry=change_from_hist_dry[order(change_from_hist_dry$Scenario_id),]
-# change_from_hist_wet$Scenario_id = factor(change_from_hist_wet$Scenario_id, levels =scenario_order)
-# change_from_hist_wet=change_from_hist_wet[order(change_from_hist_wet$Scenario_id),]
-# change_from_hist_avg$Scenario_id = factor(change_from_hist_avg$Scenario_id, levels =scenario_order)
-# change_from_hist_avg=change_from_hist_avg[order(change_from_hist_avg$Scenario_id),]
-# change_from_hist$Scenario_id = factor(change_from_hist$Scenario_id, levels =scenario_order)
-# change_from_hist=change_from_hist[order(change_from_hist$Scenario_id),]
+# change_from_basecase_dry$Scenario_id = factor(change_from_basecase_dry$Scenario_id, levels =scenario_order)
+# change_from_basecase_dry=change_from_basecase_dry[order(change_from_basecase_dry$Scenario_id),]
+# change_from_basecase_wet$Scenario_id = factor(change_from_basecase_wet$Scenario_id, levels =scenario_order)
+# change_from_basecase_wet=change_from_basecase_wet[order(change_from_basecase_wet$Scenario_id),]
+# change_from_basecase_avg$Scenario_id = factor(change_from_basecase_avg$Scenario_id, levels =scenario_order)
+# change_from_basecase_avg=change_from_basecase_avg[order(change_from_basecase_avg$Scenario_id),]
+# change_from_basecase$Scenario_id = factor(change_from_basecase$Scenario_id, levels =scenario_order)
+# change_from_basecase=change_from_basecase[order(change_from_basecase$Scenario_id),]
 # 
 # 
 # setwd(pdf_dir)
-# write.csv(change_from_hist, "change from hist, total model period.csv")
-# write.csv(change_from_hist_dry, "change from hist_dry year.csv")
-# write.csv(change_from_hist_wet, "change from hist_wet year.csv")
-# write.csv(change_from_hist_avg, "change from hist_avg year.csv")
+# write.csv(change_from_basecase, "change from basecase, total model period.csv")
+# write.csv(change_from_basecase_dry, "change from basecase_dry year.csv")
+# write.csv(change_from_basecase_wet, "change from basecase_wet year.csv")
+# write.csv(change_from_basecase_avg, "change from basecase_avg year.csv")
 
 #Format for latex
-change_from_hist$latex_line_end = "//"
+change_from_basecase$latex_line_end = "//"
 
-colnames(change_from_hist) = c("ScenarioID", 
+colnames(change_from_basecase) = c("ScenarioID", 
                                   "Precipitation", 
                                   "Surface Water Irrigation", 
                                   "Groundwater Irrigation", 
@@ -801,18 +820,18 @@ colnames(change_from_hist) = c("ScenarioID",
                                   "latex_line_end")
 
 setwd(pdf_dir)
-write.table(change_from_hist, "change_from_hist_for_latex.txt",
+write.table(change_from_basecase, "change_from_basecase_for_latex.txt",
             col.names = TRUE, row.names = FALSE, sep = " & ", quote = FALSE)
 
 #Scenario descriptions
 
-scenario_ids = c("hist","sca10, sca05, sca03", "scb90, scb80, scb70", "scc10, scc20, scc30")
-scenario_desc = c("Historical", "Scenario A", "Scenario B", "Scenario C")
+scenario_ids = c("basecase","sca10, sca05, sca03", "scb90, scb80, scb70", "scc10, scc20, scc30")
+scenario_desc = c("Basecase", "Scenario A", "Scenario B", "Scenario C")
 manipulations = c("--", "Rain arrives in large storms only", 
                   "Reduction in rainy season duration", 
                   "Precipitation reduced in dry years and increased in wet years")
 decision_vars = c("--", "Number of large storms", 
-              "Fraction of historical rainy season duration", 
+              "Fraction of Basecase rainy season duration", 
               "Reduction in dry year precip")
 scenarios_tried = c("--", "10, 5, and 3 large storms",
                     "90, 80, and 70 percent wet season duration",
@@ -838,13 +857,13 @@ budg$source[1] = "Four NOAA NCDC rainfall records in Scott Valley"
 budg$source[2] = "Four NOAA NCDC rainfall records in Scott Valley"
 
 
-# Plot dry, wet year hist vs altered precip -------------------------------
+# Plot dry, wet year basecase vs altered precip -------------------------------
 
 #To do: make rainfall_analysis_and_scenarios source-able
 source('~/GitHub/SVIHM/SVIHM_Input_Files/Rainfall_Analysis_and_Scenarios.R')
 
 #Generate scenario a
-P_sca05 = generate_scenario_a(select(ppt_hist, date, precip_m), num_large_storms=5)
+P_sca05 = generate_scenario_a(select(ppt_basecase, date, precip_m), num_large_storms=5)
 
 #Generate scenario B 
 rain_day_threshold = 0 # Any rain counts as a rainy day
@@ -852,12 +871,12 @@ rainy_season_bounds = c(0.1, 0.9)
 fraction_season_length = 0.8 #try 90, 80, 70
 scenario_folder_name = "pvar_b80"
 
-scb_tables = generate_scenario_b(select(ppt_hist, date, precip_m), fraction_season_length)
+scb_tables = generate_scenario_b(select(ppt_basecase, date, precip_m), fraction_season_length)
 
 rain_stats_scb80 = scb_tables[[1]]
 P_scb80 = scb_tables[[2]]
 
-rs_hist = rainy_season_table(select(ppt_hist, date, precip_m), rainy_season_bounds)
+rs_basecase = rainy_season_table(select(ppt_basecase, date, precip_m), rainy_season_bounds)
 rs_scb80 = rainy_season_table(select(P_scb80, date, precip_m), rainy_season_bounds)
 
 #Generate Scenario C
@@ -867,8 +886,8 @@ rainy_season_bounds = c(0.1, 0.9) #fraction of total precip that defines wet sea
 dry_wet_thresholds = c(1.0, 1.0) # mult. of mean annual precip. dry must <= wet threshold.
 percent_drier = 20 #try 10, 20, 30
 
-P = select(ppt_hist, date, precip_m)
-S = stm_hist
+P = select(ppt_basecase, date, precip_m)
+S = stm_basecase
 
 scc = generate_scenario_c( P, S, percent_drier, dry_wet_thresholds)
 P_scc20 = scc[[1]]
@@ -884,7 +903,7 @@ plot_altered_rainfall_comp=function(sc1_name, sc2_name, sc_letter, P1, P2, wy){
   # color-code plot background (with a very wide line) for wet or dry
   if(wy==dry_year){abline(v=mean(x_limits), lwd = 1000, col = rgb(1,.92,.8,.5))} #blanchedalmond
   if(wy==wet_year){{abline(v=mean(x_limits), lwd = 1000, col = rgb(.68,.85,.9, 0.5))}}#lightblue
-  #Plot historical record
+  #Plot Basecase record
   lines(P1$date, P1$precip_m * 100/2.54, col = "deepskyblue2", type = "l", lwd = 2)
   #Plot altered scenario
   altered_precip = colnames(P2)[colnames(P2) %in% c("sca", "scb", "scc")]
@@ -910,9 +929,9 @@ plot_altered_rainfall_comp=function(sc1_name, sc2_name, sc_letter, P1, P2, wy){
   # if(sc_letter == "B" & wy == wet_year){
     legend(x = "topright", cex=1.4,lwd = c(2,2,1, 1), lty = c(1,1,2,2), 
            col = rep(c("deepskyblue2", "black"),2),
-           legend = c(paste0("Historical record, water year ", wy),
+           legend = c(paste0("Basecase record, water year ", wy),
                       "Altered record",
-                      paste0("Historical rainy season (",rs1_duration," days)"), 
+                      paste0("Basecase rainy season (",rs1_duration," days)"), 
                       paste0("Altered rainy season (",rs2_duration," days)")))
   }
     
@@ -922,7 +941,7 @@ plot_altered_rainfall_comp=function(sc1_name, sc2_name, sc_letter, P1, P2, wy){
 }
 
 
-# plot_altered_rainfall_comp(P1 = ppt_hist, sc1_name = "Historical", 
+# plot_altered_rainfall_comp(P1 = ppt_basecase, sc1_name = "Basecase", 
 #                            # P2= P_sca05,   sc2_name = "Scenario A, Only 5 Storms", sc_letter = "A",
 #                            P2= P_scb80,  sc2_name = "Scenario B, 80% Rainy Season Duration", sc_letter = "B",
 #                            # P2= P_scc20,   sc2_name = "Scenario C, Dry Years 20% Drier",  sc_letter = "C",
@@ -939,34 +958,34 @@ draft_num = 9
 png(file.path(pdf_dir,paste0("altered_rainfall_6plot_",draft_num,".png")), 
     width = 11, height = 7, units = "in", res = 200)
 par(mfrow = c(3,2), mar=c(4,4,1,2))
-plot_altered_rainfall_comp(P1 = ppt_hist, sc1_name = "Historical", 
+plot_altered_rainfall_comp(P1 = ppt_basecase, sc1_name = "Basecase", 
                            P2= P_sca05,   sc2_name = "Scenario A, Only 5 Storms", sc_letter = "A",
                            # P2= P_scb80,  sc2_name = "Scenario B, 80% Rainy Season Duration", sc_letter = "B",
                            # P2= P_scc20,   sc2_name = "Scenario C, Dry Years 20% Drier",  sc_letter = "C",
                            wy = wet_year)
-plot_altered_rainfall_comp(P1 = ppt_hist, sc1_name = "Historical", 
+plot_altered_rainfall_comp(P1 = ppt_basecase, sc1_name = "Basecase", 
                            P2= P_sca05,   sc2_name = "Scenario A, Only 5 Storms", sc_letter = "A",
                            # P2= P_scb80,  sc2_name = "Scenario B, 80% Rainy Season Duration", sc_letter = "B",
                            # P2= P_scc20,   sc2_name = "Scenario C, Dry Years 20% Drier",  sc_letter = "C",
                            wy = dry_year)
 
-plot_altered_rainfall_comp(P1 = ppt_hist, sc1_name = "Historical", 
+plot_altered_rainfall_comp(P1 = ppt_basecase, sc1_name = "Basecase", 
                            # P2= P_sca05,   sc2_name = "Scenario A, Only 5 Storms", sc_letter = "A",
                            P2= P_scb80,  sc2_name = "Scenario B, 80% Rainy Season Duration", sc_letter = "B",
                            # P2= P_scc20,   sc2_name = "Scenario C, Dry Years 20% Drier",  sc_letter = "C",
                            wy = wet_year)
-plot_altered_rainfall_comp(P1 = ppt_hist, sc1_name = "Historical", 
+plot_altered_rainfall_comp(P1 = ppt_basecase, sc1_name = "Basecase", 
                            # P2= P_sca05,   sc2_name = "Scenario A, Only 5 Storms", sc_letter = "A",
                            P2= P_scb80,  sc2_name = "Scenario B, 80% Rainy Season Duration", sc_letter = "B",
                            # P2= P_scc20,   sc2_name = "Scenario C, Dry Years 20% Drier",  sc_letter = "C",
                            wy = dry_year)
 
-plot_altered_rainfall_comp(P1 = ppt_hist, sc1_name = "Historical", 
+plot_altered_rainfall_comp(P1 = ppt_basecase, sc1_name = "Basecase", 
                            # P2= P_sca05,   sc2_name = "Scenario A, Only 5 Storms", sc_letter = "A",
                            # P2= P_scb80,  sc2_name = "Scenario B, 80% Rainy Season Duration", sc_letter = "B",
                            P2= P_scc20,   sc2_name = "Scenario C, Dry Years 20% Drier",  sc_letter = "C",
                            wy = wet_year)
-plot_altered_rainfall_comp(P1 = ppt_hist, sc1_name = "Historical", 
+plot_altered_rainfall_comp(P1 = ppt_basecase, sc1_name = "Basecase", 
                            # P2= P_sca05,   sc2_name = "Scenario A, Only 5 Storms", sc_letter = "A",
                            # P2= P_scb80,  sc2_name = "Scenario B, 80% Rainy Season Duration", sc_letter = "B",
                            P2= P_scc20,   sc2_name = "Scenario C, Dry Years 20% Drier",  sc_letter = "C",
@@ -976,24 +995,24 @@ dev.off()
 
 
 #Whiplash effect
-# comp_wbs = c("hist","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
+# comp_wbs = c("basecase","sca10", "sca05", "sca03", "scb90", "scb80", "scb70", "scc10", "scc20", "scc30")
 start_date = as.Date("1990-10-01"); end_date = as.Date("2018-09-30")
-comp_mwbs = list(mwb_hist)#,mwb_sca05, mwb_scb80, mwb_scc20)
-mwb = mwb_hist
+comp_mwbs = list(mwb_basecase)#,mwb_sca05, mwb_scb80, mwb_scc20)
+mwb = mwb_basecase
 
-wy_budget = budget_stat_by_year(mwbs=list(mwb_hist, mwb_sca05, mwb_scb80, mwb_scc20), stat="sum",
-                                scenario_ids = list("hist","sca05","scb80", "scc20"))
+wy_budget = budget_stat_by_year(mwbs=list(mwb_basecase, mwb_sca05, mwb_scb80, mwb_scc20), stat="sum",
+                                scenario_ids = list("basecase","sca05","scb80", "scc20"))
 
 components = make_legend_symbol_table()
 scen = "scc20"
 
 for(i in 1:dim(components)[1]){
   component = components$abbrev[i]
-  selector = wy_budget$Scenario_id=="hist"
+  selector = wy_budget$Scenario_id=="basecase"
   plot(wy_budget$Water_year[selector], 
        wy_budget[selector, colnames(wy_budget)==component], 
        col = "darkgray", type = "l", lwd = 2, ylim = c(0, 2e8),
-       main = paste("Hist,",scen,"comparison"))
+       main = paste("basecase,",scen,"comparison"))
   
   selector = wy_budget$Scenario_id==scen
   lines(wy_budget$Water_year[selector], wy_budget$Precip[selector], 
@@ -1014,9 +1033,9 @@ for(i in 1:dim(components)[1]){
 
 #which years should we use as examples of dry, wet, and average?
 
-wy_budget = budget_stat_by_year(mwbs=list(mwb_hist),
+wy_budget = budget_stat_by_year(mwbs=list(mwb_basecase),
                                 stat="sum",
-                                scenario_ids = list("hist"))
+                                scenario_ids = list("basecase"))
 
 #Add water year type
 wy_budget$wy_type = wy_type$yr_type[match(wy_budget$Water_year, wy_type$wy)]
@@ -1068,3 +1087,73 @@ convertGraph(from = "C:/Users/ckouba/Documents/UCD/_Coursework/2019_Q1_Winter/EC
 
 
 # Just recharge, SW and GW irrigation change for scb70, 80, 90
+#Read in Scenario A (extreme days algorithm; Nov 2019)
+
+monthly_water_budget_sca_95_07 = read.table(file.path(swbm_scenario_dir,"scenario_archive","pvar_a_extr_95_07","monthly_water_budget.dat"), header = TRUE)
+P_sca_extr_95_07 = read.table(file.path(swbm_scenario_dir,"scenario_archive","pvar_a_extr_95_07","precip.txt"), header = F)
+P_sca = P_sca_extr_95_07
+colnames(P_sca) = c("precip_m","date")
+P_sca$date= as.Date(P_sca$date, format = "%d/%m/%Y")
+mwb_sca_95_07 = monthly_water_budget_sca_95_07
+
+
+# #Read in Scenario As
+# monthly_water_budget_sca10 = read.table(file.path(swbm_scenario_dir,"pvar_a10","monthly_water_budget.dat"), header = TRUE)
+# mwb_sca10 = monthly_water_budget_sca10
+# 
+# monthly_water_budget_sca05 = read.table(file.path(swbm_scenario_dir,"pvar_a05","monthly_water_budget.dat"), header = TRUE)
+# mwb_sca05 = monthly_water_budget_sca05
+# 
+# monthly_water_budget_sca03 = read.table(file.path(swbm_scenario_dir,"pvar_a03","monthly_water_budget.dat"), header = TRUE)
+# mwb_sca03 = monthly_water_budget_sca03
+# 
+# #Read in Scenario Bs
+# monthly_water_budget_scb70 = read.table(file.path(swbm_scenario_dir,"pvar_b70","monthly_water_budget.dat"), header = TRUE)
+# mwb_scb70 = monthly_water_budget_scb70
+# 
+# monthly_water_budget_scb80 = read.table(file.path(swbm_scenario_dir,"pvar_b80","monthly_water_budget.dat"), header = TRUE)
+# mwb_scb80 = monthly_water_budget_scb80
+# 
+# monthly_water_budget_scb90 = read.table(file.path(swbm_scenario_dir,"pvar_b90","monthly_water_budget.dat"), header = TRUE)
+# mwb_scb90 = monthly_water_budget_scb90
+# 
+# #Read in Scenario Cs
+# monthly_water_budget_scc10 = read.table(file.path(swbm_scenario_dir,"pvar_c10","monthly_water_budget.dat"), header = TRUE)
+# mwb_scc10 = monthly_water_budget_scc10
+# 
+# monthly_water_budget_scc20 = read.table(file.path(swbm_scenario_dir,"pvar_c20","monthly_water_budget.dat"), header = TRUE)
+# mwb_scc20 = monthly_water_budget_scc20
+# 
+# monthly_water_budget_scc30 = read.table(file.path(swbm_scenario_dir,"pvar_c30","monthly_water_budget.dat"), header = TRUE)
+# mwb_scc30 = monthly_water_budget_scc30
+
+
+# 
+## plot_water_budget_overview(mwb_sca_95_07, "Scenario A, 95 pctile, 7 pct increase", output_type = "png")
+# 
+# plot_water_budget_overview(mwb_sca10, "Scenario A, 10 large storms")
+# plot_water_budget_overview(mwb_sca05, "Scenario A, 5 large storms", output_type = "png")
+# plot_water_budget_overview(mwb_sca03, "Scenario A, 3 large storms")
+# 
+# plot_water_budget_overview(mwb_scb90, "Scenario B, 90 percent wet season duration")
+# plot_water_budget_overview(mwb_scb80, "Scenario B, 80 percent wet season duration", output_type = "png")
+# plot_water_budget_overview(mwb_scb70, "Scenario B, 70 percent wet season duration")
+# 
+# plot_water_budget_overview(mwb_scc10, "Scenario C, 10 percent wet season duration")
+# plot_water_budget_overview(mwb_scc20, "Scenario C, 20 percent wet season duration", output_type = "png")
+# plot_water_budget_overview(mwb_scc30, "Scenario C, 30 percent wet season duration")
+# 
+# 
+# #Generate comparison plots - basecase vs 3 scenarios
+# plot_water_budget_comparison(mwb_basecase, mwb_sca10, c("Basecase", "Scenario A, 10 large storms"))
+# plot_water_budget_comparison(mwb_basecase, mwb_sca05, c("Basecase", "Scenario A, 5 large storms"))
+# plot_water_budget_comparison(mwb_basecase, mwb_sca03, c("Basecase", "Scenario A, 3 large storms"))
+# 
+# plot_water_budget_comparison(mwb_basecase, mwb_scb90, c("Basecase", "Scenario B, 90 percent wet season duration"))
+# plot_water_budget_comparison(mwb_basecase, mwb_scb80, c("Basecase", "Scenario B, 80 percent wet season duration"))
+# plot_water_budget_comparison(mwb_basecase, mwb_scb70, c("Basecase", "Scenario B, 70 percent wet season duration"))
+# 
+# plot_water_budget_comparison(mwb_basecase, mwb_scc10, c("Basecase", "Scenario C, 10 percent drier dry years"))
+# plot_water_budget_comparison(mwb_basecase, mwb_scc20, c("Basecase", "Scenario C, 20 percent drier dry years"))
+# plot_water_budget_comparison(mwb_basecase, mwb_scc30, c("Basecase", "Scenario C, 30 percent drier dry years"))
+# 

@@ -644,7 +644,9 @@ if(dev_mode){
   hist_prop = calculate_fraction_precip_on_extreme_days(hist_record = P, 
                                                         comp_record = P, 
                                                         percentile_threshold = 95)
-  sca_ext_prop = calculate_fraction_precip_on_extreme_days(hist_record = P, comp_record = P_sca, percentile_threshold = 95)
+  sca_ext_prop = calculate_fraction_precip_on_extreme_days(hist_record = P, 
+                                                           comp_record = P_sca, 
+                                                           percentile_threshold = 95)
   proportion_table = merge(hist_prop, sca_ext_prop, by="wy")
   colnames(proportion_table) = c("wy", "historical", "ext_days_95_07")
   
@@ -653,7 +655,7 @@ if(dev_mode){
   
   proportion_table$diff = proportion_table$ext_days_95_07-proportion_table$historical
   
-  mean(proportion_table$diff)
+  mean(proportion_table$diff)*100
 }
 
 
@@ -985,7 +987,7 @@ if(dev_mode){
       
       barplot(height=(sc2_subset$precip_m - sc1_subset$precip_m)*1000, col = col1, width=1, 
               ylim = c(-1.2, 5), #xlim = c(1,ndays), 
-              title = paste("Rainfall alterations in water year", wy),
+              # main = paste("Rainfall alterations in water year", wy),
               xlab= paste("Date in water year",wy), 
               ylab = "Daily precip (mm) added")
       #fiddle with axis to achieve matching between length of axis and breadth of bars
@@ -996,11 +998,11 @@ if(dev_mode){
     }
   }
 
-  alteration_fig_dir = "C:/Users/Claire/Documents/UCD/Presentations or Talks or Workshops or mini-projects/2019.06-12 Geeta Precip Alteration project"
+  alteration_fig_dir = "C:/Users/Claire/Documents/UCD/Presentations_Talks_Workshops_miniprojects/2019.06-12 Geeta Precip Alteration project/figs"
   # pdf(file.path(alteration_fig_dir, "precip water years.pdf"), width = 8.5, height = 11/2)
-  png(file.path(alteration_fig_dir, "precip water years barplot2.png"), width = 7.5, height = 6, units = "in", res = 300)
-  par(mfrow = c(2,2))
-  plot_precip_compare_barplot("hist", "sca_ext", P, P_sca, plot_wy = c(2014, 2017, 2010, 2015))
+  png(file.path(alteration_fig_dir, "precip water years barplot3.png"), width = 7, height = 7, units = "in", res = 300)
+  par(mfrow = c(2,1))
+  plot_precip_compare_barplot("hist", "sca_ext", P, P_sca, plot_wy = c(2010, 2015))
   dev.off()
   
   

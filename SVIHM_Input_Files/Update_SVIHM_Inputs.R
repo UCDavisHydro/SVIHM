@@ -12,6 +12,27 @@ library(rpostgis)
 
 # rm(list = ls())
 
+# Scenario Selection ------------------------------------------------------
+
+# Recharge and flow scenarios
+recharge_scenario = "Basecase" # Can be Basecase/MAR/ILR/MAR_ILR
+flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
+
+# Irrigation demand: Different from the kc_CROP_mult values in crop_coeff_mult.txt, which is used for calibrating.
+irr_demand_mult = 1 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
+
+# Month and day of the final day of alfalfa irrigation season. 
+# Default is Aug 31, 8/31
+alf_irr_stop_mo = 7 # Month as month of year (7 = July)
+alf_irr_stop_day = 10 
+# Convert to month of wy (Oct=1, Nov=2, ..., Jul = 10, Aug=11, Sep=0)
+if(alf_irr_stop_mo<9){alf_irr_stop_mo = alf_irr_stop_mo + 3
+}else{alf_irr_stop_mo = alf_irr_stop_mo - 9}
+
+# Scenario name for SWBM and MODFLOW
+scenario_name = "alf_irr_stop_jul10" #also makes the directory name; must match folder
+
+
 # SETUP -------------------------------------------------------------------
 
 
@@ -25,22 +46,25 @@ if(isRStudio == FALSE){ library(here); svihm_dir <- dirname(here::here("Update_S
 
 # 1b) Set directories for data used in update and output file locations
 
-## Directories for running the scenarios (files copied at end of script)
-SWBM_file_dir = file.path(svihm_dir, "SWBM", "pvar_a_extr_95_07")
-MF_file_dir = file.path(svihm_dir, "MODFLOW","pvar_a_extr_95_07")
-
 ## Data used in update
 Stream_Regression_dir = file.path(svihm_dir, "Streamflow_Regression_Model")
 input_files_dir = file.path(svihm_dir, "SVIHM_Input_Files")
-scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
 time_indep_dir = file.path(svihm_dir, "SVIHM_Input_Files", "time_independent_input_files")
 ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
 ## Directory used to archive the precip and ET files for different scenarios
 scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
 # Directory for connecting to the database
 dms_dir = file.path(dirname(svihm_dir), "SiskiyouGSP2022", "Data_Management_System")
-#Connect to Siskiyou DB (for generating precip and eventually ET and streamflow)
+# Folder for collecting outputs from various scenarios for comparison plots
+results_dir = file.path(svihm_dir, "R_Files","Post-Processing","Results")
+#Connect to Siskiyou DB (for generating SVIHM.hob. And precip, eventually ET and streamflow)
 source(file.path(dms_dir, "connect_to_db.R"))
+
+## Directories for running the scenarios (files copied at end of script)
+
+SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
+MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
+
 
 #To do: incorporate web-scraping into streamflow and ET record generation
 
@@ -64,6 +88,7 @@ model_months_plus_one = seq(from = model_start_date, to = model_end_date_plus_on
 num_days = diff(model_months_plus_one) #number of days in each stress period/month
 
 num_stress_periods = length(model_months)
+
 
 
 #.#############################################################################
@@ -119,9 +144,19 @@ write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_initial_m3day
 
 #  general_inputs.txt ------------------------------------------------
 
-#Update number of stress periods
-gen_inputs = c(paste0("2119  167  ", num_stress_periods, "  440  210  1.4 UCODE Basecase"),
-"! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST, Basecase/MAR/ILR/MAR_ILR")
+#Update number of stress periods and scenario information
+# Does not include irr_demand_mult, since that gets incorporated into the kc files
+gen_inputs = c(
+  paste("2119  167", num_stress_periods, 
+        "440  210  1.4 UCODE",
+        "! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST", 
+        sep = "  "),
+  paste(recharge_scenario, flow_scenario,     
+        alf_irr_stop_mo, alf_irr_stop_day,
+        "! Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims, alf_irr_stop_mo  alf_irr_stop_day",
+        sep = "  ")
+  )
+
 write.table(gen_inputs, file = file.path(SWBM_file_dir, "general_inputs.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
@@ -155,6 +190,9 @@ kc_alfalfa_df$day = paste(str_pad(day(model_days), 2, pad = "0"),
                           str_pad(month(model_days), 2, pad = "0"), 
                           year(model_days), sep = "/")
 
+# Multiply the k_c by the demand multiplier (if irr_demand_mult!= 1, assumes land use change from alfalfa)
+kc_alfalfa_df$kc_alf_days = kc_alfalfa_df$kc_alf_days * irr_demand_mult
+
 #write alfalfa kc file
 write.table(kc_alfalfa_df, file = file.path(SWBM_file_dir, "kc_alfalfa.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
@@ -182,6 +220,9 @@ kc_pasture_df = data.frame(kc_pas_days)
 kc_pasture_df$day = paste(str_pad(day(model_days), 2, pad = "0"), 
                           str_pad(month(model_days), 2, pad = "0"), 
                           year(model_days), sep = "/")
+
+# Multiply the k_c by the demand multiplier (if irr_demand_mult!= 1, assumes land use change from pasture)
+kc_pasture_df$kc_pas_days = kc_pasture_df$kc_pas_days * irr_demand_mult
 
 #write pasture kc file
 write.table(kc_pasture_df, file = file.path(SWBM_file_dir, "kc_pasture.txt"),
@@ -234,6 +275,9 @@ kc_grain_df$day = paste(str_pad(day(model_days), 2, pad = "0"),
                           str_pad(month(model_days), 2, pad = "0"), 
                           year(model_days), sep = "/")
 
+# Multiply the k_c by the demand multiplier (if irr_demand_mult!= 1, assumes land use change from grain)
+kc_grain_df$kc_grain_days = kc_grain_df$kc_grain_days * irr_demand_mult
+
 #write grain kc file
 write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
@@ -257,6 +301,17 @@ if(!file.exists(file1)){
 }
 
 file.copy(from=file1, to = file2, overwrite=T)
+
+
+# polygons_table.txt ------------------------------------------------------
+
+# TO DO: put polygons in the ref_dir
+
+gis_dir = "C:/Users/Claire/Box/Scott_Only/Legacy Work Products/Scott_Legacy_GIS"
+
+test = readOGR(dsn = gis_dir, layer = "Landuse_SRW")
+head(test)
+plot(test)
 
 #  ref_et.txt ----------------------------------------------------
 
@@ -293,6 +348,75 @@ if(!file.exists(file1)){
 }
 file.copy(file1, file2)
 
+
+
+# instream_flow_available_ratio.txt ------------------------------------------------
+
+#read in FJ flow and CDFW recommended flow for FJ gauge
+library(dataRetrieval)
+library(lubridate)
+fj_num = "11519500"
+fjd_all = readNWISdv(siteNumbers = fj_num, parameterCd="00060" )
+fjd_all = renameNWISColumns(fjd_all)
+# Subset for model period
+fjd = fjd_all[fjd_all$Date >= model_start_date & fjd_all$Date <= model_end_date,]
+
+cdfw_tab = read.csv(file.path(ref_data_dir,"cdfw_2017_instream_flows.csv"))
+
+#build calendar of cdfw rec flow start and end dates for the years covering the model period
+model_yrs = year(seq(from = model_start_date, to = model_end_date+365, by = "year")) #Add 365 to keep ending year in the sequence
+cdfw_start_dates = as.Date(paste(sort(rep(model_yrs, dim(cdfw_tab)[1])), 
+                            cdfw_tab$Start.date.month, cdfw_tab$start.date.day, sep ="-"))
+cdfw_end_dates = as.Date(paste(sort(rep(model_yrs, dim(cdfw_tab)[1])), 
+                            cdfw_tab$End.date.month, cdfw_tab$End.date.day, sep ="-"))
+leap_years = seq(from=1900, to = 2100, by = 4)
+leapday_selector = day(cdfw_end_dates) == 28 & year(cdfw_end_dates) %in% leap_years
+cdfw_end_dates[leapday_selector] = 1 + cdfw_end_dates[leapday_selector] # adjust to include all of Feb
+cdfw_rec_flows = rep(cdfw_tab$Recommended.flow.cfs, length(model_yrs))
+
+# check for correctness
+# cdfw_expanded = data.frame(start_dates = cdfw_start_dates, end_dates = cdfw_end_dates,
+                           # cdfw_rec_flows = cdfw_rec_flows)
+
+instream_rec = data.frame(dates = model_days, cdfw_rec_flow_cfs = NA)
+
+for(i in 1:length(cdfw_start_dates)){
+  selector = instream_rec$dates >= cdfw_start_dates[i] &
+    instream_rec$dates <= cdfw_end_dates[i]
+  instream_rec$cdfw_rec_flow_cfs[selector] = cdfw_rec_flows[i]
+}
+
+# Add FJ flow to this dataframe and find difference (available flow)
+instream_rec$fj_flow_cfs = fjd$Flow[match(instream_rec$dates, fjd$Date)]
+
+# Convert to cubic meters per day
+cfs_to_m3d = 1/35.3147 * 86400 # 1 m3/x ft3 * x seconds/day
+instream_rec$cdfw_rec_flow_m3d = instream_rec$cdfw_rec_flow_cfs * cfs_to_m3d
+instream_rec$fj_flow_m3d = instream_rec$fj_flow_cfs * cfs_to_m3d
+
+# Add the stress period and day of month 
+instream_rec$month = floor_date(instream_rec$dates, unit = "month")
+
+#calculate aggregate daily average flow, by month, for whole record
+rec_monthly = aggregate(instream_rec$cdfw_rec_flow_m3d, by = list(instream_rec$month), FUN = sum)
+fj_monthly = aggregate(instream_rec$fj_flow_m3d, by = list(instream_rec$month), FUN = sum)
+avail_monthly = merge(rec_monthly, fj_monthly, by.x = "Group.1", by.y = "Group.1")
+colnames(avail_monthly) = c("month","cdfw_rec_flow_m3","fj_flow_m3")
+avail_monthly$avail_flow_m3 = avail_monthly$fj_flow_m3 - avail_monthly$cdfw_rec_flow_m3
+avail_monthly$avail_flow_m3[avail_monthly$avail_flow_m3 <0] = 0
+avail_monthly$avail_ratio = round(avail_monthly$avail_flow_m3 / avail_monthly$fj_flow_m3,3)
+
+# plot(avail_monthly$Group.1, avail_monthly$x/fj_monthly$x, type = "l", ylab = "avail / rec ratio", ylim = c(0,1))
+# plot(avail_monthly$stress_period,avail_monthly$avail_flow_m3_month, type = "l")
+# grid()
+
+# avail_monthly$stress_period = as.numeric(as.factor(avail_monthly$stress_period)) #converts to 1 to 336 for each stress period
+
+#format for table
+avail_monthly[,colnames(avail_monthly) != "avail_ratio"] = NULL
+
+write.table(avail_monthly, file = file.path(SWBM_file_dir, "instream_flow_available_ratio.txt"),
+            sep = " ", quote = FALSE, col.names = F, row.names = FALSE)
 
 # SWBM.exe ----------------------------------------------------------------
 
@@ -393,6 +517,8 @@ for (i in 1:num_stress_periods){
 
 #Currently, hacking in a hard-coded contour drive on my local computer. non-transferrable.
 #To do: pull wl down from the damn data base eventually!
+
+
 ### TO DO: Join additional wells to the model grid and add their well loc. info to reference hob_info table.
 
 ### 1) Get a cleaned water level dataframe
@@ -507,6 +633,45 @@ for(i in 1:num_stress_periods){
 file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 
 
+# OPERATOR: RUN MODFLOW ------------------------------------------------------
+
+
+# OPTIONAL: copy output to Results folder for post-processing -------------
+
+# # Scenario Selection ------------------------------------------------------
+# recharge_scenario = "Basecase" # Can be Basecase/MAR/ILR/MAR_ILR
+# flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
+# irr_demand_mult = 0.9 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
+# 
+# # Scenario name for SWBM and MODFLOW
+# scenario_name = "irrig_0.9" #also makes the directory name; must match folder
+# 
+# ## Directories for running the scenarios (files copied at end of script)
+# 
+# SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
+# MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
+
+#Copy flow tables on the mainstem
+# file.copy(from = file.path(MF_file_dir,"Streamflow_FJ_SVIHM.dat"), 
+#           to = file.path(results_dir,paste0("Streamflow_FJ_SVIHM_",scenario_name,".dat")))
+file.copy(from = file.path(MF_file_dir,"Streamflow_Pred_Loc_2.dat"), 
+          to = file.path(results_dir,paste0("Streamflow_Pred_Loc_2_",scenario_name,".dat")))
+file.copy(from = file.path(MF_file_dir,"Streamflow_Pred_Loc_3.dat"), 
+          to = file.path(results_dir,paste0("Streamflow_Pred_Loc_3_",scenario_name,".dat")))
+
+file.copy(from = file.path(MF_file_dir,"SVIHM.sfr"), 
+          to = file.path(results_dir,paste0("SVIHM_",scenario_name,".sfr")))
+file.copy(from = file.path(SWBM_file_dir,"monthly_groundwater_by_luse.dat"), 
+          to = file.path(results_dir,paste0("monthly_groundwater_by_luse_",scenario_name,".dat")))
+
+
+
+
+
+
+
+
+
 
 # Scratch work ------------------------------------------------------------
 
@@ -529,7 +694,7 @@ file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 # pointLabel(dwr_not_in@coords, labels = dwr_in$Well_ID_2)
 # write.csv(mon@data, file.path(ref_data_dir, "Monitoring_Wells_Names.csv"), row.names = F)
 # 
-# ####################################
+#. ####################################
 # # Original Precip File Writing attempt
 # #to do: web scraper
 # # CDEC data
@@ -614,7 +779,7 @@ file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 #             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 # 
 # 
-# ############################################
+#. ############################################
 # # Initial RefET writing attempt
 # #to do: webscrape cimis? (login?)
 # #units? 

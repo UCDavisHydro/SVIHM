@@ -284,7 +284,7 @@ leak = ggplot(data = leak_wys, aes(x = mo, y= -value/10^6, group = wy))+ #negati
        title="Stream Leakage")+
   geom_line(aes(colour = wy, size=2))+
   geom_hline(yintercept=0, linetype="solid", color="black")+
-  geom_text(label="Net recharge to aquifer",x=9, y=10, size=6)+
+  geom_text(label="Net recharge to aquifer",x=9, y=8, size=6)+
   geom_text(label="Net discharge to stream",x=9, y=-10, size=6)+
   scale_colour_manual(values = c("2014"="orangered", "2017"="deepskyblue3",
                                  "2010"="darkgoldenrod1", "2015"="darkgoldenrod3"))+
@@ -346,6 +346,7 @@ wtr_yr <- function(dates, start_month=10) {
 }
 
 text_y = c(30000, 15000, 8000, 4000)
+text_cex = 0.72
 
 fj_stream_and_precip= function(wy = 1991, legend =F){
   wy_start_date = as.Date(paste0(wy-1,"-10-01"))
@@ -364,9 +365,9 @@ fj_stream_and_precip= function(wy = 1991, legend =F){
   plot(fjd_wy$Date, fjd_wy$Flow, type="l", lwd = 2, col = "blue",
        log = "y", yaxt = "n", xaxt = "n", ylim = c(2, max_flow),
        # main = paste("Water Year", wy), 
-       xlab = "Date in water year", 
-       ylab = "Average Daily Flow (cfs)", cex.lab=1.5)
-  axis(side = 2, at = 10^(0:4), las = 2, labels = c("1", "10", "100", "1000", "10,000"))
+       xlab = paste("Date in water year",wy), 
+       ylab = "Average Daily Flow (cfs)", cex.lab=1)
+  axis(side = 2, at = 10^(0:4), las = 2, labels = c("1", "10", "100", "1000", "10,000"), cex.axis=text_cex)
   axis(side = 2, tck = -.01, at = rep(1:10, 5) * rep(10^(0:4), each = 10), labels = NA)
   x_ticks = unique(floor_date(seq(wy_start_date, nextwy_start_date, by="day"), unit = "month"))
   x_ticks_labels = format(x_ticks, "%b %d")
@@ -378,24 +379,34 @@ fj_stream_and_precip= function(wy = 1991, legend =F){
   
   #Add annotations to plot
   #a) indicate total precip and water year type (have to do this before adding new axis for some reason)
-  total_rainfall = sum(rain_wy$PRCP_mm)
-  total_flow = fj_annual$vol_m3[fj_annual$wy == wy]
-  summary_text_rain = paste("Total rainfall: ", round(total_rainfall), "mm")
-  summary_text_flow = paste( "Total flow:", round(total_flow/10^6), "cubic km")
-  text(x=nextwy_start_date - 100, y = text_y[1], cex = 1, pos = 4,
-       labels = summary_text_rain)
-  text(x=nextwy_start_date - 100, y = text_y[2], cex = 1, pos=4, labels = summary_text_flow)
-  #b) add center of rainfall and note
+  total_flow_m3 = fj_annual$vol_m3[fj_annual$wy == wy]
   rainfall_x = as.numeric(rain_wy$date)
-  rain_center = as.Date(sum(rainfall_x*rain_wy$PRCP_mm) / total_rainfall, origin = "1970-01-01")
+  
+  if(figure_units == "metric"){ total_rainfall = sum(rain_wy$PRCP_mm)
+    summary_text_rain = paste("Total rainfall: ", round(total_rainfall), "mm")
+    summary_text_flow = paste( "Total flow:", round(total_flow_m3/10^6), "million cubic m")
+    rain_center = as.Date(sum(rainfall_x*rain_wy$PRCP_mm) / total_rainfall, origin = "1970-01-01")
+    percent_30day = rollapply(rain_wy$PRCP_mm, width = 30, FUN = "sum", align = "left")/total_rainfall * 100
+    
+  }else{ total_rainfall = sum(rain_wy$PRCP_in)
+    summary_text_rain = paste("Total rainfall: ", round(total_rainfall), "in")
+    summary_text_flow = paste( "Total flow:", round(total_flow_m3 * 35.3147 / 43560 / 1000), "TAF")
+    rain_center = as.Date(sum(rainfall_x*rain_wy$PRCP_in) / total_rainfall, origin = "1970-01-01")
+    percent_30day = rollapply(rain_wy$PRCP_in, width = 30, FUN = "sum", align = "left")/total_rainfall * 100
+    
+  }    
+  # summary_text_flow = expression(round(total_flow/10^6), "10^6~~m^3"))# ARGGGG
+  text(x=nextwy_start_date - 120, y = text_y[1], cex = text_cex, pos = 4,
+       labels = summary_text_rain)
+  text(x=nextwy_start_date - 120, y = text_y[2], cex = text_cex, pos=4, labels = summary_text_flow)
+  #b) add center of rainfall and note
   abline(v=rain_center, lwd = 2, lty = 2, col = "gray60")
   summary_text_center = paste("Rain center of mass:", format(as.Date(rain_center), "%b %d"))
-  text(x=nextwy_start_date - 100, y = text_y[3], cex = 1, pos=4, labels = summary_text_center)
+  text(x=nextwy_start_date - 120, y = text_y[3], cex = text_cex, pos=4, labels = summary_text_center)
   #c) Calculate max 30-day rainfall density and note
-  percent_30day = rollapply(rain_wy$PRCP_mm, width = 30, FUN = "sum", align = "left")/total_rainfall * 100
   summary_text_density = paste0("Max rain density: ", round(max(percent_30day)),
-                               "% / 30 days")
-  text(x=nextwy_start_date - 100, y = text_y[4], cex = 1, pos=4, labels = summary_text_density)
+                                "% / 30 days")
+  text(x=nextwy_start_date - 120, y = text_y[4], cex = text_cex, pos=4, labels = summary_text_density)
   # d) add legend
   if(legend){
     legend(x = "topleft", lwd =c(2,NA, 2), lty = c(1, NA, 2), pch = c(NA, 15, NA),
@@ -406,10 +417,15 @@ fj_stream_and_precip= function(wy = 1991, legend =F){
   par(new = T)
   
   # Plot rainfall record
-  barplot(height = rain_wy$PRCP_mm, ylim = c(0, 100), #customized tweaking to make horizontal lines match up 
+  if(figure_units == "metric"){
+    barplot(height = rain_wy$PRCP_mm, ylim = c(0, 100), #customized tweaking to make horizontal lines match up 
           xlab = NA, ylab = NA, yaxt="n", xaxt="n", border = NA, col="gray30")
+  } else {barplot(height = rain_wy$PRCP_in, ylim = c(0, 4.65), #customized tweaking to make horizontal lines match up 
+                  xlab = NA, ylab = NA, yaxt="n", xaxt="n", border = NA, col="gray30")}
   axis(side=4)
-  mtext(side=4, line = 3, "Daily Precipitation (mm)")
+  if(figure_units == "metric"){mtext(side=4, line = 3, "Daily Precipitation (mm)")} else{
+    mtext(side=4, line = 3, "Daily Precipitation (in)")
+  }
   
   
 }
@@ -447,19 +463,31 @@ rain$PRCP_mm = rain$PRCP_m * 1000
 # rain$date = as.Date(rain$date)
 # rain$PRCP_in = rain$PRCP_mm / 25.4
 
-#make appendix
-# pdf( file.path(agu_figure_dir, "FJ Stream Gage Water Year Hydrographs.pdf"), 8.5,11/2)
+# make appendix
+# pdf( file.path(pub_mtg_figure_dir, "FJ Stream Gage Water Year Hydrographs.pdf"), 8.5,11/2)
 # for(wy in 1991:2018){
 #   fj_stream_and_precip(wy, legend = T)
 # }
 # dev.off() #close pdf
 
+
+for(wy in c(2014,2017,2010,2015)){
+  png(file.path(pub_mtg_figure_dir, paste0("FJ Stream Gage Water Year Hydrographs",wy,".png")), 
+      width = 7.2, height = 3.5, units = "in", res = 300)
+  fj_stream_and_precip(wy, legend = F)
+  dev.off() #close pdf
+}
+
+
+
+# agu_figure_dir = "C:/Users/Claire/Documents/UCD/Presentations_Talks_Workshops_miniprojects/2019.06-12 Geeta Precip Alteration project"
+pub_mtg_figure_dir = "C:/Users/Claire/Box/Siskiyou_ALL/Outreach/2020.05.26_advisory_meetings/scott_figs"
 #make AGU figures for specific water years
-agu_wys = c(2014, 2017, 2010, 2015)
+agu_wys = c(2014,2017, 2010, 2015)
 png(file.path(agu_figure_dir, "FJ Stream and Precip_vert2.png"),
-    width = 7.9,height = 15,
+    width = 7.4,height = 8,
     units = "in",res = 300)
-par(mfrow = c(4,1))
+par(mfrow = c(2,1)) ###
 for(wy in agu_wys){
   # png(file.path(agu_figure_dir, paste(wy,"FJ Stream and Precip.png")), width = 8.5,height = 11/2, units = "in",res = 300)
   fj_stream_and_precip(wy, legend = F)
@@ -494,34 +522,36 @@ for(i in 1:length(start_rows)){
   }
 }
 
-max(as.numeric(as.character(reach_array[,,8]))) # max flow out
-breaks_flow = c(10^(0:7))
-max(as.numeric(as.character(reach_array[,,13])))
-
-#calculate breaks for depth
-depth = as.numeric(as.character(reach_array[,,13]))
-depth_sorted = sort(depth)
+# max(as.numeric(as.character(reach_array[,,8]))) # max flow out
+# breaks_flow = c(10^(0:7))
+# max(as.numeric(as.character(reach_array[,,13])))
+# 
+# #calculate breaks for depth
+# depth = as.numeric(as.character(reach_array[,,13]))
+# depth_sorted = sort(depth)
 n_classes = 7
-n_breaks = n_classes+1
-breaks_index = round(1:n_breaks/n_breaks*length(depth))
-breaks_values = depth_sorted[breaks_index]
+# n_breaks = n_classes+1
+# breaks_index = round(1:n_breaks/n_breaks*length(depth))
+# breaks_values = depth_sorted[breaks_index]
+# 
+# depth_breaks_manual_7 = c(0,0.01, 0.05, 0.1, 0.2, 0.5, 1, 4.05)
+# depth_breaks_manual_5 = c(0, 0.05, 0.1, 0.3, 4.05)
 
-depth_breaks_manual_7 = c(0,0.01, 0.05, 0.1, 0.2, 0.5, 1, 4.05)
-depth_breaks_manual_5 = c(0, 0.05, 0.1, 0.3, 4.05)
+# #calculate breaks for flow out
+# flowout = as.numeric(as.character(reach_array[,,8]))
+# flowout_sorted = sort(flowout)
+# n_classes = 7
+# n_breaks = n_classes+1
+# breaks_index = round(1:n_breaks/n_breaks*length(flowout))
+# breaks_values = flowout_sorted[breaks_index]
 
-#calculate breaks for flow out
-flowout = as.numeric(as.character(reach_array[,,8]))
-flowout_sorted = sort(flowout)
-n_classes = 7
-n_breaks = n_classes+1
-breaks_index = round(1:n_breaks/n_breaks*length(flowout))
-breaks_values = flowout_sorted[breaks_index]
+# flow_breaks_manual_7 = c(0, 2.5, 20, 50, 100, 300, 700, 6350)*1000
 
-flow_breaks_manual_7 = c(0, 2.5, 20, 50, 100, 300, 700, 6350)*1000
-
+# flow_breaks_manual_7_cfs = flow_breaks_manual_7 * 35.3147 /(24*60*60)
+flow_breaks_manual_7_cfs = c(0, 1, 10, 20, 40, 100, 250, 2600)
+flow_breaks_manual_7 = flow_breaks_manual_7_cfs
 
 pal = rev(sequential_hcl(n_classes, palette = "ag_GrnYl"))
-
 
 
 #Read in shapefile of stream nodes
@@ -550,11 +580,13 @@ sp_table$month = rep(c(10:12, 1:9),(end_wy-start_wy+1))
 # for(i in 1:length(start_rows)){
 
 #to make a png figure
-png(file.path(agu_figure_dir, "wet_dry_stream_4yrs.png"), 
-    width=7.5, height=16, units = "in", res=300)
-par(mfrow=c(4,1), mar = c(1,1,1,1))
-for(i in c(287, 323, 239, 299)){ #Aug of 2014 (wet), 2017 (dry), 2010, and 2015 (avg, spread and conc) 
+# png(file.path(agu_figure_dir, "wet_dry_stream_4yrs.png"), 
+#     width=7.5, height=16, units = "in", res=300)
+# par(mfrow=c(4,1), mar = c(1,1,1,1))
+
+for(i in c(287, 323, 239, 299)){ #Aug of 2014 (dry), 2017 (wet), 2010, and 2015 (avg, spread and conc) 
   
+  png(file.path(pub_mtg_figure_dir, paste0(i,".png")), height = 7, width = 4, units = "in", res = 300)
   stress_period_array = data.frame(reach_array[i,,])
   spa = stress_period_array
   title_text = paste(month.abb[sp_table$month[i]],"of water year",sp_table$water_year[i])
@@ -568,6 +600,8 @@ for(i in c(287, 323, 239, 299)){ #Aug of 2014 (wet), 2017 (dry), 2010, and 2015 
   
   # Flowrate
   seg$flow_out = spa$FLOW_OUT_OF_STRM_RCH[match(seg$row_col, spa$row_col)]
+  seg$flow_out_cfs = seg$flow_out * 35.3147 /(24*60*60)
+  seg$flow_out = seg$flow_out_cfs
   # seg$color = "dodgerblue"
   #all flow segments with flow out of < 1 cfs are considered dry
   # seg$color[seg$flow_out/2446.6 < 1] = "salmon" #convert m^3/day to cfs for threshold comparison
@@ -582,14 +616,16 @@ for(i in c(287, 323, 239, 299)){ #Aug of 2014 (wet), 2017 (dry), 2010, and 2015 
        # main=title_text, sub=paste("stress period",sp_table$stress_period[i]))
        )
   #plot river reach centroids, colored according to depth
-  plot(seg,pch=19, cex=1, add=T,
+  plot(seg,pch=19, cex=.6, add=T,
        col=pal[cut(na.omit(seg$flow_out), include.lowest=T,
                    breaks = flow_breaks_manual_7)])
   # generate legend labels and add legend
-  legend_labels = paste(flow_breaks_manual_7[1:n_classes]/1000,
-                        flow_breaks_manual_7[2:(n_classes+1)]/1000, sep="-")
-  legend(x="bottomleft", fill = pal, title="Flow (1000 m3/day)",
-         legend = legend_labels, cex=2.5)
+  # legend_labels = paste(flow_breaks_manual_7[1:n_classes],#/1000,
+  #                       flow_breaks_manual_7[2:(n_classes+1)],#/1000,
+  #                       sep="-")
+  # legend(x="bottomleft", fill = pal, title="Flow (cfs)",#"Flow (1000 m3/day)",
+  #        legend = legend_labels, cex=2.5)
+  dev.off()
   
   #legend in CFS
   # legend_labels = paste(round(flow_breaks_manual_7[1:n_classes]/2446.6), 
@@ -616,7 +652,8 @@ for(i in c(287, 323, 239, 299)){ #Aug of 2014 (wet), 2017 (dry), 2010, and 2015 
   #        legend = legend_labels)
   
 }
-dev.off()
+
+# dev.off()
 
 # #visualize all segment subdivisions
 # trib_list = unique(seg$Name)
