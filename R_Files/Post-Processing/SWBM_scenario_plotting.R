@@ -544,7 +544,7 @@ st_m$value = st_m$value / 10^9
 #plot
 ggplot(data=st_m, aes(x=variable, y=value, fill=Scenario_id)) +
   geom_bar(stat="identity", position=position_dodge()) +
-  labs(title = fig_title, x = "Soil water budget component", y="Volume (1000 cubic km)")+
+  labs(title = fig_title, x = "Soil water budget component", y="Volume (cubic km)")+
   theme_bw()+
   scale_fill_discrete(name="Scenario",
                       breaks=c("hist","sca_95_07"),
@@ -582,7 +582,7 @@ for(i in 1:length(selected_years)){
   
   #Name png file and figure title
   fig_file_name = paste0("budget_",yr,".png")
-  fig_title = paste0("Water year ",yr, " (",fig_title_modifiers[i],")")
+  fig_title = paste0("d) ",yr, " (",fig_title_modifiers[i],")")
   
   #Open file
   png(file.path(pdf_dir, fig_file_name), 3.2, 2.5, units = "in", res = 200)
@@ -590,7 +590,7 @@ for(i in 1:length(selected_years)){
   year_plot = ggplot(data=st_m, aes(x=variable, y=value, fill=Scenario_id)) +
     geom_bar(stat="identity", position=position_dodge()) +
     scale_y_continuous(limits = std_y_limits)+
-    labs(title = fig_title, x = "Soil water budget component", y="Volume (cubic km)")+
+    labs(title = fig_title, x = "Soil water budget component", y="Volume (million cubic m)")+
     theme_bw()+
     theme(#panel.background = element_blank(),
       # panel.border = element_rect(fill=NA, color = 'black'),
