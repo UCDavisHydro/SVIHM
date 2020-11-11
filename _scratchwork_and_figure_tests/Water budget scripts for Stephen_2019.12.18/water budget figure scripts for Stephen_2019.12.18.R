@@ -28,12 +28,16 @@ library(gridExtra)
 # Directory names
 
 # Model subsystem directories - folders containing model results 
-svihm_dir = "C:/Users/Claire/Documents/GitHub/SVIHM"
+#svihm_dir = "C:/Users/Claire/Documents/GitHub/SVIHM"
+svihm_dir = "C:/Users/cmkouba/Documents/GitHub/SVIHM"
 swbm_dir = file.path(svihm_dir,"SWBM") 
-mf_dir =  file.path(svihm_dir, "MODFLOW","hist") #historical model period
+mf_dir =  file.path(svihm_dir, "MODFLOW","hist") #historical model period#
+mf_dir =  file.path(svihm_dir, "MODFLOW","pvar_a_extr_95_07") #historical model period
+
 
 # Project Directory
-gsp_dir = "C:/Users/Claire/Documents/GitHub/SiskiyouGSP2022" #overall project folder
+#gsp_dir = "C:/Users/Claire/Documents/GitHub/SiskiyouGSP2022" #overall project folder
+gsp_dir = "C:/Users/cmkouba/Documents/GitHub/SiskiyouGSP2022" #overall project folder
 #Budget and figure directories
 budget_dir = file.path(gsp_dir, "GSP_Analyses", "Scott_Water_Budget") #Store tables, intermediate products
 # dir.create(budget_dir, showWarnings = FALSE)   #Create Results directory if it doesn't exist
@@ -93,17 +97,19 @@ swbm_monthly_melt = swbm_monthly_melt[order(swbm_monthly_melt$variable),]
 # #Modflow import setup
 # PRINT_BUDGET=TRUE
 # source(file.path(budget_dir, 'MODFLOW_Budget.R'))
-# LST_Name = 'SVIHM.lst'
-# WB_Components_MODFLOW = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
-# #Specify out_dir
-# aq_monthly_raw = MODFLOW_Budget(mf_dir, LST_Name, WB_Components_MODFLOW, end_wy=end_wy)
-# if (PRINT_BUDGET==TRUE){
-#   write.table(aq_monthly_raw, file = file.path(budget_dir,'MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
-# }
+#LST_Name = 'SVIHM.lst'
+#WB_Components_MODFLOW = c('STORAGE', 'CONSTANT_HEAD', 'WELLS', 'RECHARGE', 'ET_SEGMENTS','STREAM_LEAKAGE', 'DRAINS')
+##Specify out_dir
+#aq_monthly_raw = MODFLOW_Budget(mf_dir, LST_Name, WB_Components_MODFLOW, end_wy=end_wy)
+#if (PRINT_BUDGET==TRUE){
+# write.table(aq_monthly_raw, file = file.path(budget_dir,'MODFLOW_Water_Budget.dat'), row.names = F, quote = F)
+#}
 
 # or, if you've run the modflow import setup before, you can read in:
-aq_monthly_raw = read.table(file.path(budget_dir, "MODFLOW_Water_Budget.dat"),
-                        header = T)
+# scenarios for Geeta paper
+#aq_monthly_raw = read.table(file.path(budget_dir, "MODFLOW_Water_Budget_alt.dat"),header = T)
+#aq_monthly_raw = read.table(file.path(budget_dir, "MODFLOW_Water_Budget_hist.dat"),header = T)
+aq_monthly_raw = read.table(file.path(budget_dir, "MODFLOW_Water_Budget.dat"),header = T)
 aq_monthly_raw$Month = as.Date(paste0("01-",aq_monthly_raw$Month), format = "%d-%b-%Y")
 
 #Process for plotting
@@ -119,6 +125,8 @@ names(aq_monthly) = c('Month', MODFLOW_flux_labels)
 aq_monthly_melt = melt(aq_monthly, id.vars = 'Month')
 aq_monthly_melt$variable = factor(aq_monthly_melt$variable, levels = MODFLOW_flux_labels)
 aq_monthly_melt = aq_monthly_melt[order(aq_monthly_melt$variable),]
+
+#aq_monthly_melt_alt = aq_monthly_melt
 
 # 1aiii) Import STREAMFLOW Budget
 
@@ -603,12 +611,75 @@ graphics.off()
 # 3. Change in aquifer storage plots -------------------------------------
 
 #Open figure file
+pdf_dir = budget_dir
 figure_out_dir = pdf_dir # from swbm scenario plotting script
+
 png(file.path(figure_out_dir, 'aq_storage.png'),width = 3.2, height = 2.5, units = "in", res = 200)
 
 #only show last 11 years
 plot_start_date = as.Date('2008-10-01')
 aq_monthly_trunc = aq_monthly[aq_monthly$Month >= plot_start_date,]
+
+#hacking something together for Geeta
+
+stor_monthly_alt = aq_monthly_melt_alt[aq_monthly_melt_alt$variable == "Storage",]
+stor_monthly_alt$value_cumsum = cumsum(stor_monthly_alt$value)
+stor_monthly_alt$variable = "scen_95_07"
+stor_monthly_hist = aq_monthly_melt_hist[aq_monthly_melt_hist$variable == "Storage",]
+stor_monthly_hist$value_cumsum = cumsum(stor_monthly_hist$value)
+stor_monthly_hist$variable = "hist"
+stor = rbind(stor_monthly_hist, stor_monthly_alt)
+stor_trunc = stor[stor$Month >= plot_start_date,]
+colnames(stor_trunc) = c("Month", "Scenario", "value","value_cumsum")
+
+#Plot hacked together for geeta
+(Monthly_Storage_Plot_MODFLOW_TAF = ggplot(data = stor_trunc,
+                                           aes(x = as.Date(Month),
+                                               y = -value_cumsum/10^6,
+                                               group = Scenario)) +
+    #Add annotations to reflect the appropriate water year
+    geom_rect(xmin=as.Date('2009-10-01'), xmax=as.Date('2010-09-30'), ymin = -60, ymax=-50, fill = "darkgoldenrod1", alpha = 0.7)+
+    geom_rect(xmin=as.Date('2013-10-01'), xmax=as.Date('2014-09-30'), ymin = -60, ymax=-50, fill = "orangered", alpha = 0.7)+
+    geom_rect(xmin=as.Date('2014-10-01'), xmax=as.Date('2015-09-30'), ymin = -60, ymax=-50, fill = "darkgoldenrod3", alpha = 0.4)+
+    geom_rect(xmin=as.Date('2016-10-01'), xmax=as.Date('2017-09-30'), ymin = -60, ymax=-50, fill = "deepskyblue3", alpha = 0.4)+
+    annotate(geom = "text", size = 2, x=as.Date('2010-04-01'), y=-55, label = "2010")+
+    annotate(geom = "text", size = 2, x=as.Date('2014-04-01'), y=-55, label = "2014")+
+    annotate(geom = "text", size = 2, x=as.Date('2015-04-01'), y=-55, label = "2015")+
+    annotate(geom = "text", size = 2, x=as.Date('2017-04-01'), y=-55, label = "2017")+
+    #Add gridlines, storage line and point, and edit axes
+    #geom_vline(mapping=NULL, linetype = 2, size = 0.5, colour="gray", xintercept = seq(as.Date("1990-10-01"), as.Date("2018-10-01"), by = "5 year"))+
+    #geom_hline(mapping=NULL, linetype = 2, size = 0.5, colour="gray", yintercept = seq(-50,50, by = 25))+
+    geom_hline(yintercept = 0, size = 0.25) +
+    geom_line(size = 0.5, aes( color=Scenario))  +
+    geom_point(size = 0.75, aes(color = Scenario)) +
+    scale_x_date(limits = c(as.Date('Oct-01-2008', format = '%b-%m-%y'),
+                            as.Date(paste0('Oct-01-',end_wy), format = '%b-%m-%y')),
+                 breaks = seq(plot_start_date, by = "2 years", length.out = nstress/12+1), expand = c(0,0),
+                 date_labels = ('%b-%y'))  +
+    scale_y_continuous(limits = c(-60,60), breaks = seq(-50,50,by = 25), expand = c(0,0)) +
+    # Edit labels and themes
+    scale_color_discrete(name="Scenario",
+                        breaks=c("hist","scen_95_07"),
+                        labels=c("Historical", "Altered")) +
+    ylab(ylab(bquote('Relative Aquifer Storage (million cubic m)'))) +
+    ggtitle('a) Historical Monthly Aquifer Storage') +
+    theme(#panel.background = element_blank(),
+      panel.border = element_rect(fill=NA, color = 'black'),
+      axis.text.x = element_text(angle = 45, hjust = 1, vjust= 0.7, size = 8),
+      axis.text.y = element_text(size = 8),
+      axis.ticks = element_line(size = 0.4),
+      plot.title = element_text(size = 9),
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      legend.position = c(0.45, 0.82),
+      legend.text=element_text(size=7),
+      legend.title=element_text(size=7.5),
+      legend.key.size = unit(0.3, "cm")
+    )
+)
+graphics.off()
+
+
 
 #Plot
 (Monthly_Storage_Plot_MODFLOW_TAF = ggplot(data = aq_monthly_trunc,
@@ -651,9 +722,11 @@ graphics.off()
 
 
 # 3.1 change in storage tables --------------------------------------------
+#3.1 change in storage tables
 stor_tab = aq_monthly[,c("Month", "Storage")]
 stor_tab$Storage_Cumulative = cumsum(stor_tab$Storage)
 write.csv(stor_tab, "change in storage.csv")
+
 
 # 4. Monthly, seasonal SWBM plot, full model period -----------------------
 
