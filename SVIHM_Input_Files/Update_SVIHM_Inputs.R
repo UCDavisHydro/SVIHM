@@ -13,20 +13,21 @@ library(rpostgis)
 # rm(list = ls())
 
 # Scenario Selection ------------------------------------------------------
+
+# Recharge and flow scenarios
 recharge_scenario = "Basecase" # Can be Basecase/MAR/ILR/MAR_ILR
 flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
+
 # Irrigation demand: Different from the kc_CROP_mult values in crop_coeff_mult.txt, which is used for calibrating.
 irr_demand_mult = 1 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
+
 # Month and day of the final day of alfalfa irrigation season. 
 # Default is Aug 31, 8/31
 alf_irr_stop_mo = 7 # Month as month of year (7 = July)
 alf_irr_stop_day = 10 
 # Convert to month of wy (Oct=1, Nov=2, ..., Jul = 10, Aug=11, Sep=0)
-if(alf_irr_stop_mo<9){
-  alf_irr_stop_mo = alf_irr_stop_mo + 3
-}else{
-  alf_irr_stop_mo = alf_irr_stop_mo - 9
-}
+if(alf_irr_stop_mo<9){alf_irr_stop_mo = alf_irr_stop_mo + 3
+}else{alf_irr_stop_mo = alf_irr_stop_mo - 9}
 
 # Scenario name for SWBM and MODFLOW
 scenario_name = "alf_irr_stop_jul10" #also makes the directory name; must match folder
@@ -300,6 +301,17 @@ if(!file.exists(file1)){
 }
 
 file.copy(from=file1, to = file2, overwrite=T)
+
+
+# polygons_table.txt ------------------------------------------------------
+
+# TO DO: put polygons in the ref_dir
+
+gis_dir = "C:/Users/Claire/Box/Scott_Only/Legacy Work Products/Scott_Legacy_GIS"
+
+test = readOGR(dsn = gis_dir, layer = "Landuse_SRW")
+head(test)
+plot(test)
 
 #  ref_et.txt ----------------------------------------------------
 

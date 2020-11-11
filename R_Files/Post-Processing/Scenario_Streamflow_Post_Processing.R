@@ -8,6 +8,7 @@ library(reshape2)
 library(dplyr)
 library(grid)
 library(stringr)
+library(tidyr)
 #############################################################################################
 ############################              USER INPUT             ############################
 #############################################################################################
@@ -18,7 +19,8 @@ library(stringr)
 # scenario_ids = c("flowlims","MAR_ILR","mar_ilr_flowlims")
 # scenario_ids = c("MAR_ILR","mar_ilr_flowlims", "irrig_0.8", "irrig_0.9")
 # scenario_ids = c("Basecase","irrig_0.8","irrig_0.9")
-scenario_ids = c("Basecase","alf_ir_stop_jul10")
+# scenario_ids = c("Basecase","alf_ir_stop_jul10")
+scenario_ids = c("MAR","ILR","MAR_ILR","irrig_0.8","irrig_0.9")
 
 
 # COMPARE_MAR = TRUE
@@ -79,6 +81,68 @@ DP_0.9_flow = data.frame(Date = seq(start_date, end_date, "days"),              
 alf_irr_jul10_flow = data.frame(Date = seq(start_date, end_date, "days"),                              # Import ILR flow data
                          Flow_m3day = read.table(paste0(flow_loc,'_irrig_0.9.dat'), skip = 2)[,3],
                          Flow_cfs = read.table(paste0(flow_loc,'_irrig_0.9.dat'), skip = 2)[,3]*0.000408734569)
+
+
+
+# Make a table for Thomas and his fish reconnection estimate -------------------------------------------------
+
+flow_record_subset_wide = function(daily_flow_tables, scenario_ids){
+  for(i in 1:length(daily_flow_tables)){
+    df_tab = daily_flow_tables[[i]]
+    
+    subset1 = df_tab[month(df_tab$Date)>=tab_start_month & 
+                      day(df_tab$Date)>=tab_start_day &
+                      month(df_tab$Date) <=tab_end_month &
+                      day(df_tab$Date) <=tab_end_day ,]
+    subset1$year = year(subset1$Date)
+    subset1$month_day = paste(str_pad(month(subset1$Date), width = 2, side = "left", pad = 0),
+                              str_pad(day(subset1$Date), width = 2, side = "left", pad = 0),
+                              sep = "-")
+    subset1 = subset1[,3:5]
+    
+    wide = pivot_wider(data = subset1, id_cols = c(month_day), 
+                       names_from = year, values_from = Flow_cfs)
+    wide=wide[order(wide$month_day),]
+    
+    wide_subset_tables[[i]] = wide
+  }
+  return(wide_subset_tables)
+}
+
+# tab_start_month = 9; tab_start_day = 1
+# tab_end_month = 12; tab_end_day = 31
+# 
+# wide_subset_tables = list() #initialize return list
+# daily_flow_tables = list(DP_Basecase_flow,
+#                          DP_MAR_flow, DP_ILR_flow, DP_MAR_ILR_flow,
+#                          DP_Basecase_fl_flow, #DP_MAR_ILR_fl_flow,
+#                          DP_0.8_flow, DP_0.9_flow)
+# scenario_ids = c("basecase",
+#                  "mar","ilr","mar_ilr",
+#                  "flowlims",# "mar_ilr_flowlims",
+#                  "irrig_0.8","irrig_0.9")
+# 
+# tabs= flow_record_subset_wide(daily_flow_tables = daily_flow_tables,
+#                               scenario_ids = scenario_ids)
+
+# for(i in 1:length(tabs)){
+#   tab = tabs[[i]]
+#  # print(head(tab))
+#    write.csv(x=tab, paste(scenario_ids[i], ".csv"))
+# }
+
+  
+  make_flow_diff_daily_tab(basecase_flow_table = DP_Basecase_flow,
+                                           daily_flow_tables = list(DP_MAR_flow, 
+                                                                    DP_ILR_flow, 
+                                                                    DP_MAR_ILR_flow,
+                                                                    DP_Basecase_fl_flow, 
+                                                                    #DP_MAR_ILR_fl_flow,
+                                                                    DP_0.8_flow, DP_0.9_flow),
+                                           scenario_ids = c("mar","ilr","mar_ilr", 
+                                                            "flowlims",# "mar_ilr_flowlims", 
+                                                            "irrig_0.8","irrig_0.9"))
+
 
 
 
@@ -226,10 +290,10 @@ Flow_Diff_Daily = make_flow_diff_daily_tab(basecase_flow_table = DP_Basecase_flo
                                                          DP_ILR_flow, 
                                                          DP_MAR_ILR_flow,
                                                          DP_Basecase_fl_flow, 
-                                                         DP_MAR_ILR_fl_flow,
+                                                         #DP_MAR_ILR_fl_flow,
                                                          DP_0.8_flow, DP_0.9_flow),
                                 scenario_ids = c("mar","ilr","mar_ilr", 
-                                                 "flowlims", "mar_ilr_flowlims", 
+                                                 "flowlims",# "mar_ilr_flowlims", 
                                                  "irrig_0.8","irrig_0.9"))
   
 
