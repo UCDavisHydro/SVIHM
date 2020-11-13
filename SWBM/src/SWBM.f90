@@ -52,6 +52,9 @@
   open(unit=10, file='general_inputs.txt', status='old')
   read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template
   read(10, *) rch_scenario, flow_scenario, alf_irr_stop_mo, alf_irr_stop_day
+  write(*,*)'Unknown recharge scenario input in general_inputs.txt'
+  write(800,*)'Unknown recharge scenario input in general_inputs.txt'
+
   if (trim(rch_scenario)=='basecase' .or. trim(rch_scenario)=='Basecase' .or. trim(rch_scenario)=='BASECASE') then            ! Set logicals for Recharge Scenario type
     MAR_active=  .FALSE.  
     ILR_active = .FALSE.
@@ -90,6 +93,10 @@
   write(800,'(2a19)')'Recharge Scenario: ',trim(rch_scenario)
   write(*,'(2a15)')'Flow Scenario: ',trim(flow_scenario)
   write(800,'(2a15)')'Flow Scenario: ',trim(flow_scenario)
+  write(*,'(A19,I6)') "Alfalfa end month: ", alf_irr_stop_mo
+  write(800,'(A19,I6)') "Alfalfa end month: ", alf_irr_stop_mo
+  write(*,'(A17,I6)') "Alfalfa end day: ", alf_irr_stop_day
+  write(800,'(A17,I6)') "Alfalfa end day: ", alf_irr_stop_day
   SFR_Template = TRIM(SFR_Template)
   write(*,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
   write(800,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
@@ -129,7 +136,7 @@
   close(888)
   
   call READ_KC_IRREFF                                ! Read in crop coefficients and irrigation efficiencies
-  call read_scenario_specs                           ! Read management actionsfor this scenario
+  !call read_scenario_specs                           ! Read management actionsfor this scenario
   call readpoly(npoly, nrows, ncols, output_zone_matrix) ! Read in field info
   call read_well                                     ! Read in well info
   
