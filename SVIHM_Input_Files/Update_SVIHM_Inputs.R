@@ -25,23 +25,27 @@ flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream di
 
 # Irrigation demand: Different from the kc_CROP_mult values in crop_coeff_mult.txt, which is used for calibrating.
 irr_demand_mult = 1 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
+natveg_kc = 1.0 # Default kc for natural vegetation: 0.6. 
 
 # Month and day of the final day of alfalfa irrigation season. 
 # Default is Aug 31, 8/31
-alf_irr_stop_mo = 8 # Month as month of year (7 = July)
-alf_irr_stop_day = 31 
+alf_irr_stop_mo = 7 # Month as month of year (7 = July)
+alf_irr_stop_day = 10 
 # Convert to month of wy (Oct=1, Nov=2, ..., Jul = 10, Aug=11, Sep=0)
 if(alf_irr_stop_mo<9){alf_irr_stop_mo = alf_irr_stop_mo + 3
 }else{alf_irr_stop_mo = alf_irr_stop_mo - 9}
 
 #Land use scenario
-landuse_scenario = "native veg outside adj" #"basecase"
-# landuse_scenario = "basecase" 
+# landuse_scenario = "native veg, gw and mixed fields, outside adj"
+# landuse_scenario = "native veg outside adj"
+landuse_scenario = "basecase"
 
 # Scenario name for SWBM and MODFLOW
-# scenario_name = "alf_irr_stop_jul10" #also makes the directory name; must match folder
-scenario_name = "natveg_outside_adj_0.5" #also makes the directory name; must match folder
-
+scenario_name = "alf_irr_stop_jul10" #also makes the directory name; must match folder
+# scenario_name = "natveg_outside_adj_0.05" #also makes the directory name; must match folder
+# scenario_name = "natveg_gwmixed_outside_adj_0.05" #also makes the directory name; must match folder
+# scenario_name = "natveg_outside_adj_0.05_1.0nvkc" #also makes the directory name; must match folder
+# scenario_name = "natveg_gwmixed_outside_adj_0.05_1.0nvkc" #also makes the directory name; must match folder
 
 # SETUP -------------------------------------------------------------------
 
@@ -117,19 +121,15 @@ num_stress_periods = length(model_months)
 # well_list_by_polygon.txt
 # well_summary.txt
 
-if(landuse_scenario == "native veg outside adj"){ # don't copy the polygons.txt file
-  copy_these_files = c("crop_coeff_mult.txt", "daily_out.txt", 
-                       "ET_Cells_DZ.txt", "irr_eff.txt", "MAR_Fields.txt",
-                       "No_Flow_SVIHM.txt", "Recharge_Zones_SVIHM.txt", 
+  copy_these_files = c( "daily_out.txt", "ET_Cells_DZ.txt", 
+                        "irr_eff.txt", "MAR_Fields.txt",
+                       "No_Flow_SVIHM.txt", "Recharge_Zones_SVIHM.txt",
+                       #"polygons_table.txt", "crop_coeff_mult.txt",
                        "well_list_by_polygon.txt", "well_summary.txt")
-  
-} else {
-  copy_these_files = c("crop_coeff_mult.txt", "daily_out.txt", 
-                       "ET_Cells_DZ.txt", "irr_eff.txt", "MAR_Fields.txt",
-                       "No_Flow_SVIHM.txt", "polygons_table.txt", "Recharge_Zones_SVIHM.txt", 
-                       "well_list_by_polygon.txt", "well_summary.txt")
-  
-}
+
+if(landuse_scenario=="basecase"){copy_these_files = c(copy_these_files, "polygons_table.txt")}
+if(natveg_kc==0.6){copy_these_files = c(copy_these_files, "crop_coeff_mult.txt")}
+
 
 setwd(time_indep_dir)
 file.copy(copy_these_files, SWBM_file_dir)
@@ -151,6 +151,33 @@ copy_these_files = c("SFR_PEST_TPL.txt", "SFR_UCODE_JTF.txt", "SVIHM_ETS_templat
 
 setwd(time_indep_dir)
 file.copy(copy_these_files, SWBM_file_dir)
+
+
+
+# crop_coeff_mult.txt -----------------------------------------------------
+
+# TO DO: AUTOMATE
+
+if(natveg_kc!=0.6){
+  
+  kc_alfalfa_mult = "1.05"
+  kc_grain_mult = "1.00"
+  kc_pasture_mult = "1.05"
+  if(natveg_kc<1){kc_noirr = str_pad(natveg_kc, width = 4, pad = 0, side = "right")}
+  if(natveg_kc>=1){kc_noirr = formatC(as.numeric(natveg_kc), format = 'f', flag='0', digits = 2)}
+
+  notes_string="!kc_alfalfa_mult, kc_grain_mult, kc_pasture_mult, kc_noirr"
+  
+  kc_string = paste(kc_alfalfa_mult, kc_grain_mult,
+               kc_pasture_mult, natveg_kc, 
+               notes_string, sep = "    ")
+
+write.table(kc_string, file = file.path(SWBM_file_dir, "crop_coeff_mult.txt"),
+            sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+  
+  }
+
 
 
 #  Drains_m3day.txt and Drains_initial_m3day.txt --------------------------------------
@@ -332,7 +359,7 @@ file.copy(from=file1, to = file2, overwrite=T)
 # Water source map
 # Area calculations
 
-if(landuse_scenario == "native veg outside adj"){
+if(landuse_scenario != "basecase"){
   # Run spatial analysis
   
   # read in datasets
@@ -372,12 +399,6 @@ if(landuse_scenario == "native veg outside adj"){
                         fill = T, sep = "\t", colClasses = poly_column_classes)
   colnames(poly_tab) = c("Field_ID",colnames(poly_tab)[2:11])
   
-  #Land use key:
-  # alfalfa = 25
-  # palture = 2
-  # ET_noIrr = 3 (native veg, assumes kc of 0)
-  # noET_noIrr = 4
-  # water = 6
   
   in_adj_threshold = 0.05 # lower numbers mean, just a sliver overlapping are included
   fields_inside_adj = poly$Polynmbr[poly$fraction_in_adj > in_adj_threshold]
@@ -386,6 +407,10 @@ if(landuse_scenario == "native veg outside adj"){
   
   fields_inside_adj = poly[poly$fraction_in_adj > in_adj_threshold,]
   fields_outside_adj =  poly[poly$fraction_in_adj <= in_adj_threshold,]
+  
+  # poly_saved = poly
+  # # poly = poly_saved
+  # poly_tab_saved = poly_tab
   
   # png(filename = "parcels_adj_zone_for_scenario.png", height=9.5, width = 6.2, units = "in", res = 300)
   # plot(basin, lwd = 2, main = "Fields considered within Adjudicated Area for SVIHM Scenario")
@@ -471,6 +496,38 @@ if(landuse_scenario == "native veg outside adj"){
   # 
   # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
   # dev.off()
+  
+  #Color by land use - initialize columns
+  # poly$landuse = NA
+  # poly$landuse_color = NA
+  # 
+  # #Land use key:
+  # # alfalfa = 25; palture = 2; ET_noIrr = 3 (native veg, assumes kc of 0.6);  noET_noIrr = 4; water = 6
+  # 
+  # # make a land use/crop type color table
+  # lu = c(25,2,3,4,6)
+  # lu_descrip = c("Alfalfa","Pasture","ET_noIrr","noET_noIrr", "Water")
+  # lu_color = c("forestgreen","darkolivegreen2","wheat","red","dodgerblue")
+  # 
+  # lu_df = data.frame(lu_code = lu,
+  #                    descrip = lu_descrip,
+  #                    color = lu_color)
+  # #match codes and colors
+  # poly$landuse_from_svihm = poly_tab$Landuse[match(poly$Polynmbr, poly_tab$Field_ID)]
+  # poly$landuse_color = lu_df$color[match(poly$landuse_from_svihm, lu_df$lu_code)]
+  # 
+  # # #plot
+  # png(filename = "parcels_landuse_basecase.png", height=9.5, width = 6.2, units = "in", res = 300)
+  # plot(basin, lwd = 2, main = "Land Use / Crop Type: Basecase")
+  # plot(poly, add=T, col = poly$landuse_color, border = "darkgray", lwd=0.5)
+  # legend(x = "bottomleft", 
+  #        legend = c(lu_df$descrip[1:2],"ET, No Irr. (Native Veg.)",
+  #                   "No ET, No Irr. (e.g. Tailings)","Water"),
+  #        col = lu_df$color, pch = rep(15,6))
+  # 
+  # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
+  # dev.off()
+  
 
   # #Water source fraction of parcel area  
   # wat_source_area = aggregate(area(poly), by = list(poly$wat_source_from_svihm), FUN = "sum")
@@ -506,8 +563,47 @@ if(landuse_scenario == "native veg outside adj"){
   
   # Amend the SVIHM polygons table and write
   poly_tab_amended = poly_tab
-  poly_tab_amended$Landuse[poly_tab_amended$Field_ID %in% fields_outside_adj$Polynmbr] = 3
   
+  #Land use key:
+  # alfalfa = 25
+  # palture = 2
+  # ET_noIrr = 3 (native veg, assumes kc of 0)
+  # noET_noIrr = 4
+  # water = 6
+  
+  # # make water source color table
+  # wat_source = c(1,2,3,4,5,999)
+  # wat_source_descrip = c("SW","GW","Mixed", "Sub-irrigated","Dry","Unknown")
+  # wat_source_color = c("dodgerblue","firebrick2","darkorchid1","green","yellow","gray")
+  
+  
+  if(landuse_scenario == "native veg outside adj"){
+    poly_tab_amended$Landuse[poly_tab_amended$Field_ID %in% fields_outside_adj$Polynmbr] = 3
+  } else if(landuse_scenario == "native veg, gw and mixed fields, outside adj"){
+    poly_tab_amended$Landuse[poly_tab_amended$Field_ID %in% fields_outside_adj$Polynmbr &
+                               poly_tab_amended$Water_Source %in% c(2, 3)] = 3
+  }
+  
+  # png(filename = "parcels_landuse_natveg_gwmixed_outside_adj.png", height=9.5, width = 6.2, units = "in", res = 300)
+  # # png(filename = "parcels_landuse_natveg_outside_adj.png", height=9.5, width = 6.2, units = "in", res = 300)
+  # #match codes and colors
+  # poly$landuse_from_svihm = poly_tab_amended$Landuse[match(poly$Polynmbr, poly_tab_amended$Field_ID)]
+  # poly$landuse_color = lu_df$color[match(poly$landuse_from_svihm, lu_df$lu_code)]
+  # 
+  # 
+  # plot(basin, lwd = 2, main = "Land Use / Crop Type: NV GWM OA")
+  # plot(poly, add=T, col = poly$landuse_color,
+  #      border = "darkgray", lwd=0.5)
+  # legend(x = "bottomleft", 
+  #        legend = c(lu_df$descrip[1:2],"ET, No Irr. (Native Veg.)",
+  #                   "No ET, No Irr. (e.g. Tailings)","Water"),
+  #        col = lu_df$color, pch = rep(15,6))  
+  # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
+  # dev.off()
+  
+  
+  # poly$landuse = poly_tab_amended$Landuse[match(poly$Polynmbr, poly_tab_amended$Field_ID)]
+  # plot(poly, col = poly$landuse)
   
   write.table(x = poly_tab_amended, quote = F,
               file = file.path(SWBM_file_dir, "polygons_table.txt"),
@@ -850,12 +946,12 @@ file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 # 
 # ## Directories for running the scenarios (files copied at end of script)
 # 
-# SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
-# MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
+SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
+MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
 
 #Copy flow tables on the mainstem
-# file.copy(from = file.path(MF_file_dir,"Streamflow_FJ_SVIHM.dat"), 
-#           to = file.path(results_dir,paste0("Streamflow_FJ_SVIHM_",scenario_name,".dat")))
+file.copy(from = file.path(MF_file_dir,"Streamflow_FJ_SVIHM.dat"),
+          to = file.path(results_dir,paste0("Streamflow_FJ_SVIHM_",scenario_name,".dat")))
 file.copy(from = file.path(MF_file_dir,"Streamflow_Pred_Loc_2.dat"), 
           to = file.path(results_dir,paste0("Streamflow_Pred_Loc_2_",scenario_name,".dat")))
 file.copy(from = file.path(MF_file_dir,"Streamflow_Pred_Loc_3.dat"), 

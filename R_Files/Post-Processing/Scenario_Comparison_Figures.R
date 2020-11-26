@@ -434,13 +434,16 @@ mwb_basecase = monthly_water_budget_basecase
 
 # Read in alfalfa irrigation schedule change scenarios
 
-monthly_water_budget_alf_stop_jul10 = read.table(file.path(swbm_scenario_dir,"alf_irr_stop_jul10","monthly_water_budget.dat"), header = TRUE)
-mwb_asjul10 = monthly_water_budget_alf_stop_jul10
+# monthly_water_budget_alf_stop_jul10 = read.table(file.path(swbm_scenario_dir,"alf_irr_stop_jul10","monthly_water_budget.dat"), header = TRUE)
+# mwb_asjul10 = monthly_water_budget_alf_stop_jul10
 
 # Read in native-veg-outside-adj-zone scenario
 
-monthly_water_budget_natveg_outside_adj_0.05 = read.table(file.path(swbm_scenario_dir,"natveg_outside_adj_0.5","monthly_water_budget.dat"), header = TRUE)
+monthly_water_budget_natveg_outside_adj_0.05 = read.table(file.path(swbm_scenario_dir,"natveg_outside_adj_0.05","monthly_water_budget.dat"), header = TRUE)
 mwb_nvoa0.05 = monthly_water_budget_natveg_outside_adj_0.05
+
+monthly_water_budget_natveg_gwmixed_outside_adj_0.05 = read.table(file.path(swbm_scenario_dir,"natveg_gwmixed_outside_adj_0.05","monthly_water_budget.dat"), header = TRUE)
+mwb_nvgwmoa0.05 = monthly_water_budget_natveg_gwmixed_outside_adj_0.05
 
 
 #Read in reduced irrigation demand scenarios
