@@ -55,6 +55,7 @@ SWBM/natveg_outside_adj_0.05
 SWBM/natveg_outside_adj_0.05_1.0nvkc
 SWBM/natveg_gwmixed_outside_adj_0.05
 SWBM/natveg_gwmixed_outside_adj_0.05_1.0nvkc
+SWBM/alf_irr_stop_aug01
 MODFLOW/basecase
 MODFLOW/pvar_a03
 MODFLOW/pvar_a05
@@ -76,6 +77,7 @@ MODFLOW/ilr_flowlims
 MODFLOW/irrig_0.8
 MODFLOW/irrig_0.9
 MODFLOW/alf_irr_stop_jul10
+MODFLOW/alf_irr_stop_aug01
 MODFLOW/natveg_outside_adj_0.05
 MODFLOW/natveg_outside_adj_0.05_1.0nvkc
 MODFLOW/natveg_gwmixed_outside_adj_0.05

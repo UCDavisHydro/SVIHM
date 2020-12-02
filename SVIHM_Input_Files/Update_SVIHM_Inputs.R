@@ -29,8 +29,8 @@ natveg_kc = 1.0 # Default kc for natural vegetation: 0.6.
 
 # Month and day of the final day of alfalfa irrigation season. 
 # Default is Aug 31, 8/31
-alf_irr_stop_mo = 7 # Month as month of year (7 = July)
-alf_irr_stop_day = 10 
+alf_irr_stop_mo = 8 # Month as month of year (7 = July)
+alf_irr_stop_day = 1 
 # Convert to month of wy (Oct=1, Nov=2, ..., Jul = 10, Aug=11, Sep=0)
 if(alf_irr_stop_mo<9){alf_irr_stop_mo = alf_irr_stop_mo + 3
 }else{alf_irr_stop_mo = alf_irr_stop_mo - 9}
@@ -41,7 +41,7 @@ if(alf_irr_stop_mo<9){alf_irr_stop_mo = alf_irr_stop_mo + 3
 landuse_scenario = "basecase"
 
 # Scenario name for SWBM and MODFLOW
-scenario_name = "alf_irr_stop_jul10" #also makes the directory name; must match folder
+scenario_name = "alf_irr_stop_aug01" #also makes the directory name; must match folder
 # scenario_name = "natveg_outside_adj_0.05" #also makes the directory name; must match folder
 # scenario_name = "natveg_gwmixed_outside_adj_0.05" #also makes the directory name; must match folder
 # scenario_name = "natveg_outside_adj_0.05_1.0nvkc" #also makes the directory name; must match folder
