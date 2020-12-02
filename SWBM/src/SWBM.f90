@@ -357,9 +357,9 @@
            write(800,*)'Irrigation Type Updated'
 		     end if
          if (ILR_active) then
-           call IRRIGATION_ILR(ip, imonth, jday, eff_precip)
+           call IRRIGATION_ILR(ip, imonth, jday, eff_precip, alf_irr_stop_mo, alf_irr_stop_day)
 	       else
-	         call IRRIGATION(ip, imonth, jday, eff_precip)
+	         call IRRIGATION(ip, imonth, jday, eff_precip, alf_irr_stop_mo, alf_irr_stop_day)
 	       end if
 	       call RECHARGE(ip,eff_precip,jday,imonth,moisture_save,MAR_active)
 		     call deficiency_check(ip, imonth, jday)       

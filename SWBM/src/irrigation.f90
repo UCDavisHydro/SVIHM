@@ -59,7 +59,7 @@ MODULE irrigationmodule
   end subroutine read_kc_irreff
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  SUBROUTINE IRRIGATION(ip, imonth, jday, eff_precip)
+  SUBROUTINE IRRIGATION(ip, imonth, jday, eff_precip, alf_irr_stop_mo, alf_irr_stop_day)
 
   INTEGER :: imonth, jday, alf_irr_stop_mo, alf_irr_stop_day 
   INTEGER, INTENT(in) :: ip
@@ -75,6 +75,12 @@ MODULE irrigationmodule
         daily(ip)%evapotrasp=REF_ET*Kc_alfalfa*kc_alfalfa_mult  ! Set ET to current value for the day
         irreff_wl = irreff_wl_LU25                              ! Declare irrigation efficiency for wheel line, alfalfa case
         irreff_cp = irreff_cp_LU25                              ! Declare irrigation efficiency for center pivot, alfalfa case
+        !if ((imonth==6 .and. jday.ge.25 ) .or. (imonth.ge.7 .and. imonth.le.9 ) .or. &
+        !(imonth==alf_irr_stop_mo .and. jday.le.alf_irr_stop_day)) then  ! If  March 16 - July 10
+          !if(ip==1) then
+             !write(*,*) 'alf_irr_stop_mo = ', alf_irr_stop_mo 
+          !end if
+        
         if(alf_irr_stop_mo>6) then                              ! If the alfalfa irrigation season (alf_irr_stop_mo) ends in Apr-Aug (imonth 7-11))
           if ((imonth==6 .and. jday.ge.25 ) .or. &                          ! If date is March 25 - March 31
           (imonth>6 .and. imonth<alf_irr_stop_mo) .or. &                    ! If imonth is Apr-month before alf_irr_stop_mo
@@ -84,7 +90,8 @@ MODULE irrigationmodule
               call IRRIGATION_RULESET(imonth, jday, ip, irreff_wl, irreff_cp, eff_precip)
              end if
             end if
-          else if (alf_irr_stop_mo<3) then          ! If during irrigation season (test for alf_irr_stop_mo in Sep-Nov (imonth 0-2))
+          end if 
+          if (alf_irr_stop_mo<3) then          ! If during irrigation season (test for alf_irr_stop_mo in Sep-Nov (imonth 0-2))
             if ((imonth==6 .and. jday.ge.25 ) .or. &    ! If  March 25 - March 31
             (imonth>6 .or. imonth<alf_irr_stop_mo) .or. & ! If month is April-Aug or if imonth is after Aug but before alf_irr_stop_mo
             (imonth == alf_irr_stop_mo .and. jday.le.alf_irr_stop_day)) then  ! If date is in last month of irrigation season but before ending day
@@ -316,7 +323,7 @@ MODULE irrigationmodule
   END SUBROUTINE MAR
 
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-  SUBROUTINE IRRIGATION_ILR(ip, imonth, jday, eff_precip)
+  SUBROUTINE IRRIGATION_ILR(ip, imonth, jday, eff_precip, alf_irr_stop_mo, alf_irr_stop_day)
 
   INTEGER                      :: imonth, jday, alf_irr_stop_mo, alf_irr_stop_day
   INTEGER, INTENT(in)          :: ip

@@ -434,8 +434,8 @@ mwb_basecase = monthly_water_budget_basecase
 
 # Read in alfalfa irrigation schedule change scenarios
 
-# monthly_water_budget_alf_stop_jul10 = read.table(file.path(swbm_scenario_dir,"alf_irr_stop_jul10","monthly_water_budget.dat"), header = TRUE)
-# mwb_asjul10 = monthly_water_budget_alf_stop_jul10
+monthly_water_budget_alf_stop_jul10 = read.table(file.path(swbm_scenario_dir,"alf_irr_stop_jul10","monthly_water_budget.dat"), header = TRUE)
+mwb_asjul10 = monthly_water_budget_alf_stop_jul10
 
 # Read in native-veg-outside-adj-zone scenario
 
@@ -520,6 +520,8 @@ plot_water_budget_comparison(mwb_mar_ilr, mwb_mar_ilr_fl, c("MAR and ILR, no flo
 
 plot_water_budget_comparison(mwb_basecase, mwb_i0.8, c("Basecase", "80 percent Irrigation Demand"))
 
+plot_water_budget_comparison(mwb_basecase, mwb_asjul10, c("Basecase", "Alfalfa Irr Stops July 10"))
+
 
 # Bar graphs setup-------------------------------------
 
@@ -537,8 +539,10 @@ plot_water_budget_comparison(mwb_basecase, mwb_i0.8, c("Basecase", "80 percent I
 # scenario_ids = c("basecase","scb70", "scb80", "scb90")
 # mwbs = list(mwb_basecase, mwb_sca_95_07)
 # scenario_ids = c("basecase","sca_95_07")
-mwbs = list(mwb_basecase, mwb_i0.9, mwb_i0.8)
-scenario_ids = c("basecase","irrig_0.9","irrig_0.8")
+# mwbs = list(mwb_basecase, mwb_i0.9, mwb_i0.8)
+# scenario_ids = c("basecase","irrig_0.9","irrig_0.8")
+mwbs = list(mwb_basecase, mwb_asjul10)
+scenario_ids = c("basecase","asjul10")
 
 
 mwbs = list(mwb_basecase, mwb_mar, mwb_ilr, mwb_mar_ilr,
