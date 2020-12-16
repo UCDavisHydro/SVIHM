@@ -25,7 +25,7 @@ flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream di
 
 # Irrigation demand: Different from the kc_CROP_mult values in crop_coeff_mult.txt, which is used for calibrating.
 irr_demand_mult = 1 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
-natveg_kc = 1.0 # Default kc for natural vegetation: 0.6. 
+natveg_kc = 1.0 # Default: 0.6. Set at 1.0 for major natveg scenarios. 
 
 # Month and day of the final day of alfalfa irrigation season. 
 # Default is Aug 31, 8/31
@@ -38,14 +38,23 @@ if(alf_irr_stop_mo<9){alf_irr_stop_mo = alf_irr_stop_mo + 3
 #Land use scenario
 # landuse_scenario = "native veg, gw and mixed fields, outside adj"
 # landuse_scenario = "native veg outside adj"
+# landuse_scenario = "native veg, gw and mixed fields, inside adj"
+# landuse_scenario = "native veg inside adj"
+# landuse_scenario = "native veg, gw and mixed fields, all fields"
+# landuse_scenario = "native veg all fields"
+
 landuse_scenario = "basecase"
 
+
 # Scenario name for SWBM and MODFLOW
+# scenario_name = "alf_irr_stop_jul10" #also makes the directory name; must match folder
 scenario_name = "alf_irr_stop_aug01" #also makes the directory name; must match folder
-# scenario_name = "natveg_outside_adj_0.05" #also makes the directory name; must match folder
-# scenario_name = "natveg_gwmixed_outside_adj_0.05" #also makes the directory name; must match folder
-# scenario_name = "natveg_outside_adj_0.05_1.0nvkc" #also makes the directory name; must match folder
-# scenario_name = "natveg_gwmixed_outside_adj_0.05_1.0nvkc" #also makes the directory name; must match folder
+# scenario_name = "natveg_outside_adj" #also makes the directory name; must match folder
+# scenario_name = "natveg_gwmixed_outside_adj" #also makes the directory name; must match folder
+# scenario_name = "natveg_inside_adj" #also makes the directory name; must match folder
+# scenario_name = "natveg_gwmixed_inside_adj" #also makes the directory name; must match folder
+
+
 
 # SETUP -------------------------------------------------------------------
 
@@ -156,7 +165,7 @@ file.copy(copy_these_files, SWBM_file_dir)
 
 # crop_coeff_mult.txt -----------------------------------------------------
 
-# TO DO: AUTOMATE
+major_natveg_scenarios = c()
 
 if(natveg_kc!=0.6){
   
@@ -809,6 +818,18 @@ for (i in 1:num_stress_periods){
 
 # Now working here: get the fkn wl data from somewhere so you can make a hob file and run the modflow hist model
 
+
+
+# SVIHM.ets ---------------------------------------------------------------
+
+# TO DO: 
+
+#Look at the deficit, take an average deficit (by month), and assign that 
+# deficit to an ET package (ET package will only extract water from GW 
+# table according to extinction formula.). ET deficit assigned by SP, by cell.
+#At 6 ft depth, 100% of potential/target ET
+# At 15 ft depth, 0% of potential ET/target 
+#(linearly interpolate between) 
 
 # SVIHM.hob ---------------------------------------------------------------
 #Head Observation Package

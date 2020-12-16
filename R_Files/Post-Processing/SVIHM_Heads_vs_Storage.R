@@ -57,7 +57,7 @@ for(k in 1:NSP){
     H_temp = matrix(readBin(fid, numeric(), n=92400, size = 4), nrow = NROW, ncol = NCOL, byrow = T)  #Read in head matrix
     eval(parse(text = paste0('H[,,NLAY] = H_temp')))
   }
-  H[H==No_FLow_Val] = NaN
+  # H[H==No_FLow_Val] = NaN
   
   if (Print_Mon_Wells==T){
     if (k==1){
@@ -91,14 +91,20 @@ ground_surface_elev_values = trimws(dis_text[start_index:end_index])
 gse_val = unlist(strsplit(ground_surface_elev_values, split = "  "))
 gse = matrix(data = as.numeric(gse_val), nrow=NROW, ncol=NCOL, byrow=TRUE)
 
+# TO DO: subset H by growing season
+#growing season: Apr-Sep, or imonth 7-11
+growing_season_selector = ((1:NSP %% 12) %in% 7:11)
+#H[NROW, NCOL, NLAY, NSP]
+H_gs = H_all[,,,growing_season_selector]
+
 # image(t(gse[440:1,])) # Test by mapping: transpose x and y vals and reverse x vals to convert to geographic position
 for(i in 1:NLAY){
-  h_layer = H_all[,,i,]
+  h_layer = H_gs[,,i,]
   h_avg = apply(X = h_layer, MARGIN = c(1,2), FUN = mean)
   
   dtw = gse - h_avg
   dtw_lt_15 = dtw
-  dtw_lt_15[dtw_lt_15 > 15] = NA
+  dtw_lt_15[dtw_lt_15 > 6] = NA
   
   image(t(dtw_lt_15[440:1,]))
 }

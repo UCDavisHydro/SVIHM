@@ -56,6 +56,7 @@ SWBM/natveg_outside_adj_0.05_1.0nvkc
 SWBM/natveg_gwmixed_outside_adj_0.05
 SWBM/natveg_gwmixed_outside_adj_0.05_1.0nvkc
 SWBM/alf_irr_stop_aug01
+MODFLOW/scenario_archive
 MODFLOW/basecase
 MODFLOW/pvar_a03
 MODFLOW/pvar_a05

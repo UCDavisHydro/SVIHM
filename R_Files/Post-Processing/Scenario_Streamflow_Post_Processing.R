@@ -49,6 +49,7 @@ dif_lim = c(-80,140)
 DP_Basecase_flow = data.frame(Date = seq(start_date, end_date, "days"),                         # Import Basecase flow data
                               Flow_m3day = read.table(paste0(flow_loc,"_basecase.dat"), skip = 2)[,3],
                               Flow_cfs = read.table(paste0(flow_loc,"_basecase.dat"), skip = 2)[,3]*0.000408734569)
+
 DP_MAR_flow = data.frame(Date = seq(start_date, end_date, "days"),                              # Import MAR flow data
                          Flow_m3day = read.table(paste0(flow_loc,'_MAR.dat'), skip = 2)[,3],
                          Flow_cfs = read.table(paste0(flow_loc,'_MAR.dat'), skip = 2)[,3]*0.000408734569)
@@ -79,11 +80,15 @@ DP_0.9_flow = data.frame(Date = seq(start_date, end_date, "days"),              
                          Flow_m3day = read.table(paste0(flow_loc,'_irrig_0.9.dat'), skip = 2)[,3],
                          Flow_cfs = read.table(paste0(flow_loc,'_irrig_0.9.dat'), skip = 2)[,3]*0.000408734569)
 
-# DP_alf_irr_jul10_flow = data.frame(Date = seq(start_date, end_date, "days"),                              # Import ILR flow data
-#                          Flow_m3day = read.table(paste0(flow_loc,'_alf_irr_stop_jul10.dat'), skip = 2)[,3],
-#                          Flow_cfs = read.table(paste0(flow_loc,'_alf_irr_stop_jul10.dat'), skip = 2)[,3]*0.000408734569)
+#Alf Irr stop dates
+DP_alf_irr_jul10_flow = data.frame(Date = seq(start_date, end_date, "days"),                              # Import ILR flow data
+                         Flow_m3day = read.table(paste0(flow_loc,'_alf_irr_stop_jul10.dat'), skip = 2)[,3],
+                         Flow_cfs = read.table(paste0(flow_loc,'_alf_irr_stop_jul10.dat'), skip = 2)[,3]*0.000408734569)
+DP_alf_irr_aug01_flow = data.frame(Date = seq(start_date, end_date, "days"),                              # Import ILR flow data
+                                   Flow_m3day = read.table(paste0(flow_loc,'_alf_irr_stop_aug01.dat'), skip = 2)[,3],
+                                   Flow_cfs = read.table(paste0(flow_loc,'_alf_irr_stop_aug01.dat'), skip = 2)[,3]*0.000408734569)
 
-
+# "turn off pumping" or nat veg in some areas
 DP_natveg_outside_adj_0.05_flow = data.frame(Date = seq(start_date, end_date, "days"),                              # Import ILR flow data
                                 Flow_m3day = read.table(paste0(flow_loc,'_natveg_outside_adj_0.05.dat'), skip = 2)[,3],
                                 Flow_cfs = read.table(paste0(flow_loc,'_natveg_outside_adj_0.05.dat'), skip = 2)[,3]*0.000408734569)
@@ -91,14 +96,6 @@ DP_natveg_outside_adj_0.05_flow = data.frame(Date = seq(start_date, end_date, "d
 DP_natveg_gwmixed_outside_adj_0.05_flow = data.frame(Date = seq(start_date, end_date, "days"),                              # Import ILR flow data
                                              Flow_m3day = read.table(paste0(flow_loc,'_natveg_gwmixed_outside_adj_0.05.dat'), skip = 2)[,3],
                                              Flow_cfs = read.table(paste0(flow_loc,'_natveg_gwmixed_outside_adj_0.05.dat'), skip = 2)[,3]*0.000408734569)
-
-DP_natveg_outside_adj_0.05_1.0nvkc_flow = data.frame(Date = seq(start_date, end_date, "days"),                              # Import ILR flow data
-                                             Flow_m3day = read.table(paste0(flow_loc,'_natveg_outside_adj_0.05_1.0nvkc.dat'), skip = 2)[,3],
-                                             Flow_cfs = read.table(paste0(flow_loc,'_natveg_outside_adj_0.05_1.0nvkc.dat'), skip = 2)[,3]*0.000408734569)
-
-DP_natveg_gwmixed_outside_adj_0.05_1.0nvkc_flow = data.frame(Date = seq(start_date, end_date, "days"),                              # Import ILR flow data
-                                                     Flow_m3day = read.table(paste0(flow_loc,'_natveg_gwmixed_outside_adj_0.05_1.0nvkc.dat'), skip = 2)[,3],
-                                                     Flow_cfs = read.table(paste0(flow_loc,'_natveg_gwmixed_outside_adj_0.05_1.0nvkc.dat'), skip = 2)[,3]*0.000408734569)
 
 # Make a table for Thomas and his fish reconnection estimate -------------------------------------------------
 
@@ -283,9 +280,9 @@ read_pumping_data = function(results_dir, scenario_ids){
 # MAR_ILR_pumping_diff = pumping_bc - pumping_MAR_ILR
 
 
-#############################################################################################
+#.############################################################################################
 ##########################             DATA PROCESSING             ##########################
-#############################################################################################
+#.############################################################################################
 
 make_flow_diff_daily_tab = function(basecase_flow_table = DP_Basecase_flow,
                                     daily_flow_tables, scenario_ids){
@@ -328,28 +325,26 @@ return(Daily_Flow)
 # FLOW DIFFERENCES
 
 #Specify tables and scenario IDs (for column name differentiation) for daily diff table
-Flow_Diff_Daily = make_flow_diff_daily_tab(basecase_flow_table = DP_Basecase_flow,
-                                daily_flow_tables = list(DP_MAR_flow, 
-                                                         DP_ILR_flow, 
-                                                         DP_MAR_ILR_flow,
-                                                         DP_Basecase_fl_flow, 
-                                                         # DP_MAR_ILR_fl_flow,
-                                                         DP_0.8_flow, DP_0.9_flow,
-                                                         DP_natveg_outside_adj_0.05_flow,
-                                                         DP_natveg_gwmixed_outside_adj_0.05_flow,
-                                                         DP_natveg_outside_adj_0.05_1.0nvkc_flow,
-                                                         DP_natveg_gwmixed_outside_adj_0.05_1.0nvkc_flow
-                                                         ),
-                                scenario_ids = c("mar","ilr","mar_ilr", 
-                                                 "flowlims", #"mar_ilr_flowlims", 
-                                                 "irrig_0.8","irrig_0.9",
-                                                 "nvoa0.05","nvgwmoa0.05",
-                                                 "nvoa0.05_1.0","nvgwmoa0.05_1.0"
-                                                 ))
-
-# Flow_Diff_Daily = make_flow_diff_daily_tab(basecase_flow_table = DP_Basecase_flow,
-#                          daily_flow_tables = list(natveg_outside_adj_0.05_flow),
-#                          scenario_ids = c("nvoa0.05"))
+Flow_Diff_Daily = make_flow_diff_daily_tab(
+  basecase_flow_table = DP_Basecase_flow,
+  daily_flow_tables = 
+    list(DP_MAR_flow, 
+         DP_ILR_flow, 
+         DP_MAR_ILR_flow,
+         DP_Basecase_fl_flow, 
+         DP_MAR_ILR_fl_flow,
+         DP_0.8_flow, DP_0.9_flow,
+         DP_alf_irr_jul10_flow, 
+         DP_alf_irr_aug01_flow,
+         DP_natveg_outside_adj_0.05_flow,
+         DP_natveg_gwmixed_outside_adj_0.05_flow
+    ),
+  scenario_ids = c("mar","ilr","mar_ilr", 
+                   "flowlims", "mar_ilr_flowlims", 
+                   "irrig_0.8","irrig_0.9",
+                   "alf_irr_jul10", "alf_irr_aug01",
+                   "nvoa0.05","nvgwmoa0.05"
+  ))
 
 # Average difference in flow for each Stress Period
 Flow_Diff_SP_Avg = Flow_Diff_Daily# Copy daily data frame
@@ -375,23 +370,24 @@ Flow_Diff_Monthly_Avg = Flow_Diff_Monthly_Avg[order(Flow_Diff_Monthly_Avg$Date),
 
 Daily_Flow = make_daily_flow_tab(
   daily_flow_tables = list(DP_Basecase_flow,
-    DP_MAR_flow, 
+                           DP_MAR_flow, 
                            DP_ILR_flow, 
                            DP_MAR_ILR_flow,
                            DP_Basecase_fl_flow, 
-                           # DP_MAR_ILR_fl_flow,
-                           DP_0.8_flow, DP_0.9_flow,
+                           DP_MAR_ILR_fl_flow,
+                           DP_0.8_flow, 
+                           DP_0.9_flow,
+                           DP_alf_irr_jul10_flow, 
+                           DP_alf_irr_aug01_flow,
                            DP_natveg_outside_adj_0.05_flow,
-                           DP_natveg_gwmixed_outside_adj_0.05_flow,
-                           DP_natveg_outside_adj_0.05_1.0nvkc_flow,
-                           DP_natveg_gwmixed_outside_adj_0.05_1.0nvkc_flow
+                           DP_natveg_gwmixed_outside_adj_0.05_flow
   ),
   scenario_ids = c("basecase","mar","ilr","mar_ilr", 
-                   "flowlims", #"mar_ilr_flowlims", 
+                   "flowlims", "mar_ilr_flowlims", 
                    "irrig_0.8","irrig_0.9",
-                   "nvoa0.05","nvgwmoa0.05",
-                   "nvoa0.05_1.0","nvgwmoa0.05_1.0"
-                   ))
+                   "alf_irr_jul10", "alf_irr_aug01",
+                   "nvoa0.05","nvgwmoa0.05"
+  ))
 
 # Average flow for each Stress Period
 Flow_SP_Avg = Daily_Flow# Copy daily data frame
@@ -435,8 +431,6 @@ MAR_ILR_Flowlims_geom_ribbon_data = data.frame(x = c(1,2,3,MAR_ILR_flowlims_xint
 irrig_0.8_geom_ribbon_data = data.frame(x = 1:12, y = Flow_Diff_Monthly_Avg$irrig_0.8_difference_cfs)
 irrig_0.9_geom_ribbon_data = data.frame(x = 1:12, y = Flow_Diff_Monthly_Avg$irrig_0.9_difference_cfs)
 
-"nvoa0.05"
-"nvgwmoa0.05"
 
 nvoa0.05_xintercept_cfs = 3 +(-Flow_Diff_Monthly_Avg$nvoa0.05_difference_cfs[3] /(Flow_Diff_Monthly_Avg$nvoa0.05_difference_cfs[4] - Flow_Diff_Monthly_Avg$nvoa0.05_difference_cfs[3]))
 nvoa0.05_geom_ribbon_data = data.frame(x = c(1,2,3,nvoa0.05_xintercept_cfs,4,5,6,7,8,9,10,11,12),
@@ -452,13 +446,13 @@ nvoa0.05_xintercept_cfs = 3 +(-Flow_Diff_Monthly_Avg$nvoa0.05_difference_cfs[3] 
 nvoa0.05_geom_ribbon_data = data.frame(x = c(1,2,3,nvoa0.05_xintercept_cfs,4,5,6,7,8,9,10,11,12),
                                        y = c(Flow_Diff_Monthly_Avg$nvoa0.05_difference_cfs[1:3], 0, Flow_Diff_Monthly_Avg$nvoa0.05_difference_cfs[4:12])      )
 
-nvoa0.05_1.0_xintercept_cfs =  3 +(-Flow_Diff_Monthly_Avg$nvoa0.05_1.0_difference_cfs[3] /(Flow_Diff_Monthly_Avg$nvoa0.05_1.0_difference_cfs[4] - Flow_Diff_Monthly_Avg$nvoa0.05_1.0_difference_cfs[3]))
-nvoa0.05_1.0_geom_ribbon_data  = data.frame(x = c(1,2,3,nvoa0.05_1.0_xintercept_cfs,4,5,6,7,8,9,10,11,12),
-                                               y = c(Flow_Diff_Monthly_Avg$nvoa0.05_1.0_difference_cfs[1:3], 0, Flow_Diff_Monthly_Avg$nvoa0.05_1.0_difference_cfs[4:12])      )
 
-nvgwmoa0.05_1.0_xintercept_cfs =  3 +(-Flow_Diff_Monthly_Avg$nvgwmoa0.05_1.0_difference_cfs[3] /(Flow_Diff_Monthly_Avg$nvgwmoa0.05_1.0_difference_cfs[4] - Flow_Diff_Monthly_Avg$nvgwmoa0.05_1.0_difference_cfs[3]))
-nvgwmoa0.05_1.0_geom_ribbon_data  = data.frame(x = c(1,2,3,nvgwmoa0.05_1.0_xintercept_cfs,4,5,6,7,8,9,10,11,12),
-                                               y = c(Flow_Diff_Monthly_Avg$nvgwmoa0.05_1.0_difference_cfs[1:3], 0, Flow_Diff_Monthly_Avg$nvgwmoa0.05_1.0_difference_cfs[4:12])      )
+
+# Scenario-comparison metrics table ---------------------------------------
+
+
+colnames_metrics = c(fall_days_gained_20cfs, monthly_flow_chg_avg_Sept_cfs, monthly_flow_chg_val_Sept_cfs,
+                     crop_water_deficit_TAF_per_yr, acres_affected)
 
 #.############################################################################################
 #.############################################################################################
