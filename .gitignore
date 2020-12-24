@@ -26,9 +26,11 @@ R_Files/Post-Processing/Results
 R_Files/Post-Processing/CovRandPar_out
 R_Files/Post-Processing/UniRandPar_out
 R_Files/Post-Processing/Results
+R_Files/Post-Processing/Results_2020
 MODFLOW/up2018
 MODFLOW/orig_1991_2011
 MODFLOW/hist
+MODFLOW/scenario_archive
 SWBM/hist
 SWBM/pvar_a03
 SWBM/pvar_a05
@@ -40,4 +42,6 @@ SWBM/pvar_c10
 SWBM/pvar_c20
 SWBM/pvar_c30
 SWBM/scenario_archive
+_scratchwork_and_figure_tests
+Scenarios
 
