@@ -1,18 +1,15 @@
 #Generate input files for SVIHM
-#Goal: Use this R script to generate ALL the text files that go into the SWBM and the SVIHM modflow model. 
-#This script must be in the outer SVIHM directory to access all the other files (Streamflow Regression, SWBM, MODFLOW)
 
 library(lubridate)
 library(stringr)
 library(dplyr)
 library(DBI)
 #spatial tools
-library(raster) # for crs function
+library(raster) 
 library(rpostgis)
 library(rgdal)
 library(postGIStools) # pull from gis server
-library(rgeos) # buffer
-#Rules:
+library(rgeos) # for buffer function
 ## dates in R are treated as YYYY-MM-DD for convenience. Dates in the model input files are DD-MM-YYYY.
 
 # rm(list = ls())
@@ -24,8 +21,8 @@ recharge_scenario = "Basecase" # Can be Basecase/MAR/ILR/MAR_ILR
 flow_scenario = "Basecase" # Can be Basecase/Flow_Lims. Flow limits on stream diversion specified in "available ratio" table.
 
 # Irrigation demand: Different from the kc_CROP_mult values in crop_coeff_mult.txt, which is used for calibrating.
-irr_demand_mult = 1 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)(increased irrigation)
-natveg_kc = 1.0 # Default: 0.6. Set at 1.0 for major natveg scenarios. 
+irr_demand_mult = 1 # Can be 1 (Basecase) or < 1 or > 1 (i.e., reduced or increased irrigation; assumes land use change)
+natveg_kc = 0.6 # Default: 0.6. Set at 1.0 for major natveg scenarios. 
 
 # Month and day of the final day of alfalfa irrigation season. 
 # Default is Aug 31, 8/31
@@ -35,24 +32,27 @@ alf_irr_stop_day = 1
 if(alf_irr_stop_mo<9){alf_irr_stop_mo = alf_irr_stop_mo + 3
 }else{alf_irr_stop_mo = alf_irr_stop_mo - 9}
 
-#Land use scenario
-# landuse_scenario = "native veg, gw and mixed fields, outside adj"
-# landuse_scenario = "native veg outside adj"
-# landuse_scenario = "native veg, gw and mixed fields, inside adj"
-# landuse_scenario = "native veg inside adj"
-# landuse_scenario = "native veg, gw and mixed fields, all fields"
-# landuse_scenario = "native veg all fields"
+#Land use scenario. 
+landuse_scenario = "Basecase" # Default: Basecase. For attribution study: major_natveg
+# landuse_scenario_detail = "native veg, gw and mixed fields, outside adj"
+# landuse_scenario_detail = "native veg outside adj"
+# landuse_scenario_detail = "native veg, gw and mixed fields, inside adj"
+# landuse_scenario_detail = "native veg inside adj"
+# landuse_scenario_detail = "native veg, gw and mixed fields, all cultivated fields"
+# landuse_scenario_detail = "native veg all cultivated fields"
 
-landuse_scenario = "basecase"
 
 
-# Scenario name for SWBM and MODFLOW
-# scenario_name = "alf_irr_stop_jul10" #also makes the directory name; must match folder
-scenario_name = "alf_irr_stop_aug01" #also makes the directory name; must match folder
-# scenario_name = "natveg_outside_adj" #also makes the directory name; must match folder
-# scenario_name = "natveg_gwmixed_outside_adj" #also makes the directory name; must match folder
-# scenario_name = "natveg_inside_adj" #also makes the directory name; must match folder
-# scenario_name = "natveg_gwmixed_inside_adj" #also makes the directory name; must match folder
+# Overall scenario identifier. Also makes the directory name; must match folder
+# scenario_name = "basecase"
+# scenario_name = "mar_ilr" # "ilr" "mar" 
+# scenario_name = "flowlims" #"irrig_0.9" "irrig_0.8
+# scenario_name = "alf_irr_stop_jul10" 
+scenario_name = "alf_irr_stop_aug01" 
+# scenario_name = "natveg_outside_adj"
+# scenario_name = "natveg_gwmixed_outside_adj"
+# scenario_name = "natveg_inside_adj" 
+# scenario_name = "natveg_gwmixed_inside_adj" 
 
 
 
@@ -85,11 +85,14 @@ source(file.path(dms_dir, "connect_to_db.R"))
 
 ## Directories for running the scenarios (files copied at end of script)
 
-SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
-MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
+# New file architecture
+scenario_dir = file.path(svihm_dir, "Scenarios",scenario_name)
+SWBM_file_dir = scenario_dir
+MF_file_dir = scenario_dir
+# Old file architecture
+# SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
+# MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
 
-
-#To do: incorporate web-scraping into streamflow and ET record generation
 
 #SET MODEL RUN DATES
 start_year = 1990 # WY 1991; do not change
@@ -121,22 +124,22 @@ num_stress_periods = length(model_months)
 
 # crop_coeff_mult.txt
 # daily_out.txt
-# ET_Cells_DZ.txt
 # irr_eff.txt
 # MAR_Fields.txt
 # No_Flow_SVIHM.txt
+# Discharge_Zone_Cells.txt
 # polygons_table.txt
 # Recharge_Zones_SVIHM.txt
 # well_list_by_polygon.txt
 # well_summary.txt
 
-  copy_these_files = c( "daily_out.txt", "ET_Cells_DZ.txt", 
+  copy_these_files = c( "daily_out.txt", #"Discharge_Zone_Cells.txt",
                         "irr_eff.txt", "MAR_Fields.txt",
                        "No_Flow_SVIHM.txt", "Recharge_Zones_SVIHM.txt",
                        #"polygons_table.txt", "crop_coeff_mult.txt",
                        "well_list_by_polygon.txt", "well_summary.txt")
 
-if(landuse_scenario=="basecase"){copy_these_files = c(copy_these_files, "polygons_table.txt")}
+if(landuse_scenario %in% c("basecase","Basecase")){ copy_these_files = c(copy_these_files, "polygons_table.txt")}
 if(natveg_kc==0.6){copy_these_files = c(copy_these_files, "crop_coeff_mult.txt")}
 
 
@@ -165,7 +168,6 @@ file.copy(copy_these_files, SWBM_file_dir)
 
 # crop_coeff_mult.txt -----------------------------------------------------
 
-major_natveg_scenarios = c()
 
 if(natveg_kc!=0.6){
   
@@ -198,6 +200,360 @@ write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_m3day.txt"),
 write.table(drains_vector, file = file.path(SWBM_file_dir, "Drains_initial_m3day.txt"),
             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
+
+# ET_Cells_extinction_depth.txt,  polygons_table.txt ------------------------------------------------------------
+
+if( !(landuse_scenario %in% c("basecase","Basecase"))){ 
+  #If landuse is not basecase, amend polygons table
+  
+
+# ___polygons.txt ------------------------------------------------------------
+
+  
+  # Run spatial analysis
+  
+  # read in datasets
+  poly = readOGR(dsn = ref_data_dir, layer = "Landuse_20190219")
+  # adj = get_postgis_query(siskiyou_spatial, "SELECT * FROM scott_adjudicated_area", geom_name = "geom")
+  # writeOGR(adj, dsn = ref_data_dir, layer = "Adjudicated Area",driver = "ESRI Shapefile")
+  adj = readOGR(dsn = ref_data_dir, layer = "Adjudicated Area")
+  
+  poly = spTransform(poly, crs(adj))
+  
+  #Calculate the fraction of each polygon *inside* the adjudicated zone.
+  poly$fraction_in_adj = 0 # initialize new column
+  
+  for(i in 1:max(poly$Polynmbr)){
+    selector = poly$Polynmbr==i
+    field = poly[selector,]
+    if(!gIsValid(field)){
+      field = gBuffer(field, width = 0) # fix invalid geoms and warn about it
+      print(paste("polygon number",i,"invalid"))} 
+    
+    if(gIntersects(adj, field)){
+      overlap_poly = intersect(field, adj)
+      poly$fraction_in_adj[selector] = round(area(overlap_poly) / area(field), digits = 3) # otherwise get leftover digit junk
+    }
+  }
+  
+  # Divide fields
+  
+  # Note: this does not preserve "notes" column
+  poly_column_classes = c(rep("integer",4),
+                          "numeric","integer","numeric","numeric",
+                          "integer","integer","character",
+                          rep("NULL",16)) # get rid of empty columns in the text file
+  
+  poly_tab = read.table(file.path(time_indep_dir,"polygons_table.txt"),
+                        header = T, comment.char = "!", 
+                        fill = T, sep = "\t", colClasses = poly_column_classes)
+  colnames(poly_tab) = c("Field_ID",colnames(poly_tab)[2:11])
+  
+  
+  in_adj_threshold = 0.05 # lower numbers mean, just a sliver overlapping are included
+  fields_inside_adj = poly$Polynmbr[poly$fraction_in_adj > in_adj_threshold]
+  fields_outside_adj = poly$Polynmbr[!(poly$Polynmbr %in% fields_inside_adj)]
+  
+  
+  fields_inside_adj = poly[poly$fraction_in_adj > in_adj_threshold,]
+  fields_outside_adj =  poly[poly$fraction_in_adj <= in_adj_threshold,]
+  
+  # poly_saved = poly
+  # # poly = poly_saved
+  # poly_tab_saved = poly_tab
+  
+  # png(filename = "parcels_adj_zone_for_scenario.png", height=9.5, width = 6.2, units = "in", res = 300)
+  # plot(basin, lwd = 2, main = "Fields considered within Adjudicated Area for SVIHM Scenario")
+  # plot(fields_inside_adj, add=T, col = rgb(0,0,1, 0.5))
+  # plot(fields_outside_adj, add=T, col = rgb(0,1,0,0.3))
+  # plot(adj, add=T, border = "red", lwd = 2)#col = rgb(1,0,0,0.3))
+  # legend(x = "bottomleft",
+  #        lwd = c(2, 2, NA,NA), pch = c(NA,NA, 15, 15),
+  #        col = c("black","red","blue", "green"),
+  #        legend = c("Groundwater Basin", "Adjudicated Zone", "Inside Fields", "Outside Fields"))
+  # dev.off()
+  
+  # sq_m_per_acre = 4046.86
+  # sum(area(fields_inside_adj))/ unique(area(basin)) #sum(area(poly))
+  # sum(area(fields_inside_adj)) / sq_m_per_acre # convert to acres
+  # sum(area(fields_outside_adj))/ sum(area(poly)) #unique(area(basin)) #
+  # sum(area(fields_outside_adj)) / sq_m_per_acre # convert to acres
+  
+  # Explore/visualize
+  # area(adj)/sum(area(poly))*100 # covers 20.0% of the land area in this shapefile
+  # area(adj)/area(basin)*100 # covers 15.7% of the land area of the basin
+  # plot(poly)
+  # plot(adj, add=T, col=rgb(.5,.5,.5,0.5))
+  
+  
+  #Data exploration - visualize 3 categories of field. All in, all out, or overlapping
+  
+  # fields_totally_in_adj = poly[poly$fraction_in_adj==1,]
+  # fields_totally_outside_adj = poly[poly$fraction_in_adj==0,]
+  # fields_partially_in_adj = poly[poly$fraction_in_adj !=0 & poly$fraction_in_adj !=1 ,]
+  
+  # sum(area(fields_totally_in_adj)) / sq_m_per_acre # convert to acres
+  # sum(area(fields_totally_outside_adj)) / sq_m_per_acre # convert to acres
+  # sum(area(fields_partially_in_adj)) / sq_m_per_acre # convert to acres
+  
+  
+  # png(filename = "parcels_adj_zone.png", height=9.5, width = 6.2, units = "in", res = 300)
+  # plot(basin, lwd = 2, main = "Relation of Parcels to the Adjudicated Zone")
+  # plot(fields_totally_in_adj, add=T, col = rgb(0,0,1,.7), border = "gray")
+  # plot(fields_totally_outside_adj, add=T, col = rgb(0,1,0,.7), border = "gray")
+  # plot(fields_partially_in_adj, add=T, col = rgb(1,0,0,.7), border = "gray")
+  # legend(x = "bottomleft",
+  #        col = c("black","blue","green","red"),
+  #        pch=c(NA,rep(15,3)),
+  #        lwd = c(2,rep(NA,3)),
+  #        legend = c("Basin Boundary","Completely Inside", "Completely Outside", "Overlaps Zone Border"))
+  # dev.off()
+  
+  # # fractions of the basin area
+  # "Totally inside adjudicated zone:"
+  # sum(area(fields_totally_in_adj)) / sum(area(poly))
+  # sum(area(fields_totally_in_adj)) / area(basin)
+  # "Totally outside adjudicated zone:"
+  # sum(area(fields_totally_outside_adj)) / sum(area(poly))
+  # sum(area(fields_totally_outside_adj)) / area(basin)
+  # "Overlapping adjudicated zone boundary:"
+  # sum(area(fields_partially_in_adj))/ sum(area(poly))
+  # sum(area(fields_partially_in_adj))/ area(basin)
+  
+  
+  # #Color by water source - initialize columns
+  # poly$wat_source_from_svihm = NA
+  # poly$wat_source_from_svihm_color = NA
+  # 
+  # # make water source color table
+  # wat_source = c(1,2,3,4,5,999)
+  # wat_source_descrip = c("SW","GW","Mixed", "Sub-irrigated","Dry","Unknown")
+  # wat_source_color = c("dodgerblue","firebrick2","darkorchid1","green","yellow","gray")
+  # 
+  # wat_source_df = data.frame(ws_code = wat_source,
+  #                            descrip = wat_source_descrip,
+  #                            color = wat_source_color)
+  # #match codes and colors
+  # poly$wat_source_from_svihm = poly_tab$Water_Source[match(poly$Polynmbr, poly_tab$Field_ID)]
+  # poly$wat_source_from_svihm_color = wat_source_df$color[match(poly$wat_source_from_svihm, wat_source_df$ws_code)]
+  # 
+  # # #plot
+  # png(filename = "parcels_wat_source.png", height=9.5, width = 6.2, units = "in", res = 300)
+  # plot(basin, lwd = 2, main = "Irrigation Water Sources")
+  # plot(poly, add=T, col = poly$wat_source_from_svihm_color, border = "darkgray")
+  # legend(x = "bottomleft", legend = wat_source_df$descrip,
+  #        col = wat_source_df$color, pch = rep(15,6))
+  # 
+  # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
+  # dev.off()
+  
+  #Color by land use - initialize columns
+  # poly$landuse = NA
+  # poly$landuse_color = NA
+  # 
+  # #Land use key:
+  # # alfalfa = 25; palture = 2; ET_noIrr = 3 (native veg, assumes kc of 0.6);  noET_noIrr = 4; water = 6
+  # 
+  # # make a land use/crop type color table
+  lu = c(25,2,3,4,6)
+  lu_descrip = c("Alfalfa","Pasture","ET_noIrr","noET_noIrr", "Water")
+  lu_color = c("forestgreen","darkolivegreen2","wheat","red","dodgerblue")
+
+  lu_df = data.frame(lu_code = lu,
+                     descrip = lu_descrip,
+                     color = lu_color)
+  #match codes and colors
+  poly$landuse_from_svihm = poly_tab$Landuse[match(poly$Polynmbr, poly_tab$Field_ID)]
+  poly$landuse_color = lu_df$color[match(poly$landuse_from_svihm, lu_df$lu_code)]
+  # 
+  # # #plot
+  # png(filename = "parcels_landuse_basecase.png", height=9.5, width = 6.2, units = "in", res = 300)
+  # plot(basin, lwd = 2, main = "Land Use / Crop Type: Basecase")
+  # plot(poly, add=T, col = poly$landuse_color, border = "darkgray", lwd=0.5)
+  # legend(x = "bottomleft", 
+  #        legend = c(lu_df$descrip[1:2],"ET, No Irr. (Native Veg.)",
+  #                   "No ET, No Irr. (e.g. Tailings)","Water"),
+  #        col = lu_df$color, pch = rep(15,6))
+  # 
+  # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
+  # dev.off()
+  
+  
+  # #Water source fraction of parcel area  
+  # wat_source_area = aggregate(area(poly), by = list(poly$wat_source_from_svihm), FUN = "sum")
+  # wat_source_area$frac_parcels = round(wat_source_area$x / sum(area(poly)),digits = 3)
+  # wat_source_area$frac_basin = round(wat_source_area$x / unique(area(basin)),digits = 3)
+  
+  # #proportion of fields in each category 
+  # par(mfrow = c(3,1))
+  # pie(summary(poly_tab$Landuse), main = "all fields")
+  # pie(summary(poly_tab$Landuse[poly_tab$Field_ID %in% fields_inside_adj]), 
+  #     main = paste("fields in adj,", in_adj_threshold, "overlap needed"))
+  # pie(summary(poly_tab$Landuse[!(poly_tab$Field_ID %in% fields_inside_adj)]), 
+  #     main = paste("fields outside adj,", in_adj_threshold, "overlap needed"))
+  
+  
+  
+  # # find weird parcels
+  # pdf(file = "weird_parcel_finder.pdf",width = 8.5, height = 11)
+  # for(i in 1:length(poly$Polynmbr)){
+  #   field = poly[poly$Polynmbr==i,]
+  #   # print(area(field))
+  #   if(area(field) > 10^5 & i %in% fields_partially_in_adj$Polynmbr) {
+  #     plot(basin, main = i)
+  #     plot(field, col = "pink", border = "red", lwd = 2,add=T)
+  #     
+  #   }
+  # }
+  # dev.off()
+  
+  ## Weird: 714. a couple others.
+  #in the find-weird-parcels analysis, I decided to exclude parcels with 5% or less of their area in the adjudicated zone.
+  
+  
+  # Amend the SVIHM polygons table and write
+  poly_tab_amended = poly_tab
+  
+  #Land use key:
+  # alfalfa = 25
+  # palture = 2
+  # ET_noIrr = 3 (native veg, assumes kc of 0.6 default or 1.0 for major-nat-veg scenarios w/ shallow water table)
+  # noET_noIrr = 4
+  # water = 6
+  
+  # # make water source color table
+  # wat_source = c(1,2,3,4,5,999)
+  # wat_source_descrip = c("SW","GW","Mixed", "Sub-irrigated","Dry","Unknown")
+  # wat_source_color = c("dodgerblue","firebrick2","darkorchid1","green","yellow","gray")
+  
+  # Note: Does not convert urban land or water surfaces to native vegetation. Converts only alfalfa and pasture (25, 2)
+  if(landuse_scenario_detail == "native veg outside adj"){
+    poly_tab_amended$Landuse[poly_tab$Landuse %in% c(25, 2) &
+                               poly_tab$Field_ID %in% fields_outside_adj$Polynmbr] = 3
+  } else if(landuse_scenario_detail == "native veg, gw and mixed fields, outside adj"){
+    poly_tab_amended$Landuse[poly_tab$Landuse %in% c(25, 2) &
+                               poly_tab$Field_ID %in% fields_outside_adj$Polynmbr &
+                               poly_tab$Water_Source %in% c(2, 3)] = 3
+  }else if(landuse_scenario_detail=="native veg inside adj"){
+    poly_tab_amended$Landuse[poly_tab$Landuse %in% c(25, 2) &
+                               poly_tab$Field_ID %in% fields_inside_adj$Polynmbr] = 3
+  } else if(landuse_scenario_detail=="native veg, gw and mixed fields, inside adj"){
+    poly_tab_amended$Landuse[poly_tab$Landuse %in% c(25, 2)  &
+                               poly_tab$Field_ID %in% fields_inside_adj$Polynmbr &
+                               poly_tab$Water_Source %in% c(2, 3)] = 3
+  } else if(landuse_scenario_detail=="native veg all cultivated fields") {
+    poly_tab_amended$Landuse[poly_tab$Landuse %in% c(25, 2)] = 3 
+  } else if(landuse_scenario_detail=="native veg, gw and mixed fields, all cultivated fields"){
+    poly_tab_amended$Landuse[poly_tab$Landuse %in% c(25, 2)  &
+                               poly_tab$Water_Source %in% c(2, 3)] = 3
+  }
+  
+  
+  
+  # png(filename = "parcels_landuse_natveg_gwmixed_outside_adj.png", height=9.5, width = 6.2, units = "in", res = 300)
+  # # png(filename = "parcels_landuse_natveg_outside_adj.png", height=9.5, width = 6.2, units = "in", res = 300)
+  # #match codes and colors
+  # poly$landuse_from_svihm = poly_tab_amended$Landuse[match(poly$Polynmbr, poly_tab_amended$Field_ID)]
+  # poly$landuse_color = lu_df$color[match(poly$landuse_from_svihm, lu_df$lu_code)]
+  # 
+  # 
+  # plot(basin, lwd = 2, main = "Land Use / Crop Type: NV GWM OA")
+  # plot(poly, add=T, col = poly$landuse_color,
+  #      border = "darkgray", lwd=0.5)
+  # legend(x = "bottomleft", 
+  #        legend = c(lu_df$descrip[1:2],"ET, No Irr. (Native Veg.)",
+  #                   "No ET, No Irr. (e.g. Tailings)","Water"),
+  #        col = lu_df$color, pch = rep(15,6))  
+  # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
+  # dev.off()
+  
+  
+  # poly$landuse = poly_tab_amended$Landuse[match(poly$Polynmbr, poly_tab_amended$Field_ID)]
+  # plot(poly, col = poly$landuse)
+  
+  write.table(x = poly_tab_amended, quote = F,
+              file = file.path(SWBM_file_dir, "polygons_table.txt"),
+              sep = "\t",col.names=TRUE, row.names = F)
+
+# ___ET_Cells_NV.txt ---------------------------------------------------------
+  
+  # Spatial operation to designate cells which fall outside the Discharge Zone but 
+  # more than 50% within Natural Vegetation areas
+
+  # # Read in shapefile for precise outline of model domain
+  # domain = readOGR(dsn = ref_data_dir, layer = "Model_Domain_20180222")
+  
+  # Read in Discharge Zone Cells 
+  dz_cells = as.matrix(read.table(file.path(ref_data_dir,"Discharge_Zone_Cells.txt"),header=F))
+  
+  #Use DZ Cells and the domain bounding box to create a raster
+  
+  # # This is a problem because domain doesn't cover the whole model grid. gives us 96 m x-dir, 92 m y-dir
+  # dz = raster(x=dz_cells, crs = crs(domain),
+  #                xmn = bbox(domain)[1,1], xmx = bbox(domain)[1,2],
+  #                ymn = bbox(domain)[2,1], ymx = bbox(domain)[2,2])
+  # This is slightly better. Still short in the y-direction. 99 m x-dir, 95 m y-dir. 
+  # I'm missing a bunch of rows of 0 no-flow cells at the top of the model domain.
+  # dz = raster(x=dz_cells, crs = crs(utm_poly),
+  #                xmn = bbox(utm_poly)[1,1], xmx = bbox(utm_poly)[1,2],
+  #                ymn = bbox(utm_poly)[2,1], ymx = bbox(utm_poly)[2,2])
+  
+  ## Visualize
+  # plot(dz)
+  # plot(domain, add=T, lwd = 2)
+  # utm_poly = spTransform(poly, crs(domain))
+  # plot(utm_poly, border = "darkgray", add=T, col = utm_poly$landuse_color)
+  
+  # # Rasterize the polygons that are natural vegetation
+  # poly_nv = utm_poly[utm_poly$landuse_from_svihm == 3,]
+  # nv_poly_raster = rasterize(x = poly_nv, y = dz, field = 1, background = 0)
+  # 
+  # # Make combination extinction depth matrix: 0.5 in the Discharge Zone, 4.5 m in the nat veg outside DZ
+  # plot(dz)
+  # combo_raster = dz
+  # combo_raster[combo_raster == 0] = nv_poly_raster[combo_raster == 0]*4.5
+  
+  
+  # Alternatively, we could skip the rasterizing process and use Recharge_Zones_SVIHM.txt,
+  # which already has a spatial relationship between each field and the modflow gridcells.
+  poly_nv = poly_tab_amended[poly_tab_amended$Landuse == 3,]
+  poly_cells = as.matrix(read.table(file = file.path(time_indep_dir, "Recharge_Zones_SVIHM.txt"),
+                                    header = F))
+  # Make extinction depth matrix
+  extinction_depth = dz_cells
+  # Assign cells in natural vegetation fields a 4.5 m extinction depth
+  extinction_depth[poly_cells %in% unique(poly_nv$Polynmbr)] = 4.5
+  # Assign Discharge Zone cells an extinction depth of 0.5 m
+  extinction_depth[dz_cells == 1] = 0.5
+  
+  # Save  extinction depth matrix
+  write.table(x =extinction_depth, 
+              file = file.path(SWBM_file_dir, "ET_Cells_Extinction_Depth.txt"),
+              row.names = F, col.names = F)
+  
+} else if(landuse_scenario %in% c("basecase","Basecase")){
+    # If the land use is basecase, keep the standard polygon file, and 
+  # write a ET_Cells_Extinction_Depth file for only the discharge zone
+  
+  # Read in Discharge Zone Cells 
+  dz_cells = as.matrix(read.table(file.path(ref_data_dir,"Discharge_Zone_Cells.txt"),header=F))
+  # Make extinction depth matrix
+  extinction_depth = dz_cells
+  # Assign Discharge Zone cells an extinction depth of 0.5 m
+  extinction_depth[dz_cells == 1] = 0.5
+  # Save  extinction depth matrix
+  write.table(x =extinction_depth, 
+              file = file.path(SWBM_file_dir, "ET_Cells_Extinction_Depth.txt"),
+              row.names = F, col.names = F)
+  }
+
+
+
+# TO DO: Calculate cells that are nat veg and need to get the 15-foot extinction depth
+
+
+# Write file as NatVeg_Outside_DZ_Cells.txt
+
 #  general_inputs.txt ------------------------------------------------
 
 #Update number of stress periods and scenario information
@@ -210,7 +566,8 @@ gen_inputs = c(
   paste(recharge_scenario, flow_scenario,     
         alf_irr_stop_mo, alf_irr_stop_day,
         "! Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims, alf_irr_stop_mo  alf_irr_stop_day",
-        sep = "  ")
+        sep = "  "),
+  paste(landuse_scenario, "! Basecase/Major_NatVeg")
   )
 
 write.table(gen_inputs, file = file.path(SWBM_file_dir, "general_inputs.txt"),
@@ -359,265 +716,6 @@ if(!file.exists(file1)){
 file.copy(from=file1, to = file2, overwrite=T)
 
 
-# polygons_table.txt ------------------------------------------------------
-
-#Plots for this analysis:
-# Fields completely in, completely out, or partially in the adjudicated zone
-# Fields "inside" (defined as >5% field area inside adj zone) and outside adj zone
-# Pie charts - more alfalfa in adjudicated zone that outside, but pretty diverse
-# Water source map
-# Area calculations
-
-if(landuse_scenario != "basecase"){
-  # Run spatial analysis
-  
-  # read in datasets
-  poly = readOGR(dsn = ref_data_dir, layer = "Landuse_20190219")
-  # adj = get_postgis_query(siskiyou_spatial, "SELECT * FROM scott_adjudicated_area", geom_name = "geom")
-  # writeOGR(adj, dsn = ref_data_dir, layer = "Adjudicated Area",driver = "ESRI Shapefile")
-  adj = readOGR(dsn = ref_data_dir, layer = "Adjudicated Area")
-  
-  poly = spTransform(poly, crs(adj))
-
-  #Calculate the fraction of each polygon *inside* the adjudicated zone.
-  poly$fraction_in_adj = 0 # initialize new column
-  
-  for(i in 1:max(poly$Polynmbr)){
-    selector = poly$Polynmbr==i
-    field = poly[selector,]
-    if(!gIsValid(field)){
-      field = gBuffer(field, width = 0) # fix invalid geoms and warn about it
-      print(paste("polygon number",i,"invalid"))} 
-    
-    if(gIntersects(adj, field)){
-      overlap_poly = intersect(field, adj)
-      poly$fraction_in_adj[selector] = round(area(overlap_poly) / area(field), digits = 3) # otherwise get leftover digit junk
-    }
-  }
-  
-  # Amend polygons.txt table
-  
-  # Note: this does not preserve "notes" column
-  poly_column_classes = c(rep("integer",4),
-                          "numeric","integer","numeric","numeric",
-                          "integer","integer","character",
-                          rep("NULL",16)) # get rid of empty columns in the text file
-  
-  poly_tab = read.table(file.path(time_indep_dir,"polygons_table.txt"),
-                        header = T, comment.char = "!", 
-                        fill = T, sep = "\t", colClasses = poly_column_classes)
-  colnames(poly_tab) = c("Field_ID",colnames(poly_tab)[2:11])
-  
-  
-  in_adj_threshold = 0.05 # lower numbers mean, just a sliver overlapping are included
-  fields_inside_adj = poly$Polynmbr[poly$fraction_in_adj > in_adj_threshold]
-  fields_outside_adj = poly$Polynmbr[!(poly$Polynmbr %in% fields_inside_adj)]
-  
-  
-  fields_inside_adj = poly[poly$fraction_in_adj > in_adj_threshold,]
-  fields_outside_adj =  poly[poly$fraction_in_adj <= in_adj_threshold,]
-  
-  # poly_saved = poly
-  # # poly = poly_saved
-  # poly_tab_saved = poly_tab
-  
-  # png(filename = "parcels_adj_zone_for_scenario.png", height=9.5, width = 6.2, units = "in", res = 300)
-  # plot(basin, lwd = 2, main = "Fields considered within Adjudicated Area for SVIHM Scenario")
-  # plot(fields_inside_adj, add=T, col = rgb(0,0,1, 0.5))
-  # plot(fields_outside_adj, add=T, col = rgb(0,1,0,0.3))
-  # plot(adj, add=T, border = "red", lwd = 2)#col = rgb(1,0,0,0.3))
-  # legend(x = "bottomleft",
-  #        lwd = c(2, 2, NA,NA), pch = c(NA,NA, 15, 15),
-  #        col = c("black","red","blue", "green"),
-  #        legend = c("Groundwater Basin", "Adjudicated Zone", "Inside Fields", "Outside Fields"))
-  # dev.off()
-  
-  # sq_m_per_acre = 4046.86
-  # sum(area(fields_inside_adj))/ unique(area(basin)) #sum(area(poly))
-  # sum(area(fields_inside_adj)) / sq_m_per_acre # convert to acres
-  # sum(area(fields_outside_adj))/ sum(area(poly)) #unique(area(basin)) #
-  # sum(area(fields_outside_adj)) / sq_m_per_acre # convert to acres
-  
-  # Explore/visualize
-  # area(adj)/sum(area(poly))*100 # covers 20.0% of the land area in this shapefile
-  # area(adj)/area(basin)*100 # covers 15.7% of the land area of the basin
-  # plot(poly)
-  # plot(adj, add=T, col=rgb(.5,.5,.5,0.5))
-  
-  
-  #Data exploration - visualize 3 categories of field. All in, all out, or overlapping
-  
-  # fields_totally_in_adj = poly[poly$fraction_in_adj==1,]
-  # fields_totally_outside_adj = poly[poly$fraction_in_adj==0,]
-  # fields_partially_in_adj = poly[poly$fraction_in_adj !=0 & poly$fraction_in_adj !=1 ,]
-  
-  # sum(area(fields_totally_in_adj)) / sq_m_per_acre # convert to acres
-  # sum(area(fields_totally_outside_adj)) / sq_m_per_acre # convert to acres
-  # sum(area(fields_partially_in_adj)) / sq_m_per_acre # convert to acres
-  
-  
-  # png(filename = "parcels_adj_zone.png", height=9.5, width = 6.2, units = "in", res = 300)
-  # plot(basin, lwd = 2, main = "Relation of Parcels to the Adjudicated Zone")
-  # plot(fields_totally_in_adj, add=T, col = rgb(0,0,1,.7), border = "gray")
-  # plot(fields_totally_outside_adj, add=T, col = rgb(0,1,0,.7), border = "gray")
-  # plot(fields_partially_in_adj, add=T, col = rgb(1,0,0,.7), border = "gray")
-  # legend(x = "bottomleft",
-  #        col = c("black","blue","green","red"),
-  #        pch=c(NA,rep(15,3)),
-  #        lwd = c(2,rep(NA,3)),
-  #        legend = c("Basin Boundary","Completely Inside", "Completely Outside", "Overlaps Zone Border"))
-  # dev.off()
-  
-  # # fractions of the basin area
-  # "Totally inside adjudicated zone:"
-  # sum(area(fields_totally_in_adj)) / sum(area(poly))
-  # sum(area(fields_totally_in_adj)) / area(basin)
-  # "Totally outside adjudicated zone:"
-  # sum(area(fields_totally_outside_adj)) / sum(area(poly))
-  # sum(area(fields_totally_outside_adj)) / area(basin)
-  # "Overlapping adjudicated zone boundary:"
-  # sum(area(fields_partially_in_adj))/ sum(area(poly))
-  # sum(area(fields_partially_in_adj))/ area(basin)
-  
-  
-  # #Color by water source - initialize columns
-  # poly$wat_source_from_svihm = NA
-  # poly$wat_source_from_svihm_color = NA
-  # 
-  # # make water source color table
-  # wat_source = c(1,2,3,4,5,999)
-  # wat_source_descrip = c("SW","GW","Mixed", "Sub-irrigated","Dry","Unknown")
-  # wat_source_color = c("dodgerblue","firebrick2","darkorchid1","green","yellow","gray")
-  # 
-  # wat_source_df = data.frame(ws_code = wat_source,
-  #                            descrip = wat_source_descrip,
-  #                            color = wat_source_color)
-  # #match codes and colors
-  # poly$wat_source_from_svihm = poly_tab$Water_Source[match(poly$Polynmbr, poly_tab$Field_ID)]
-  # poly$wat_source_from_svihm_color = wat_source_df$color[match(poly$wat_source_from_svihm, wat_source_df$ws_code)]
-  # 
-  # # #plot
-  # png(filename = "parcels_wat_source.png", height=9.5, width = 6.2, units = "in", res = 300)
-  # plot(basin, lwd = 2, main = "Irrigation Water Sources")
-  # plot(poly, add=T, col = poly$wat_source_from_svihm_color, border = "darkgray")
-  # legend(x = "bottomleft", legend = wat_source_df$descrip,
-  #        col = wat_source_df$color, pch = rep(15,6))
-  # 
-  # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
-  # dev.off()
-  
-  #Color by land use - initialize columns
-  # poly$landuse = NA
-  # poly$landuse_color = NA
-  # 
-  # #Land use key:
-  # # alfalfa = 25; palture = 2; ET_noIrr = 3 (native veg, assumes kc of 0.6);  noET_noIrr = 4; water = 6
-  # 
-  # # make a land use/crop type color table
-  # lu = c(25,2,3,4,6)
-  # lu_descrip = c("Alfalfa","Pasture","ET_noIrr","noET_noIrr", "Water")
-  # lu_color = c("forestgreen","darkolivegreen2","wheat","red","dodgerblue")
-  # 
-  # lu_df = data.frame(lu_code = lu,
-  #                    descrip = lu_descrip,
-  #                    color = lu_color)
-  # #match codes and colors
-  # poly$landuse_from_svihm = poly_tab$Landuse[match(poly$Polynmbr, poly_tab$Field_ID)]
-  # poly$landuse_color = lu_df$color[match(poly$landuse_from_svihm, lu_df$lu_code)]
-  # 
-  # # #plot
-  # png(filename = "parcels_landuse_basecase.png", height=9.5, width = 6.2, units = "in", res = 300)
-  # plot(basin, lwd = 2, main = "Land Use / Crop Type: Basecase")
-  # plot(poly, add=T, col = poly$landuse_color, border = "darkgray", lwd=0.5)
-  # legend(x = "bottomleft", 
-  #        legend = c(lu_df$descrip[1:2],"ET, No Irr. (Native Veg.)",
-  #                   "No ET, No Irr. (e.g. Tailings)","Water"),
-  #        col = lu_df$color, pch = rep(15,6))
-  # 
-  # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
-  # dev.off()
-  
-
-  # #Water source fraction of parcel area  
-  # wat_source_area = aggregate(area(poly), by = list(poly$wat_source_from_svihm), FUN = "sum")
-  # wat_source_area$frac_parcels = round(wat_source_area$x / sum(area(poly)),digits = 3)
-  # wat_source_area$frac_basin = round(wat_source_area$x / unique(area(basin)),digits = 3)
-  
-  # #proportion of fields in each category 
-  # par(mfrow = c(3,1))
-  # pie(summary(poly_tab$Landuse), main = "all fields")
-  # pie(summary(poly_tab$Landuse[poly_tab$Field_ID %in% fields_inside_adj]), 
-  #     main = paste("fields in adj,", in_adj_threshold, "overlap needed"))
-  # pie(summary(poly_tab$Landuse[!(poly_tab$Field_ID %in% fields_inside_adj)]), 
-  #     main = paste("fields outside adj,", in_adj_threshold, "overlap needed"))
-  
-  
-  
-  # # find weird parcels
-  # pdf(file = "weird_parcel_finder.pdf",width = 8.5, height = 11)
-  # for(i in 1:length(poly$Polynmbr)){
-  #   field = poly[poly$Polynmbr==i,]
-  #   # print(area(field))
-  #   if(area(field) > 10^5 & i %in% fields_partially_in_adj$Polynmbr) {
-  #     plot(basin, main = i)
-  #     plot(field, col = "pink", border = "red", lwd = 2,add=T)
-  #     
-  #   }
-  # }
-  # dev.off()
-  
-  ## Weird: 714. a couple others.
-  #in the find-weird-parcels analysis, I decided to exclude parcels with 5% or less of their area in the adjudicated zone.
-  
-  
-  # Amend the SVIHM polygons table and write
-  poly_tab_amended = poly_tab
-  
-  #Land use key:
-  # alfalfa = 25
-  # palture = 2
-  # ET_noIrr = 3 (native veg, assumes kc of 0)
-  # noET_noIrr = 4
-  # water = 6
-  
-  # # make water source color table
-  # wat_source = c(1,2,3,4,5,999)
-  # wat_source_descrip = c("SW","GW","Mixed", "Sub-irrigated","Dry","Unknown")
-  # wat_source_color = c("dodgerblue","firebrick2","darkorchid1","green","yellow","gray")
-  
-  
-  if(landuse_scenario == "native veg outside adj"){
-    poly_tab_amended$Landuse[poly_tab_amended$Field_ID %in% fields_outside_adj$Polynmbr] = 3
-  } else if(landuse_scenario == "native veg, gw and mixed fields, outside adj"){
-    poly_tab_amended$Landuse[poly_tab_amended$Field_ID %in% fields_outside_adj$Polynmbr &
-                               poly_tab_amended$Water_Source %in% c(2, 3)] = 3
-  }
-  
-  # png(filename = "parcels_landuse_natveg_gwmixed_outside_adj.png", height=9.5, width = 6.2, units = "in", res = 300)
-  # # png(filename = "parcels_landuse_natveg_outside_adj.png", height=9.5, width = 6.2, units = "in", res = 300)
-  # #match codes and colors
-  # poly$landuse_from_svihm = poly_tab_amended$Landuse[match(poly$Polynmbr, poly_tab_amended$Field_ID)]
-  # poly$landuse_color = lu_df$color[match(poly$landuse_from_svihm, lu_df$lu_code)]
-  # 
-  # 
-  # plot(basin, lwd = 2, main = "Land Use / Crop Type: NV GWM OA")
-  # plot(poly, add=T, col = poly$landuse_color,
-  #      border = "darkgray", lwd=0.5)
-  # legend(x = "bottomleft", 
-  #        legend = c(lu_df$descrip[1:2],"ET, No Irr. (Native Veg.)",
-  #                   "No ET, No Irr. (e.g. Tailings)","Water"),
-  #        col = lu_df$color, pch = rep(15,6))  
-  # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
-  # dev.off()
-  
-  
-  # poly$landuse = poly_tab_amended$Landuse[match(poly$Polynmbr, poly_tab_amended$Field_ID)]
-  # plot(poly, col = poly$landuse)
-  
-  write.table(x = poly_tab_amended, quote = F,
-              file = file.path(SWBM_file_dir, "polygons_table.txt"),
-              sep = "\t",col.names=TRUE, row.names = F)
-}
 
 
 #  ref_et.txt ----------------------------------------------------
@@ -732,16 +830,17 @@ file.copy(file.path(svihm_dir,"SWBM","bin",'SWBM.exe'), SWBM_file_dir)
 
 
 
-# OPERATOR: RUN SWBM ------------------------------------------------------
+# If in 2 folders: OPERATOR: RUN SWBM -------
 
 
 #.#############################################################################
 # ### MODFLOW INPUTS ------------------------------------------------
 
-#After SWBM done running, copy the files written by SWBM into the modflow directory.
-copy_these_files = c("SVIHM.wel","SVIHM.sfr", "SVIHM.ets", "SVIHM.rch")
-setwd(SWBM_file_dir)
-file.copy(copy_these_files, MF_file_dir)
+# If running SWBM and Modflow in 2 separate folders, copy over SWBM outputs
+# #After SWBM done running, copy the files written by SWBM into the modflow directory.
+# copy_these_files = c("SVIHM.wel","SVIHM.sfr", "SVIHM.ets", "SVIHM.rch")
+# setwd(SWBM_file_dir)
+# file.copy(copy_these_files, MF_file_dir)
 
 
 #Copy files that don't change if the time period gets extended 
@@ -830,6 +929,9 @@ for (i in 1:num_stress_periods){
 #At 6 ft depth, 100% of potential/target ET
 # At 15 ft depth, 0% of potential ET/target 
 #(linearly interpolate between) 
+
+#Updated to do: adjusted this in SWBM; now writes ETS with multiple different extinction depths
+# but only simulates ETS in cells with either a) discharge zone or b) nat veg in major-natveg scenarios
 
 # SVIHM.hob ---------------------------------------------------------------
 #Head Observation Package
@@ -952,7 +1054,15 @@ for(i in 1:num_stress_periods){
 file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 
 
-# OPERATOR: RUN MODFLOW ------------------------------------------------------
+# If in 2 folders: OPERATOR: RUN MODFLOW ------------------------------------------------------
+
+
+
+# Run_SVIHM_forward.bat and input update R scripts ---------------------------------------------------
+
+file.copy(file.path(svihm_dir,"Batch_Scripts",'Run_SVIHM_forward.bat'), MF_file_dir)
+file.copy(file.path(svihm_dir,"R_Files","Model",'Update_SVIHM_Drain_Inflows.R'), MF_file_dir)
+file.copy(file.path(svihm_dir,"R_Files","Model",'Update_SVIHM_Starting_Heads.R'), MF_file_dir)
 
 
 # OPTIONAL: copy output to Results folder for post-processing -------------
@@ -967,8 +1077,8 @@ file.copy(file.path(svihm_dir,"MODFLOW",'MF_OWHM.exe'), MF_file_dir)
 # 
 # ## Directories for running the scenarios (files copied at end of script)
 # 
-SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
-MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
+# SWBM_file_dir = file.path(svihm_dir, "SWBM", scenario_name)
+# MF_file_dir = file.path(svihm_dir, "MODFLOW",scenario_name)
 
 #Copy flow tables on the mainstem
 file.copy(from = file.path(MF_file_dir,"Streamflow_FJ_SVIHM.dat"),
@@ -1131,3 +1241,265 @@ file.copy(from = file.path(SWBM_file_dir,"monthly_groundwater_by_luse.dat"),
 # # sum(is.na(ref_et_updated$ETo_m))
 # write.table(ref_et_updated, file = file.path(SWBM_file_dir, "ref_et.txt"),
 #             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
+# .polygons_table.txt ------------------------------------------------------
+
+#Plots for this analysis:
+# Fields completely in, completely out, or partially in the adjudicated zone
+# Fields "inside" (defined as >5% field area inside adj zone) and outside adj zone
+# Pie charts - more alfalfa in adjudicated zone that outside, but pretty diverse
+# Water source map
+# Area calculations
+
+# if(landuse_scenario != "basecase"){
+#   # Run spatial analysis
+#   
+#   # read in datasets
+#   poly = readOGR(dsn = ref_data_dir, layer = "Landuse_20190219")
+#   # adj = get_postgis_query(siskiyou_spatial, "SELECT * FROM scott_adjudicated_area", geom_name = "geom")
+#   # writeOGR(adj, dsn = ref_data_dir, layer = "Adjudicated Area",driver = "ESRI Shapefile")
+#   adj = readOGR(dsn = ref_data_dir, layer = "Adjudicated Area")
+#   
+#   poly = spTransform(poly, crs(adj))
+#   
+#   #Calculate the fraction of each polygon *inside* the adjudicated zone.
+#   poly$fraction_in_adj = 0 # initialize new column
+#   
+#   for(i in 1:max(poly$Polynmbr)){
+#     selector = poly$Polynmbr==i
+#     field = poly[selector,]
+#     if(!gIsValid(field)){
+#       field = gBuffer(field, width = 0) # fix invalid geoms and warn about it
+#       print(paste("polygon number",i,"invalid"))} 
+#     
+#     if(gIntersects(adj, field)){
+#       overlap_poly = intersect(field, adj)
+#       poly$fraction_in_adj[selector] = round(area(overlap_poly) / area(field), digits = 3) # otherwise get leftover digit junk
+#     }
+#   }
+#   
+#   # Amend polygons.txt table
+#   
+#   # Note: this does not preserve "notes" column
+#   poly_column_classes = c(rep("integer",4),
+#                           "numeric","integer","numeric","numeric",
+#                           "integer","integer","character",
+#                           rep("NULL",16)) # get rid of empty columns in the text file
+#   
+#   poly_tab = read.table(file.path(time_indep_dir,"polygons_table.txt"),
+#                         header = T, comment.char = "!", 
+#                         fill = T, sep = "\t", colClasses = poly_column_classes)
+#   colnames(poly_tab) = c("Field_ID",colnames(poly_tab)[2:11])
+#   
+#   
+#   in_adj_threshold = 0.05 # lower numbers mean, just a sliver overlapping are included
+#   fields_inside_adj = poly$Polynmbr[poly$fraction_in_adj > in_adj_threshold]
+#   fields_outside_adj = poly$Polynmbr[!(poly$Polynmbr %in% fields_inside_adj)]
+#   
+#   
+#   fields_inside_adj = poly[poly$fraction_in_adj > in_adj_threshold,]
+#   fields_outside_adj =  poly[poly$fraction_in_adj <= in_adj_threshold,]
+#   
+#   # poly_saved = poly
+#   # # poly = poly_saved
+#   # poly_tab_saved = poly_tab
+#   
+#   # png(filename = "parcels_adj_zone_for_scenario.png", height=9.5, width = 6.2, units = "in", res = 300)
+#   # plot(basin, lwd = 2, main = "Fields considered within Adjudicated Area for SVIHM Scenario")
+#   # plot(fields_inside_adj, add=T, col = rgb(0,0,1, 0.5))
+#   # plot(fields_outside_adj, add=T, col = rgb(0,1,0,0.3))
+#   # plot(adj, add=T, border = "red", lwd = 2)#col = rgb(1,0,0,0.3))
+#   # legend(x = "bottomleft",
+#   #        lwd = c(2, 2, NA,NA), pch = c(NA,NA, 15, 15),
+#   #        col = c("black","red","blue", "green"),
+#   #        legend = c("Groundwater Basin", "Adjudicated Zone", "Inside Fields", "Outside Fields"))
+#   # dev.off()
+#   
+#   # sq_m_per_acre = 4046.86
+#   # sum(area(fields_inside_adj))/ unique(area(basin)) #sum(area(poly))
+#   # sum(area(fields_inside_adj)) / sq_m_per_acre # convert to acres
+#   # sum(area(fields_outside_adj))/ sum(area(poly)) #unique(area(basin)) #
+#   # sum(area(fields_outside_adj)) / sq_m_per_acre # convert to acres
+#   
+#   # Explore/visualize
+#   # area(adj)/sum(area(poly))*100 # covers 20.0% of the land area in this shapefile
+#   # area(adj)/area(basin)*100 # covers 15.7% of the land area of the basin
+#   # plot(poly)
+#   # plot(adj, add=T, col=rgb(.5,.5,.5,0.5))
+#   
+#   
+#   #Data exploration - visualize 3 categories of field. All in, all out, or overlapping
+#   
+#   # fields_totally_in_adj = poly[poly$fraction_in_adj==1,]
+#   # fields_totally_outside_adj = poly[poly$fraction_in_adj==0,]
+#   # fields_partially_in_adj = poly[poly$fraction_in_adj !=0 & poly$fraction_in_adj !=1 ,]
+#   
+#   # sum(area(fields_totally_in_adj)) / sq_m_per_acre # convert to acres
+#   # sum(area(fields_totally_outside_adj)) / sq_m_per_acre # convert to acres
+#   # sum(area(fields_partially_in_adj)) / sq_m_per_acre # convert to acres
+#   
+#   
+#   # png(filename = "parcels_adj_zone.png", height=9.5, width = 6.2, units = "in", res = 300)
+#   # plot(basin, lwd = 2, main = "Relation of Parcels to the Adjudicated Zone")
+#   # plot(fields_totally_in_adj, add=T, col = rgb(0,0,1,.7), border = "gray")
+#   # plot(fields_totally_outside_adj, add=T, col = rgb(0,1,0,.7), border = "gray")
+#   # plot(fields_partially_in_adj, add=T, col = rgb(1,0,0,.7), border = "gray")
+#   # legend(x = "bottomleft",
+#   #        col = c("black","blue","green","red"),
+#   #        pch=c(NA,rep(15,3)),
+#   #        lwd = c(2,rep(NA,3)),
+#   #        legend = c("Basin Boundary","Completely Inside", "Completely Outside", "Overlaps Zone Border"))
+#   # dev.off()
+#   
+#   # # fractions of the basin area
+#   # "Totally inside adjudicated zone:"
+#   # sum(area(fields_totally_in_adj)) / sum(area(poly))
+#   # sum(area(fields_totally_in_adj)) / area(basin)
+#   # "Totally outside adjudicated zone:"
+#   # sum(area(fields_totally_outside_adj)) / sum(area(poly))
+#   # sum(area(fields_totally_outside_adj)) / area(basin)
+#   # "Overlapping adjudicated zone boundary:"
+#   # sum(area(fields_partially_in_adj))/ sum(area(poly))
+#   # sum(area(fields_partially_in_adj))/ area(basin)
+#   
+#   
+#   # #Color by water source - initialize columns
+#   # poly$wat_source_from_svihm = NA
+#   # poly$wat_source_from_svihm_color = NA
+#   # 
+#   # # make water source color table
+#   # wat_source = c(1,2,3,4,5,999)
+#   # wat_source_descrip = c("SW","GW","Mixed", "Sub-irrigated","Dry","Unknown")
+#   # wat_source_color = c("dodgerblue","firebrick2","darkorchid1","green","yellow","gray")
+#   # 
+#   # wat_source_df = data.frame(ws_code = wat_source,
+#   #                            descrip = wat_source_descrip,
+#   #                            color = wat_source_color)
+#   # #match codes and colors
+#   # poly$wat_source_from_svihm = poly_tab$Water_Source[match(poly$Polynmbr, poly_tab$Field_ID)]
+#   # poly$wat_source_from_svihm_color = wat_source_df$color[match(poly$wat_source_from_svihm, wat_source_df$ws_code)]
+#   # 
+#   # # #plot
+#   # png(filename = "parcels_wat_source.png", height=9.5, width = 6.2, units = "in", res = 300)
+#   # plot(basin, lwd = 2, main = "Irrigation Water Sources")
+#   # plot(poly, add=T, col = poly$wat_source_from_svihm_color, border = "darkgray")
+#   # legend(x = "bottomleft", legend = wat_source_df$descrip,
+#   #        col = wat_source_df$color, pch = rep(15,6))
+#   # 
+#   # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
+#   # dev.off()
+#   
+#   #Color by land use - initialize columns
+#   # poly$landuse = NA
+#   # poly$landuse_color = NA
+#   # 
+#   # #Land use key:
+#   # # alfalfa = 25; palture = 2; ET_noIrr = 3 (native veg, assumes kc of 0.6);  noET_noIrr = 4; water = 6
+#   # 
+#   # # make a land use/crop type color table
+#   # lu = c(25,2,3,4,6)
+#   # lu_descrip = c("Alfalfa","Pasture","ET_noIrr","noET_noIrr", "Water")
+#   # lu_color = c("forestgreen","darkolivegreen2","wheat","red","dodgerblue")
+#   # 
+#   # lu_df = data.frame(lu_code = lu,
+#   #                    descrip = lu_descrip,
+#   #                    color = lu_color)
+#   # #match codes and colors
+#   # poly$landuse_from_svihm = poly_tab$Landuse[match(poly$Polynmbr, poly_tab$Field_ID)]
+#   # poly$landuse_color = lu_df$color[match(poly$landuse_from_svihm, lu_df$lu_code)]
+#   # 
+#   # # #plot
+#   # png(filename = "parcels_landuse_basecase.png", height=9.5, width = 6.2, units = "in", res = 300)
+#   # plot(basin, lwd = 2, main = "Land Use / Crop Type: Basecase")
+#   # plot(poly, add=T, col = poly$landuse_color, border = "darkgray", lwd=0.5)
+#   # legend(x = "bottomleft", 
+#   #        legend = c(lu_df$descrip[1:2],"ET, No Irr. (Native Veg.)",
+#   #                   "No ET, No Irr. (e.g. Tailings)","Water"),
+#   #        col = lu_df$color, pch = rep(15,6))
+#   # 
+#   # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
+#   # dev.off()
+#   
+#   
+#   # #Water source fraction of parcel area  
+#   # wat_source_area = aggregate(area(poly), by = list(poly$wat_source_from_svihm), FUN = "sum")
+#   # wat_source_area$frac_parcels = round(wat_source_area$x / sum(area(poly)),digits = 3)
+#   # wat_source_area$frac_basin = round(wat_source_area$x / unique(area(basin)),digits = 3)
+#   
+#   # #proportion of fields in each category 
+#   # par(mfrow = c(3,1))
+#   # pie(summary(poly_tab$Landuse), main = "all fields")
+#   # pie(summary(poly_tab$Landuse[poly_tab$Field_ID %in% fields_inside_adj]), 
+#   #     main = paste("fields in adj,", in_adj_threshold, "overlap needed"))
+#   # pie(summary(poly_tab$Landuse[!(poly_tab$Field_ID %in% fields_inside_adj)]), 
+#   #     main = paste("fields outside adj,", in_adj_threshold, "overlap needed"))
+#   
+#   
+#   
+#   # # find weird parcels
+#   # pdf(file = "weird_parcel_finder.pdf",width = 8.5, height = 11)
+#   # for(i in 1:length(poly$Polynmbr)){
+#   #   field = poly[poly$Polynmbr==i,]
+#   #   # print(area(field))
+#   #   if(area(field) > 10^5 & i %in% fields_partially_in_adj$Polynmbr) {
+#   #     plot(basin, main = i)
+#   #     plot(field, col = "pink", border = "red", lwd = 2,add=T)
+#   #     
+#   #   }
+#   # }
+#   # dev.off()
+#   
+#   ## Weird: 714. a couple others.
+#   #in the find-weird-parcels analysis, I decided to exclude parcels with 5% or less of their area in the adjudicated zone.
+#   
+#   
+#   # Amend the SVIHM polygons table and write
+#   poly_tab_amended = poly_tab
+#   
+#   #Land use key:
+#   # alfalfa = 25
+#   # palture = 2
+#   # ET_noIrr = 3 (native veg, assumes kc of 0)
+#   # noET_noIrr = 4
+#   # water = 6
+#   
+#   # # make water source color table
+#   # wat_source = c(1,2,3,4,5,999)
+#   # wat_source_descrip = c("SW","GW","Mixed", "Sub-irrigated","Dry","Unknown")
+#   # wat_source_color = c("dodgerblue","firebrick2","darkorchid1","green","yellow","gray")
+#   
+#   
+#   if(landuse_scenario == "native veg outside adj"){
+#     poly_tab_amended$Landuse[poly_tab_amended$Field_ID %in% fields_outside_adj$Polynmbr] = 3
+#   } else if(landuse_scenario == "native veg, gw and mixed fields, outside adj"){
+#     poly_tab_amended$Landuse[poly_tab_amended$Field_ID %in% fields_outside_adj$Polynmbr &
+#                                poly_tab_amended$Water_Source %in% c(2, 3)] = 3
+#   }
+#   
+#   # png(filename = "parcels_landuse_natveg_gwmixed_outside_adj.png", height=9.5, width = 6.2, units = "in", res = 300)
+#   # # png(filename = "parcels_landuse_natveg_outside_adj.png", height=9.5, width = 6.2, units = "in", res = 300)
+#   # #match codes and colors
+#   # poly$landuse_from_svihm = poly_tab_amended$Landuse[match(poly$Polynmbr, poly_tab_amended$Field_ID)]
+#   # poly$landuse_color = lu_df$color[match(poly$landuse_from_svihm, lu_df$lu_code)]
+#   # 
+#   # 
+#   # plot(basin, lwd = 2, main = "Land Use / Crop Type: NV GWM OA")
+#   # plot(poly, add=T, col = poly$landuse_color,
+#   #      border = "darkgray", lwd=0.5)
+#   # legend(x = "bottomleft", 
+#   #        legend = c(lu_df$descrip[1:2],"ET, No Irr. (Native Veg.)",
+#   #                   "No ET, No Irr. (e.g. Tailings)","Water"),
+#   #        col = lu_df$color, pch = rep(15,6))  
+#   # # plot(adj, add=T, col= rgb(0.5,0.5,0.5,0.5))
+#   # dev.off()
+#   
+#   
+#   # poly$landuse = poly_tab_amended$Landuse[match(poly$Polynmbr, poly_tab_amended$Field_ID)]
+#   # plot(poly, col = poly$landuse)
+#   
+#   write.table(x = poly_tab_amended, quote = F,
+#               file = file.path(SWBM_file_dir, "polygons_table.txt"),
+#               sep = "\t",col.names=TRUE, row.names = F)
+# }
+
