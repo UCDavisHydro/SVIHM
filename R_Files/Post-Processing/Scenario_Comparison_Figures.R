@@ -432,6 +432,10 @@ barplots_comparison = function(scenario_totals){
 monthly_water_budget_basecase = read.table(file.path(swbm_scenario_dir,"basecase","monthly_water_budget.dat"), header = TRUE)
 mwb_basecase = monthly_water_budget_basecase
 
+#Baseline, accounting for drains
+
+monthly_water_budget_basecase_drains = read.table(file.path(swbm_scenario_dir,"basecase_drains","monthly_water_budget.dat"), header = TRUE)
+mwb_bd = monthly_water_budget_basecase_drains
 # Read in alfalfa irrigation schedule change scenarios
 
 monthly_water_budget_alf_stop_jul10 = read.table(file.path(swbm_scenario_dir,"alf_irr_stop_jul10","monthly_water_budget.dat"), header = TRUE)
@@ -440,10 +444,10 @@ mwb_asjul10 = monthly_water_budget_alf_stop_jul10
 # Read in native-veg-outside-adj-zone scenario
 
 monthly_water_budget_natveg_outside_adj_0.05 = read.table(file.path(swbm_scenario_dir,"natveg_outside_adj_0.05","monthly_water_budget.dat"), header = TRUE)
-mwb_nvoa0.05 = monthly_water_budget_natveg_outside_adj_0.05
+mwb_nvoa = monthly_water_budget_natveg_outside_adj_0.05
 
 monthly_water_budget_natveg_gwmixed_outside_adj_0.05 = read.table(file.path(swbm_scenario_dir,"natveg_gwmixed_outside_adj_0.05","monthly_water_budget.dat"), header = TRUE)
-mwb_nvgwmoa0.05 = monthly_water_budget_natveg_gwmixed_outside_adj_0.05
+mwb_nvgwmoa = monthly_water_budget_natveg_gwmixed_outside_adj_0.05
 
 
 #Read in reduced irrigation demand scenarios
@@ -497,6 +501,7 @@ make_legend_symbol_table = function(){
 
 # generate  overview plots
 plot_water_budget_overview(mwb_basecase, "Basecase", output_type = "png")
+plot_water_budget_overview(mwb_bd, "Basecase (Drains)", output_type = "png")
 plot_water_budget_overview(mwb_mar, "MAR", output_type = "png")
 plot_water_budget_overview(mwb_ilr, "ILR", output_type = "png")
 plot_water_budget_overview(mwb_mar_ilr, "MAR_ILR", output_type = "png")
@@ -509,7 +514,7 @@ plot_water_budget_overview(mwb_mar_ilr_fl, "MAR and ILR with CDFW limits", outpu
 plot_water_budget_overview(mwb_i0.8, "80 percent Irrigation Demand", output_type = "png")
 
 plot_water_budget_overview(mwb_asjul10, "Alfalfa Irrigation ends Jul 10", output_type = "png")
-plot_water_budget_overview(mwb_nvoa0.05, "Native Veg Outside Adj (0.05 frac threshold)", output_type = "png")
+plot_water_budget_overview(mwb_nvoa, "Native Veg Outside Adj", output_type = "png")
 
 
 # Comparison plots
