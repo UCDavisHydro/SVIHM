@@ -4,7 +4,7 @@
 ###########        Import Streamflow Data ######
 
 # read_streamflow_records=function(){
-# setwd("C:/Users/ckouba/Git/SVIHM/SVIHM/Streamflow_Regression_Model")
+# setwd("C:/Users/Claire/Documents/GitHub/SVIHM/Streamflow_Regression_Model")
 # #Set working drive
 # isRStudio <- Sys.getenv("RSTUDIO") == "1"
 # if(isRStudio == TRUE){
@@ -33,9 +33,19 @@ read_in_flow_data = function(){
   
   # Streams = c('FJ','East_Fork','South_Fork','Sugar','Etna','French','Patterson','Kidder','Moffett','Mill','Shackleford')
   
-  daily_means_all = list(FJ_daily_mean, East_Fork_daily_mean, South_Fork_daily_mean, Sugar_daily_mean, 
-                         Etna_daily_mean, French_daily_mean, Patterson_daily_mean, Kidder_daily_mean,
-                         Moffett_daily_mean, Mill_daily_mean, Shackleford_daily_mean)
+  # daily_means_all = list(fj = FJ_daily_mean, east = East_Fork_daily_mean, 
+  #                        south = South_Fork_daily_mean, sugar = Sugar_daily_mean, 
+  #                        etna = Etna_daily_mean, french = French_daily_mean,
+  #                        patterson = Patterson_daily_mean, kidder = Kidder_daily_mean,
+  #                        moffett = Moffett_daily_mean, mill = Mill_daily_mean, 
+  #                        shackleford = Shackleford_daily_mean)
+  daily_means_all = list(FJ_daily_mean, East_Fork_daily_mean,
+                         South_Fork_daily_mean, Sugar_daily_mean,
+                         Etna_daily_mean, French_daily_mean,
+                         Patterson_daily_mean,  Kidder_daily_mean,
+                         Moffett_daily_mean, Mill_daily_mean,
+                         Shackleford_daily_mean)
+  
   return(daily_means_all)
 }
 #No Data for Clark, Johnson, Crystal, or Oro Fino Creeks
@@ -238,7 +248,7 @@ populate_SVIHM_flows = function(monthly_cleaned_all, Streams, SVIHM_months, NumD
   FJ_monthly_cleaned = monthly_cleaned_all[[1]]
 
   for (i in 2:length(Streams)){
-    #df_monthly_volume = eval(parse(text = paste0(Streams[i],'_monthly_cleaned'))) 
+    # df_monthly_volume = eval(parse(text = paste0(Streams[i],'_monthly_cleaned')))
     df_monthly_volume = monthly_cleaned_all[[i]]
     Trib_name = Streams[i]
     
@@ -286,13 +296,13 @@ populate_SVIHM_flows = function(monthly_cleaned_all, Streams, SVIHM_months, NumD
 
 
 # ##############   Regression - All Years
-# regress_all = function(Trib_df, Trib_name) {
-#   Trib_regress_all = subset(Trib_df, Month %in% FJ_monthly_cleaned$Month)[c('Month', 'norm_log_AF')]
-#   Trib_regress_all = cbind(Trib_regress_all,subset(FJ_monthly_cleaned, Month %in% Trib_regress_all$Month)['norm_log_AF'])
-#   names(Trib_regress_all) = c('Month', 'norm_log_AF','FJ_norm_log_AF')
-#   output_df_name = paste0(Trib_name,'_regress_all')                    #name of tributary output data frame
-#   eval(parse(text = paste0(output_df_name,' <<- Trib_regress_all')))   #export dataframe
-# }
+regress_all = function(Trib_df, Trib_name) {
+  Trib_regress_all = subset(Trib_df, Month %in% FJ_monthly_cleaned$Month)[c('Month', 'norm_log_AF')]
+  Trib_regress_all = cbind(Trib_regress_all,subset(FJ_monthly_cleaned, Month %in% Trib_regress_all$Month)['norm_log_AF'])
+  names(Trib_regress_all) = c('Month', 'norm_log_AF','FJ_norm_log_AF')
+  output_df_name = paste0(Trib_name,'_regress_all')                    #name of tributary output data frame
+  eval(parse(text = paste0(output_df_name,' <<- Trib_regress_all')))   #export dataframe
+}
 
 
 
@@ -401,47 +411,47 @@ generate_streamflow_input_txt = function(end_date = as.Date("2018/9/30")){
 
 
 
-# for (i in 2:length(Streams)){
-#   regress_all(Trib_df = eval(parse(text = paste0(Streams[i],'_monthly_cleaned'))), Trib_name = Streams[i])
-# } 
-#   
-# tribs_regress_all = rbind(East_Fork_regress_all, South_Fork_regress_all, Sugar_regress_all, French_regress_all, Etna_regress_all,
-#                           Patterson_regress_all, Kidder_regress_all, Moffett_regress_all, Mill_regress_all, Shackleford_regress_all)
-# tribs_regress_all_model = lm(norm_log_AF ~ FJ_norm_log_AF, data = tribs_regress_all)
-# Summary_All_Years = summary(tribs_regress_all_model)
-# Regression_Coefs_All_Years = coef(tribs_regress_all_model)
-# R2_All_Years.exp = paste("R^2 == ",round(Summary_All_Years$adj.r.squared,2))
-# if (Summary_All_Years$coefficients[1] > 0){
-#   Eqn_All_Years.exp = paste('y = ',round(Summary_All_Years$coefficients[2],2),'x + ',round(Summary_All_Years$coefficients[1],2),sep = '')
-# } else {
-#   Eqn_All_Years.exp = paste('y = ',round(Summary_All_Years$coefficients[2],2),'x - ',abs(round(Summary_All_Years$coefficients[1],2)),sep = '')
-# }
-# Intercept_All_Years = Summary_All_Years$coefficients[1]
+for (i in 2:length(Streams)){
+  regress_all(Trib_df = eval(parse(text = paste0(Streams[i],'_monthly_cleaned'))), Trib_name = Streams[i])
+}
+
+tribs_regress_all = rbind(East_Fork_regress_all, South_Fork_regress_all, Sugar_regress_all, French_regress_all, Etna_regress_all,
+                          Patterson_regress_all, Kidder_regress_all, Moffett_regress_all, Mill_regress_all, Shackleford_regress_all)
+tribs_regress_all_model = lm(norm_log_AF ~ FJ_norm_log_AF, data = tribs_regress_all)
+Summary_All_Years = summary(tribs_regress_all_model)
+Regression_Coefs_All_Years = coef(tribs_regress_all_model)
+R2_All_Years.exp = paste("R^2 == ",round(Summary_All_Years$adj.r.squared,2))
+if (Summary_All_Years$coefficients[1] > 0){
+  Eqn_All_Years.exp = paste('y = ',round(Summary_All_Years$coefficients[2],2),'x + ',round(Summary_All_Years$coefficients[1],2),sep = '')
+} else {
+  Eqn_All_Years.exp = paste('y = ',round(Summary_All_Years$coefficients[2],2),'x - ',abs(round(Summary_All_Years$coefficients[1],2)),sep = '')
+}
+Intercept_All_Years = Summary_All_Years$coefficients[1]
 
 
 # Plotting ----------------------------------------------------------------
 
 
-# png('Regression_Plot_All_Years_4_square.png',width = 8, height = 5, units = 'in', res = 600)
-# layout(matrix(1:4,2,2))
-# plot(tribs_regress_all_model)
-# graphics.off()
-# png('Regression_Plot_All_Years.png',width = 8, height = 5, units = 'in', res = 600)
-# ggplot(data = tribs_regress_all,aes(FJ_norm_log_AF, norm_log_AF)) + 
-#   geom_point()  +  
-#   geom_smooth(method='lm') + 
-#   xlab(expression(Normalized~Log[10]~USGS~Fort~Jones~Streamflow)) +
-#   ylab(expression(Normalized~Log[10]~Tributary~Streamflow)) + 
-#   ggtitle('All Years Regression') +
-#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_rect(colour = 'black', fill = NA),
-#         panel.background = element_blank(), axis.line = element_line(colour = "black"),
-#         axis.text=element_text(size=12), axis.title=element_text(size=14,face="bold"),
-#         plot.title = element_text(hjust = 0.5)) +
-#   scale_x_continuous(limits = c(-3,3), breaks = seq(-3,3,1), expand = c(0,0)) +
-#   scale_y_continuous(limits = c(-3,3), breaks = seq(-3,3,1), expand = c(0,0)) +
-#   annotate('text', x=1.5, y=-1.5, label = R2_All_Years.exp, parse = T) +
-#   annotate('text', x=1.5, y=-1.8, label = Eqn_All_Years.exp, parse = F) 
-# graphics.off()
+png('Regression_Plot_All_Years_4_square.png',width = 8, height = 5, units = 'in', res = 600)
+layout(matrix(1:4,2,2))
+plot(tribs_regress_all_model)
+graphics.off()
+png('Regression_Plot_All_Years.png',width = 8, height = 5, units = 'in', res = 600)
+ggplot(data = tribs_regress_all,aes(FJ_norm_log_AF, norm_log_AF)) +
+  geom_point()  +
+  geom_smooth(method='lm') +
+  xlab(expression(Normalized~Log[10]~USGS~Fort~Jones~Streamflow)) +
+  ylab(expression(Normalized~Log[10]~Tributary~Streamflow)) +
+  ggtitle('All Years Regression') +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_rect(colour = 'black', fill = NA),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        axis.text=element_text(size=12), axis.title=element_text(size=14,face="bold"),
+        plot.title = element_text(hjust = 0.5)) +
+  scale_x_continuous(limits = c(-3,3), breaks = seq(-3,3,1), expand = c(0,0)) +
+  scale_y_continuous(limits = c(-3,3), breaks = seq(-3,3,1), expand = c(0,0)) +
+  annotate('text', x=1.5, y=-1.5, label = R2_All_Years.exp, parse = T) +
+  annotate('text', x=1.5, y=-1.8, label = Eqn_All_Years.exp, parse = F)
+graphics.off()
 
 # #Color by date
 # png('Regression_Plot_All_Years.png',width = 8, height = 5, units = 'in', res = 600)

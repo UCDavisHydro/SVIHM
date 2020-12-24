@@ -3,6 +3,7 @@ library(ggplot2)
 library(reshape2)
 library(dplyr)
 library(grid)
+library(rstudioapi)
 
 gages = c('FJ','AS','BY','LS')
 #FJ = Fort Jones gage (USGS)
@@ -13,27 +14,43 @@ gages = c('FJ','AS','BY','LS')
 ###########################################################################################################
 ########################                    USER INPUT                       ##############################
 ###########################################################################################################
+svihm_dir = dirname(dirname(dirname(getActiveDocumentContext()$path)))
+ref_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
+mf_results_dir = file.path(svihm_dir, "MODFLOW", "hist") # historical 1991-2018 wy 
+postproc_dir = file.path(svihm_dir, "R_Files", "Post-Processing")
+
+copy_these_files=c("SVIHM_Flow_Obs_Times.obs","Streamflow_FJ_SVIHM.dat")
+file.copy(from=file.path(c(ref_dir, mf_results_dir),copy_these_files), to = postproc_dir)
+
 units_cfs = FALSE   #If true, output units will be in cfs. If false output units will be in m^3/day
-dir.create(file.path(getwd(),'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
-out_dir = paste0(getwd(),'/Results')
+dir.create(file.path(postproc_dir,'Results'), showWarnings = FALSE)   #Create Results directory if it doesn't exist
+out_dir = file.path(postproc_dir,'Results')
 options(warn=-1)   # suppress warnings (set to 0 to turn warnings on)
 ###########################################################################################################
 ########################                    IMPORT STREAMFLOW                ##############################
 ###########################################################################################################
-Steamflow_Obs_Times = read.table('SVIHM_Flow_Obs_Times.obs', header = T, fill = T)
+Steamflow_Obs_Times = read.table('SVIHM_Flow_Obs_Times.obs', header = T, fill = T) #Where is this file? 
 Steamflow_Obs_Times$FJ = as.Date(Steamflow_Obs_Times$FJ, format = '%m/%d/%Y')
 Steamflow_Obs_Times$LS = as.Date(Steamflow_Obs_Times$LS, format = '%m/%d/%Y')
 Steamflow_Obs_Times$AS = as.Date(Steamflow_Obs_Times$AS, format = '%m/%d/%Y')
 Steamflow_Obs_Times$BY = as.Date(Steamflow_Obs_Times$BY, format = '%m/%d/%Y')
 
-FJ_obs_cfs = read.table('SVIHM_FJ_1990-2011.obs', skip = 27)[c(3,4)]
-names(FJ_obs_cfs) = c('Date','Streamflow_Sim_FJ_cfs')
+#Create .obs file in results
+# FJ_obs_file = "C:/Users/Claire/Documents/GitHub/SVIHM/Streamflow_Regression_Model/USGS_11519500_WY_1942_2018.txt"
+# FJ_obs_all = read.table(FJ_obs_file, header = T)
+# dates = as.Date(FJ_obs_all$Date, format = "%m/%d/%Y")
+# FJ_obs_1990_2018 = FJ_obs_all[dates >= as.Date("1990-10-01") & dates < as.Date("2018-10-01"),]
+# write.table(FJ_obs_1990_2018,file.path(postproc_dir,'SVIHM_FJ_1990-2011.obs'))
 
-FJ_sim_m3day = read.table('Streamflow_FJ_SVIHM.dat',skip=2)[c(1,3)]
+#read 
+FJ_obs_cfs = read.table(file.path(postproc_dir,'SVIHM_FJ_1990-2011.obs'), header=TRUE)[c(1,2)]
+names(FJ_obs_cfs) = c('Date','Streamflow_obs_FJ_cfs')
+
+FJ_sim_m3day = read.table(file.path(postproc_dir,'Streamflow_FJ_SVIHM.dat'),skip=2)[c(1,3)]
 names(FJ_sim_m3day) = c('Date', 'm3day')
 FJ_sim_m3day$Date = as.Date(FJ_sim_m3day$Date, origin = '1990-09-30')
-FJ_cfs = data.frame(Date = as.Date(FJ_obs_cfs$Date), 
-                                   Observed = FJ_obs_cfs$Streamflow_Sim_FJ_cfs, 
+FJ_cfs = data.frame(Date = as.Date(FJ_obs_cfs$Date, format = "%m/%d/%Y"), 
+                                   Observed = FJ_obs_cfs$Streamflow_obs_FJ_cfs, 
                                    Simulated = FJ_sim_m3day$m3day*0.000408734569)
 
 #UCODE Residuals
@@ -48,7 +65,7 @@ FJ_residuals_m3day[FJ_residuals_m3day$Residual>0,] = log10(FJ_residuals_m3day[FJ
 #########################################################
 #Streamflows for Above Serpa Lane, Below Youngs Dam, and Lower Shackleford Creek
 for (i in 2:length(gages)){
-  obs_cfs_text = readLines(paste0('SVIHM_',gages[i],'.obs'))
+  obs_cfs_text = readLines(file.path(postproc_dir,paste0('SVIHM_',gages[i],'.obs')))
   obs_cfs = data.frame(Date = as.Date(sapply(lapply(strsplit(obs_cfs_text[seq(2,length(obs_cfs_text))],' '),function(x){x[!x ==""]}),"[[",1),'%m/%d/%Y'))
   obs_cfs$Observed = as.numeric(sapply(lapply(strsplit(obs_cfs_text[seq(2,length(obs_cfs_text))],' '),function(x){x[!x ==""]}),"[[",3))
   idx <- c(1, diff(obs_cfs$Date))  #create grouping value in case data is discontinuous
