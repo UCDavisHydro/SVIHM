@@ -804,25 +804,25 @@ write_swbm_et_input_file=function(){
 # #Generate daily precip table (same daterange as in original methodology) to make model coefficients
 # #Each station is a column (plus a couple extra columns); each row is a date, WY 1944-2019
 # daily_precip_regression = make_daily_precip(weather_table = noaa,
-#                                                               daily_precip_start_date = as.Date("1943-10-01"), 
+#                                                               daily_precip_start_date = as.Date("1943-10-01"),
 #                                                               daily_precip_end_date = as.Date("2018-09-30")) #changed from 2011 for orig record
-# model_coeff = make_model_coeffs_table(months = 1:12, 
+# model_coeff = make_model_coeffs_table(months = 1:12,
 #                                       station_table = station_table,
 #                                       daily_precip = daily_precip_regression,
-#                                       ys = c("fj", "cal", "gv"), 
+#                                       ys = c("fj", "cal", "gv"),
 #                                       xs = c("fj", "cal", "gv", "et", "yr", "y2"))
 # #Generate daily precip table to make the gap-filled records (can be for a diff time period)
 # daily_precip_p_record = make_daily_precip(weather_table = noaa,
-#                                                             daily_precip_start_date = as.Date("1943-10-01"), 
+#                                                             daily_precip_start_date = as.Date("1943-10-01"),
 #                                                             daily_precip_end_date = as.Date("2018-09-30"))
-# p_record = fill_fj_cal_gv_gaps_regression_table(model_coeff=model_coeff, 
+# p_record = fill_fj_cal_gv_gaps_regression_table(model_coeff=model_coeff,
 #                                                 station_table = station_table,
 #                                                 daily_precip = daily_precip_p_record,
-#                                                 start_date = as.Date("1943-10-01"), 
+#                                                 start_date = as.Date("1943-10-01"),
 #                                                 end_date =  as.Date("2018-09-30"))
 # 
 # # average interp-fj and interp-cal records and compare to original
-# p_record$interp_cal_fj_gv_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp, gv_interp), 
+# p_record$interp_cal_fj_gv_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp, gv_interp),
 #                                         MARGIN = 1, FUN = mean, na.rm=F)
 # 
 # #check for nas
@@ -830,9 +830,9 @@ write_swbm_et_input_file=function(){
 # 
 # #Then, aggregate by month and by water year
 # #monthly
-# p_monthly = p_record %>% 
-#   dplyr::select(PRCP_mm_cal, PRCP_mm_fj, PRCP_mm_et, PRCP_mm_gv, 
-#          PRCP_mm_yr,PRCP_mm_y2, PRCP_mm_orig, 
+# p_monthly = p_record %>%
+#   dplyr::select(PRCP_mm_cal, PRCP_mm_fj, PRCP_mm_et, PRCP_mm_gv,
+#          PRCP_mm_yr,PRCP_mm_y2, PRCP_mm_orig,
 #          fj_interp, cal_interp, gv_interp, month_day1) %>%
 #   group_by(month_day1) %>%
 #   summarise_all(funs(sum), na.rm=TRUE)
@@ -844,9 +844,9 @@ write_swbm_et_input_file=function(){
 # 
 # #Then, aggregate by month and by water year
 # #yearly
-# p_wy = p_record %>% 
-#   dplyr::select(#PRCP_mm_cal, PRCP_mm_fj, PRCP_mm_gv, # PRCP_mm_et, 
-#                  # PRCP_mm_yr,PRCP_mm_y2, 
+# p_wy = p_record %>%
+#   dplyr::select(#PRCP_mm_cal, PRCP_mm_fj, PRCP_mm_gv, # PRCP_mm_et,
+#                  # PRCP_mm_yr,PRCP_mm_y2,
 #                 # interp_cal_fj_gv_mean,
 #                 PRCP_mm_orig,
 #                 fj_interp, cal_interp, gv_interp,
@@ -859,6 +859,136 @@ write_swbm_et_input_file=function(){
 #   geom_line(aes(group=variable))
 # p
 # 
+# #_Tanaka-Deas oct-march water year type break-points checking ----
+# 
+# p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp),
+#                                         MARGIN = 1, FUN = mean, na.rm=F)
+# 
+# rainmo2 = aggregate(p_record$interp_cal_fj_mean,
+#                     by = list(year(p_record$Date), month(p_record$Date)),
+#                     FUN = sum)
+# colnames(rainmo2) = c("year","month","precip_mm")
+# rainmo$precip_mm=rainmo$precip_m*1000
+# rainmo = rainmo[order(rainmo$year, rainmo$month),]
+# plot(as.Date(paste(rainmo$year, rainmo$month, "01", sep = "-")),
+#      rainmo$precip_mm / 25.4, pch = 18, type = "o", ylim = c(0, 15),
+#      main = "SVIHM monthly rainfall record", ylab = "Monthly rainfall (in)", xlab = "")
+# grid()
+# rainmo2 = rainmo2[order(rainmo2$year, rainmo2$month),]
+# rainmo2 = rainmo2[as.Date(paste(rainmo2$year, rainmo2$month, "01", sep = "-")) >= as.Date("1990-10-01"),]
+# plot(as.Date(paste(rainmo2$year, rainmo2$month, "01", sep = "-")),
+#      rainmo2$precip_mm/25.4, pch = 18, type = "o", ylim = c(0, 15),
+#      main = "Avg of interpolated Cal and FJ rain records",
+#      ylab = "Monthly rainfall (in)", xlab = "")
+# grid()
+# 
+# # yearly
+# #original SVIHM inputs
+# raintab$wy = year(raintab$date); raintab$wy[month(raintab$date)>9]=year(raintab$date[month(raintab$date)>9])+1
+# rainyr = aggregate(raintab$precip_m, by=list(raintab$wy), FUN = sum)
+# rainyr$x=rainyr$x*1000
+# colnames(rainyr) = c("wy","precip_mm")
+# # from noaa data
+# rainyr2 = aggregate(p_record$interp_cal_fj_mean, by=list(p_record$water_year), FUN = sum)
+# colnames(rainyr2) = c("wy","precip_mm")
+# 
+# png(filename = "Scott Valley annual Rain comparison.png", width = 8, height = 5, units = "in", res = 300)
+# 
+# plot(rainyr$wy, rainyr$precip_mm / 25.4, col = "gray",
+#      pch = 18, type = "o", ylim = c(0,40),
+#      main = "SVIHM annual rainfall record", ylab = "Annual rainfall (in)", xlab = "")
+# grid()
+# 
+# lines(rainyr$wy[23:28], rainyr$precip_mm[23:28] / 25.4, col = "blue")
+# points(rainyr$wy[23:28], rainyr$precip_mm[23:28] / 25.4, col = "blue", pch = 18)
+# 
+# lines(rainyr2$wy, rainyr2$precip_mm / 25.4, col = "red")
+# points(rainyr2$wy, rainyr2$precip_mm / 25.4, col = "red", pch = 5)
+# 
+# legend(x = "bottomright", horiz = T,
+#        pch = c(18,18, 5), col = c("gray", "blue", "red"), cex = 0.8,
+#        legend = c("Original rainfall input", "SVIHM input, 2012-18", "Interp. Cal and FJ mean"))
+# dev.off()
+# # plot(rainyr2$wy, rainyr2$precip_mm / 25.4,
+# #      pch = 18, type = "o",ylim = c(0,40),
+# #      main = "Avg of interpolated Cal and FJ rain records", ylab = "Annual rainfall (in)", xlab = "")
+# # grid()
+# 
+# 
+# 
+# # Subset for only oct-march months
+# sv_oct_mar = p_record[month(p_record$Date) %in% c(10,11,12,1,2,3),
+#                       c("month_day1","interp_cal_fj_mean")]
+# # calculated water year
+# sv_oct_mar$wy = year(sv_oct_mar$month_day1)
+# sv_oct_mar$wy[month(sv_oct_mar$month_day1)>9] = year(sv_oct_mar$month_day1[month(sv_oct_mar$month_day1)>9]) +1
+# # Aggregate by water year
+# annual_o_m = aggregate(sv_oct_mar$interp_cal_fj_mean, by = list(sv_oct_mar$wy), FUN = sum)
+# annual_o_m$color = gray((1:nrow(annual_o_m)/nrow(annual_o_m)))
+# #Assign water year type colors. Divide the years in thirds.
+# dry_breakpoint = annual_o_m$x[order(annual_o_m$x)][round(nrow(annual_o_m) * 0.33)] 
+# wet_breakpoint = annual_o_m$x[order(annual_o_m$x)][round(nrow(annual_o_m) * 0.66)] 
+# annual_o_m$wy_type_color = "goldenrod"
+# annual_o_m$wy_type_color[annual_o_m$x <= dry_breakpoint] = "orangered"
+# annual_o_m$wy_type_color[annual_o_m$x >= wet_breakpoint] = "dodgerblue"
+# 
+# # 1. Plot for full available data: 1944-2018
+# par(mfrow = c(2,1))
+# # annual_o_m = annual_o_m[annual_o_m$Group.1>1990,]
+# #plot over time
+# plot(annual_o_m$Group.1, annual_o_m$x / 25.4, 
+#      pch = 21, type = "o", main = "Oct-Mar Rainfall, 1944-2018",
+#      col = "black", ylim = c(0,30),
+#      #bg = annual_o_m$color,
+#      bg = annual_o_m$wy_type_color,
+#      xlab = "Water Year", ylab = "Oct-Mar Cumulative Rainfall, in.")
+# abline(h = mean(annual_o_m$x / 25.4), lty = 2)
+# grid()
+# #Plot in order
+# plot(annual_o_m$x[order(annual_o_m$x)] / 25.4, ylim = c(0,30),
+#      pch = 21, col = "black", main = "Oct-Mar Rainfall, 1944-2018, Sorted",
+#      # bg = annual_o_m$color[order(annual_o_m$x)],
+#      bg = annual_o_m$wy_type_color[order(annual_o_m$x)],
+#      xlab = "", ylab = "Oct-Mar Cumulative Rainfall, in.")
+# abline(h = mean(annual_o_m$x / 25.4), lty = 2)
+# grid()
+# abline(v = c(round(nrow(annual_o_m) * 0.33),
+#              round(nrow(annual_o_m) * 0.66)),
+#        h = mean(annual_o_m$x / 25.4), lty = 2)
+# 
+# 
+# # 2. subset for their period of study: 1942-2008
+# annual_o_m = annual_o_m[annual_o_m$Group.1<= 2008,]
+# #plot over time
+# plot(annual_o_m$Group.1, annual_o_m$x / 25.4, 
+#      pch = 21, type = "o", main = "Oct-Mar Rainfall, 1942-2008",
+#      col = "black", 
+#      #bg = annual_o_m$color,
+#      bg = annual_o_m$wy_type_color,
+#      xlab = "Water Year", ylab = "Oct-Mar Cumulative Rainfall, in.")
+# abline(h = mean(annual_o_m$x / 25.4), lty = 2)
+# grid()
+# #Plot in order
+# plot(annual_o_m$x[order(annual_o_m$x)] / 25.4, 
+#      pch = 21, col = "black",
+#      main = "Oct-Mar Rainfall, 1942-2008, Sorted",
+#      bg = annual_o_m$wy_type_color[order(annual_o_m$x)],
+#      # bg = annual_o_m$color[order(annual_o_m$x)],
+#      xlab = "", ylab = "Oct-Mar Cumulative Rainfall, in.")
+# abline(h = mean(annual_o_m$x / 25.4), lty = 2)
+# grid()
+# abline(v = c(round(nrow(annual_o_m) * 0.33),
+#              round(nrow(annual_o_m) * 0.66)),
+#        h = mean(annual_o_m$x / 25.4), lty = 2)
+# 
+# 
+# abline(v = c(round(nrow(annual_o_m) * 0.36),
+#              round(nrow(annual_o_m) * 0.66)),
+#        h = mean(annual_o_m$x / 25.4), lty = 2)
+# annual_o_m$x[order(annual_o_m$x)][21] / 25.4
+
+
+#
 # #_Visualize model coeffs ---------------------------------------
 # 
 # model_coeff1 = model_coeff[model_coeff$months == 1,]
