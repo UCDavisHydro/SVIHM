@@ -29,51 +29,91 @@
   
   IMPLICIT NONE
 
-  INTEGER  :: nmonth, imonth,jday,i,im,ip, nrows, ncols, dummy, nsegs, n_wel_param, num_daily_out, unit_num, num_MAR_fields
-  INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix, Discharge_Zone_Cells
+  INTEGER  :: nmonth, imonth, jday, i, im, ip, nrows, ncols
+  INTEGER  :: dummy, nsegs, n_wel_param, num_daily_out, unit_num, num_MAR_fields, alf_irr_stop_mo, alf_irr_stop_day
+  INTEGER, ALLOCATABLE, DIMENSION(:,:) :: zone_matrix, no_flow_matrix, output_zone_matrix
+  REAL, ALLOCATABLE, DIMENSION(:,:) :: ET_Cells_extinction_depth
   INTEGER, ALLOCATABLE, DIMENSION(:)   :: MAR_fields, ip_daily_out
   REAL   :: precip, Total_Ref_ET, MAR_vol
-  REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow, max_MAR_field_rate, moisture_save
+  REAL, ALLOCATABLE, DIMENSION(:)  :: drain_flow, max_MAR_field_rate, moisture_save, available_instream_flow_ratio
   REAL :: start, finish
   INTEGER, ALLOCATABLE, DIMENSION(:)  :: ndays
   CHARACTER(9) :: param_dummy
-  CHARACTER(10)  :: SFR_Template, scenario, suffix
+  CHARACTER(12)  :: SFR_Template, rch_scenario, flow_scenario, landuse_scenario, suffix
   CHARACTER(50), ALLOCATABLE, DIMENSION(:) :: daily_out_name
   INTEGER, DIMENSION(31) :: ET_Active
-  LOGICAL :: MAR_active, ILR_active, daily_out_flag
+  LOGICAL :: MAR_active, ILR_active, instream_limits_active, major_natveg_areas, daily_out_flag
   DOUBLE PRECISION :: eff_precip
  
   call cpu_time(start)
-  ! DATA nday / 30,31,30,31,31,28,31,30,31,30,31,31 /            ! The months are shifted by one because the first index location is zero due to use of MOD function
   open (unit=800, file='SWBM_log.rec')                         ! Open record file for screen output
   eff_precip = 0.
   Total_Ref_ET = 0.
   
   open(unit=10, file='general_inputs.txt', status='old')
-  read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template, scenario
-  if (trim(scenario)=='basecase' .or. trim(scenario)=='Basecase' .or. trim(scenario)=='BASECASE') then            ! Set logicals for Scenario type
+  read(10, *) npoly, total_n_wells, nmonth, nrows, ncols, RD_Mult, SFR_Template
+  read(10, *) rch_scenario, flow_scenario, alf_irr_stop_mo, alf_irr_stop_day
+  read(10, *) landuse_scenario
+
+  if (trim(rch_scenario)=='basecase' .or. trim(rch_scenario)=='Basecase' .or. trim(rch_scenario)=='BASECASE') then            ! Set logicals for Recharge Scenario type
     MAR_active=  .FALSE.  
     ILR_active = .FALSE.
-  else if(trim(scenario)=='MAR' .or. trim(scenario)=='mar') then
+  else if(trim(rch_scenario)=='MAR' .or. trim(rch_scenario)=='mar') then
     MAR_active=  .TRUE. 
     ILR_active = .FALSE.
-  else if (trim(scenario)=='ILR' .or. trim(scenario)=='ilr') then
+  else if (trim(rch_scenario)=='ILR' .or. trim(rch_scenario)=='ilr') then
     MAR_active=  .FALSE.
   	ILR_active = .TRUE.
-  else if (trim(scenario)=='MAR_ILR' .or. trim(scenario)=='mar_ilr') then
-  	 MAR_active=  .TRUE.       
-     ILR_active = .TRUE.    
-  else if(trim(scenario).ne.'basecase' .or. trim(scenario).ne.'Basecase' .or. trim(scenario).ne.'BASECASE' &      ! Exit program if incorrect scenario type
-         .or. trim(scenario).ne.'MAR' .or. trim(scenario).ne.'mar' &
-         .or. trim(scenario).ne.'ILR' .or. trim(scenario).ne.'ilr' &
-         .or. trim(scenario).ne.'MAR_ILR' .or. trim(scenario).ne.'mar_ilr' ) then
-    write(*,*)'Unknown scenario input in general_inputs.txt'
-    write(800,*)'Unknown scenario input in general_inputs.txt'
+  else if (trim(rch_scenario)=='MAR_ILR' .or. trim(rch_scenario)=='mar_ilr') then
+    MAR_active=  .TRUE.       
+    ILR_active = .TRUE.    
+  else if (trim(rch_scenario).ne.'basecase' .or. trim(rch_scenario).ne.'Basecase' .or. trim(rch_scenario).ne.'BASECASE' &  ! Exit program if incorrect recharge scenario type
+         .or. trim(rch_scenario).ne.'MAR' .or. trim(rch_scenario).ne.'mar' &
+         .or. trim(rch_scenario).ne.'ILR' .or. trim(rch_scenario).ne.'ilr' &
+         .or. trim(rch_scenario).ne.'MAR_ILR' .or. trim(rch_scenario).ne.'mar_ilr' ) then
+    write(*,*)'Unknown recharge scenario input in general_inputs.txt'
+    print*, rch_scenario
+    write(800,*)'Unknown recharge scenario input in general_inputs.txt'
     call EXIT
   end if
-    
-  write(*,'(2a10)')'Scenario: ',trim(scenario)
-  write(800,'(2a10)')'Scenario: ',trim(scenario)
+
+  if (trim(flow_scenario)=='basecase' .or. trim(flow_scenario)=='Basecase' .or. trim(flow_scenario)=='BASECASE') then 
+    instream_limits_active = .FALSE.         ! Set logicals for Flow Scenario type 
+  else if (trim(flow_scenario)=='flow_lims' .or. trim(flow_scenario)=='Flow_Lims' &
+    .or. trim(flow_scenario)=='FLOW_LIMS')  then 
+      instream_limits_active = .TRUE.         
+  else if (trim(flow_scenario).ne.'basecase' .or. trim(flow_scenario).ne.'Basecase' &
+    .or. trim(flow_scenario).ne.'BASECASE' .or. trim(flow_scenario).ne.'flow_lims' &
+    .or. trim(flow_scenario).ne.'Flow_Lims' .or. trim(flow_scenario).ne.'FLOW_LIMS') then
+      write(*,*)'Unknown flow scenario input in general_inputs.txt'
+      write(800,*)'Unknown flow scenario input in general_inputs.txt'
+      call EXIT
+    end if
+
+    if (trim(landuse_scenario)=='basecase' .or. trim(landuse_scenario)=='Basecase' .or. trim(landuse_scenario)=='BASECASE') then 
+      major_natveg_areas = .FALSE.         ! Set logicals for Landuse Scenario type 
+    else if (trim(landuse_scenario)=='major_natveg' .or. trim(landuse_scenario)=='Major_NatVeg' &
+      .or. trim(landuse_scenario)=='MAJOR_NATVEG')  then 
+        major_natveg_areas = .TRUE.         
+    else if (trim(landuse_scenario).ne.'basecase' .or. trim(landuse_scenario).ne.'Basecase' &
+      .or. trim(landuse_scenario).ne.'BASECASE' .or. trim(landuse_scenario).ne.'major_natveg' &
+      .or. trim(landuse_scenario).ne.'Major_NatVeg' .or. trim(landuse_scenario).ne.'MAJOR_NATVEG') then
+        write(*,*)'Unknown land use scenario input in general_inputs.txt'
+        write(*,'(2a19)')'Land use Scenario: ',trim(landuse_scenario)
+        write(800,*)'Unknown land use scenario input in general_inputs.txt'
+        call EXIT
+      end if
+  
+  write(*,'(2a19)')'Recharge Scenario: ',trim(rch_scenario)
+  write(800,'(2a19)')'Recharge Scenario: ',trim(rch_scenario)
+  write(*,'(2a15)')'Flow Scenario: ',trim(flow_scenario)
+  write(800,'(2a15)')'Flow Scenario: ',trim(flow_scenario)
+  write(*,'(2a19)')'Land use Scenario: ',trim(landuse_scenario)
+  write(800,'(2a19)')'Land use Scenario: ',trim(landuse_scenario)
+  write(*,'(A19,I6)') "Alfalfa end month: ", alf_irr_stop_mo
+  write(800,'(A19,I6)') "Alfalfa end month: ", alf_irr_stop_mo
+  write(*,'(A17,I6)') "Alfalfa end day: ", alf_irr_stop_day
+  write(800,'(A17,I6)') "Alfalfa end day: ", alf_irr_stop_day
   SFR_Template = TRIM(SFR_Template)
   write(*,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
   write(800,'(A27, A6)') 'SFR Template File Format = ',SFR_Template
@@ -90,7 +130,7 @@
   ALLOCATE(zone_matrix(nrows,ncols))
   ALLOCATE(no_flow_matrix(nrows,ncols))
   ALLOCATE(output_zone_matrix(nrows,ncols))
-  ALLOCATE(Discharge_Zone_Cells(nrows,ncols))
+  ALLOCATE(ET_Cells_extinction_depth(nrows,ncols)) 
   ALLOCATE(drain_flow(nmonth))
   ALLOCATE(ndays(nmonth))
 
@@ -101,8 +141,14 @@
   output_zone_matrix = zone_matrix * no_flow_matrix        ! Create Recharge Zone Matrix with zeros at no flow cells
   open(unit=213, file='SVIHM_SFR_template.txt', status='old')
   read(213,*) dummy,nsegs 
-  open(unit=214,file='ET_Cells_DZ.txt',status='old')      ! Read in MODFLOW recharge zone matrix
-  read(214,*) Discharge_Zone_Cells
+  open(unit=214,file='ET_Cells_Extinction_Depth.txt',status='old')      ! Read in extinction depths for MODFLOW ET-from-groundwater zones
+  read(214,*) ET_Cells_extinction_depth 
+  !if(landuse_scenario == 'lots_natveg') then                  ! If there are major 
+  !  open(unit=217,file='NatVeg_Outside_DZ_Cells.txt',status='old')   ! Read in MODFLOW ET-from-groundwater zone matrix for Nat Veg outside DZ cells
+  !  read(217,*) ET_Cells_NV                                          ! In changed-land-use scenarios, nat veg areas.
+  !  close(217)
+  !end if
+
   open(unit=888, file='stress_period_days.txt', status='old')      ! Read in vector with number of days in each stress period (month)
   read(888, *) ndays   
 
@@ -113,6 +159,7 @@
   close(888)
   
   call READ_KC_IRREFF                                ! Read in crop coefficients and irrigation efficiencies
+  !call read_scenario_specs                           ! Read management actionsfor this scenario
   call readpoly(npoly, nrows, ncols, output_zone_matrix) ! Read in field info
   call read_well                                     ! Read in well info
   
@@ -127,8 +174,13 @@
       read(215,*)MAR_fields(i), max_MAR_field_rate(i)
     end do
   end if
+
+  if (instream_limits_active) then
+    open(unit=216,file='instream_flow_available_ratio.txt') ! Read in available flow (inflow - CDFW recommended instream flows, m^3/month) (1 value for each month)
+    ALLOCATE(available_instream_flow_ratio(nmonth)) ! vector instream_flow_lim has 1 entry for each month (stress period) in model record
+  end if
   
-  close(210)
+  close(210) ! No unit = 210; delete?
   close(212)
   close(214) 
   
@@ -286,14 +338,18 @@
        call do_rotation(im)	                 ! Rotate alfalfa/grain in January, except for first year since rotation happened in October   
      end if                   
      call calc_area(im)                ! Calculate area for each month due to changing alfalfa/grain
-     call read_streamflow(ndays(im))     ! Read in streamflow inputs
      write(*,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', ndays(im)
      write(800,'(a15, i3,a13,i2,a18,i2)')'Stress Period: ',im,'   Month ID: ',imonth,'   Length (days): ', ndays(im)
      call zero_month                                 ! Zero out monthly accumulated volume
      if (imonth==1) then                             ! If October:
        call zero_year                                ! Zero out yearly accumulated volume
      endif    
-     read(220,*)drain_flow(im)                       ! Read drain flow into array         
+     read(220,*) drain_flow(im)                       ! Read drain flow into array
+     if(instream_limits_active) then                  
+      read(216, *) available_instream_flow_ratio(im)        ! Read monthly available instream flow ratio (% of divertible trib flow) into array
+     end if
+     call read_streamflow(ndays(im), instream_limits_active, available_instream_flow_ratio(im))     ! Read in streamflow inputs
+
      do jday=1, ndays(im)                         ! Loop over days in each month
        if (jday==1) monthly%ET_active = 0            ! Set ET counter to 0 at the beginning of the month. Used for turning ET on and off in MODFLOW so it is not double counted.    
        daily%ET_active  = 0                                 ! Reset ET active counter
@@ -305,9 +361,9 @@
        read(88,*) REF_ET
        Total_Ref_ET = Total_Ref_ET + REF_ET                 
        read(79,*) kc_grain
-       read (80,*)kc_alfalfa
+       read (80,*) kc_alfalfa
        read(81,*)kc_pasture
-       read(887,*) precip
+       read(887,*) precip 
        if (precip .GE. (0.2*ref_et)) then
          eff_precip=precip
        else
@@ -324,9 +380,9 @@
            write(800,*)'Irrigation Type Updated'
 		     end if
          if (ILR_active) then
-           call IRRIGATION_ILR(ip, imonth, jday, eff_precip)
+           call IRRIGATION_ILR(ip, imonth, jday, eff_precip, alf_irr_stop_mo, alf_irr_stop_day)
 	       else
-	         call IRRIGATION(ip, imonth, jday, eff_precip)
+	         call IRRIGATION(ip, imonth, jday, eff_precip, alf_irr_stop_mo, alf_irr_stop_day)
 	       end if
 	       call RECHARGE(ip,eff_precip,jday,imonth,moisture_save,MAR_active)
 		     call deficiency_check(ip, imonth, jday)       
@@ -358,7 +414,7 @@
        call convert_length_to_volume
        call monthly_out_by_field(im)
        call monthly_pumping(im, jday, total_n_wells)
-		   call ET_out_MODFLOW(im,imonth,ndays,nmonth, nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells,npoly)
+		   call ET_out_MODFLOW(im,imonth,ndays,nmonth, nrows,ncols,output_zone_matrix,Total_Ref_ET,ET_Cells_extinction_depth,npoly) 
 		   Total_Ref_ET = 0.  ! Reset monthly Average ET
 		   call recharge_out_MODFLOW(im,imonth,ndays, nmonth,nrows,ncols,output_zone_matrix)
        call monthly_volume_out		   

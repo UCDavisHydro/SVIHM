@@ -343,36 +343,39 @@ end subroutine monthly_pumping
     end subroutine monthly_out_by_field
 
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    subroutine ET_out_MODFLOW(im,imonth,ndays,nmonth, nrows,ncols,output_zone_matrix,Total_Ref_ET,Discharge_Zone_Cells, npoly)
+    subroutine ET_out_MODFLOW(im,imonth,ndays,nmonth, nrows,ncols,output_zone_matrix,Total_Ref_ET,ET_Cells_extinction_depth, npoly)
  
     INTEGER, INTENT(IN) :: im,imonth,nmonth,nrows,ncols, npoly
-    INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), ndays(nmonth), Discharge_Zone_Cells(nrows,ncols)
+    INTEGER, INTENT(IN) :: output_zone_matrix(nrows,ncols), ndays(nmonth)
     REAL, INTENT(IN) :: Total_Ref_ET
     REAL :: Avg_Ref_ET
     REAL, DIMENSION(npoly) :: ET_fraction
     INTEGER :: ip
-    REAL, DIMENSION(nrows,ncols) :: Extinction_depth_matrix, ET_matrix_out
+    REAL, DIMENSION(nrows,ncols) ::  ET_matrix_out, ET_Cells_extinction_depth(nrows,ncols)
     
     ET_matrix_out = 0.
-    Avg_Ref_ET = Total_Ref_ET/dble(ndays(im))                                                   ! Calculate average Reference ET for populating ET package
+    !Extinction_depth_matrix = ET_Cells_extinction_depth
+    Avg_Ref_ET = Total_Ref_ET/dble(ndays(im))                    ! Calculate average Reference ET for populating ET package
     
     do ip=1,npoly
       ET_fraction(ip) = monthly(ip)%ET_active / dble(ndays(im)) 
       where (output_zone_matrix(:,:) == ip)
-        ET_matrix_out(:,:) = Avg_Ref_ET * (1 - ET_fraction(ip))  ! Scale Average monthly ET by the number of days ET was not active on the field.
-        Extinction_depth_matrix(:,:) = 0.5
+        ET_matrix_out(:,:) = Avg_Ref_ET * (1 - ET_fraction(ip))  ! Scale Average monthly ET by the number of days ET was NOT active on the field.
+        !Extinction_depth_matrix(:,:) = 0.5
       end where
     end do
     
-    ET_matrix_out = ET_matrix_out * Discharge_Zone_Cells
-    Extinction_depth_matrix = Extinction_depth_matrix 
+    !ET_matrix_out = ET_matrix_out * Discharge_Zone_Cells  ! format excluding all cells outside Discharge Zone
+    where (ET_Cells_extinction_depth(:,:) == 0)
+      ET_matrix_out = 0                          ! Simulate ET-from-gw only in cells a specified, non-0 extinction depth
+    end where
     
     if (im==1) then
     	open(unit=83, file='SVIHM.ets', status = 'old', position = 'append')
     	write(83, *)"       20   1.00000(10e14.6)                   -1     ET RATE"
       write(83,'(10e14.6)') ET_matrix_out                ! Write Max ET Rates 
       write(83,*)'       20   1.00000(10e14.6)                   -1     ET DEPTH'
-      write(83,'(10e14.6)') Extinction_depth_matrix  ! Write ET Extinction Depth
+      write(83,'(10e14.6)') ET_Cells_extinction_depth  ! Write ET Extinction Depth
       write(83,*)'        05.0000e-01(20F6.3)                    -1     PXDP Segment 1'    ! Linear decrease in ET from land surface to 0.5 m below surface
       write(83,*)'        05.0000e-01(20F6.3)                    -1     PETM Segment 1'    ! Linear decrease in ET from land surface to 0.5 m below surface
     else
@@ -380,7 +383,7 @@ end subroutine monthly_pumping
       write(83, *)"       20   1.00000(10e14.6)                   -1     ET RATE"
       write(83,'(10e14.6)') ET_matrix_out                ! Write Max ET Rates 
       write(83,*)'       20   1.00000(10e14.6)                   -1     ET DEPTH'
-      write(83,'(10e14.6)') Extinction_depth_matrix  ! Write ET Extinction Depth
+      write(83,'(10e14.6)') ET_Cells_extinction_depth  ! Write ET Extinction Depth
     end if
     end subroutine ET_out_MODFLOW	
 

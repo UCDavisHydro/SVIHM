@@ -1,0 +1,10 @@
+FID,CLASS1,SUBCLASS1,Landuse,acres
+0, F, ,Field Crops,363.4450073
+1, G, ,Grain and Hay,"2,263.4799805"
+2, I, ,Idle,"1,036.4599609"
+3, P, 1,Alfalfa,"13,753.0996094"
+4, P, ,Pasture,"15,110.2998047"
+5,NB, ,Barren,142.7630005
+6,NV, ,Native Vegetation,"28,153.5996094"
+7,S, ,Semiagricultural,409.6310120
+8,UC, ,Urban,"2,359.3100586"

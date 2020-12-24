@@ -4,22 +4,31 @@ library(ggplot2)
 start_time <- Sys.time()
 
 # User Inputs -------------------------------------------------------------
+
 NLAY = 2                 # Number of layers in model
-NSP = 252                # Number of stress peridos for which heads are printed
+NSP = 336                # Number of stress peridos for which heads are printed
+NROW = 440               # Number of rows in 2020-12-02 version of SVIHM
+NCOL = 210               # Number of columns in 2020-12-02 version of SVIHM
 filename = 'SVIHM.hds'   #Name of binary head file
 No_FLow_Val = 9999       #Value of no flow cells
 Print_All_Heads = FALSE  #Flag for printing all groundwater heads
-Print_Mon_Wells = TRUE   #Flag for printing heads at monitoring well locations 
+Print_Mon_Wells = FALSE   #Flag for printing heads at monitoring well locations 
 Evaluate_Storage = TRUE  #Flag for evalutating relationship between heads and storage
+# Directories
+svihm_dir = "C:/Users/Claire/Documents/GitHub/SVIHM"
+analysis_dir = file.path(svihm_dir, "R_Files", "Post-Processing")
+scenario_dir = file.path(svihm_dir, "MODFLOW", "basecase")
 output_dir = 'Results/'  #Output directory
-source('Extract_Monitoring_Well_Heads.R')    #Function for extracting heads from matrix
-source('Read_LST.R')                         #Function for extracting MODFLOW Budget Terms
+source(file.path(analysis_dir, 'Extract_Monitoring_Well_Heads.R'))    #Function for extracting heads from matrix
+# source(file.path(analysis_dir,'Read_LST.R'))                         #Function for extracting MODFLOW Budget Terms
 
 # Read Heads --------------------------------------------------------------
 
-fid = file(filename, "rb")
+fid = file(file.path(scenario_dir, filename), "rb")
 bytes = 0                                     #Bytes counter
 p=1
+
+H_all=array(data = NA, dim = c(NROW, NCOL, NLAY, NSP))
 
 for(k in 1:NSP){
   print(paste0('Reading Heads for Stress Period ', k))
@@ -28,7 +37,7 @@ for(k in 1:NSP){
   PERTIM = readBin(fid, numeric(), n = 1, size = 4); bytes = bytes + 4                        #Time in the current stress period
   TOTIM = readBin(fid, numeric(), n = 1, size = 4); bytes = bytes + 4                         #Total elapsed time
   DESC =  readBin(readBin(fid, "raw", n=16L, size=1L, endian="little"),
-                           "character", n=1L, endian="little"); bytes = bytes + 16            #Description of the array
+                  "character", n=1L, endian="little"); bytes = bytes + 16            #Description of the array
   NCOL = readBin(fid, integer(), n = 1, size = 4); bytes = bytes + 4                          #Number of columns in the model
   NROW = readBin(fid, integer(), endian = "little", size = 4); bytes = bytes + 4              #Number of rows in the model
   ILAY = readBin(fid, integer(), endian = "little", size = 4); bytes = bytes + 4              #Current layer number
@@ -48,21 +57,58 @@ for(k in 1:NSP){
     H_temp = matrix(readBin(fid, numeric(), n=92400, size = 4), nrow = NROW, ncol = NCOL, byrow = T)  #Read in head matrix
     eval(parse(text = paste0('H[,,NLAY] = H_temp')))
   }
-  H[H==No_FLow_Val] = NaN
+  # H[H==No_FLow_Val] = NaN
+  
   if (Print_Mon_Wells==T){
     if (k==1){
       mon_well_heads = Extract_Monitoring_Well_Heads(H, Current_Wells = T)
     }  else {
       mon_well_heads = cbind(mon_well_heads, Extract_Monitoring_Well_Heads(H, Current_Wells = T)[2])
-  } 
+    } 
   }
+  
+  H_all[,,,k] = H
 }
-names(mon_well_heads) = c('Well_ID', paste0('Head_SP', seq(1,NSP)))
+
 
 # Print Monitoring Well Heads ---------------------------------------------
+if (Print_Mon_Wells==T){names(mon_well_heads) = c('Well_ID', paste0('Head_SP', seq(1,NSP)))}
 if (Print_Mon_Wells==T){
   write.table(mon_well_heads, file = paste0(output_dir,'Monitoring_Well_Heads.txt'), quote = F, row.names = F, sep = ',')
 }
+
+
+# Map GW Elev and DTW -----------------------------------------------------
+
+# Read in top of layer 1 (ground surface elevation)
+# Read in the whole .dis file
+dis_text = readLines(con=file.path(scenario_dir, "SVIHM.dis"))
+#Find data indices for the ground surface in the .dis file
+start_index = which(grepl(pattern = "TOP of Model", x = dis_text)) + 1
+end_index = which(grepl(pattern = "BOTTOM of Layer   1", x = dis_text)) - 1
+# Trim white space, split the numeric values, and vectorize
+ground_surface_elev_values = trimws(dis_text[start_index:end_index])
+gse_val = unlist(strsplit(ground_surface_elev_values, split = "  "))
+gse = matrix(data = as.numeric(gse_val), nrow=NROW, ncol=NCOL, byrow=TRUE)
+
+# TO DO: subset H by growing season
+#growing season: Apr-Sep, or imonth 7-11
+growing_season_selector = ((1:NSP %% 12) %in% 7:11)
+#H[NROW, NCOL, NLAY, NSP]
+H_gs = H_all[,,,growing_season_selector]
+
+# image(t(gse[440:1,])) # Test by mapping: transpose x and y vals and reverse x vals to convert to geographic position
+for(i in 1:NLAY){
+  h_layer = H_gs[,,i,]
+  h_avg = apply(X = h_layer, MARGIN = c(1,2), FUN = mean)
+  
+  dtw = gse - h_avg
+  dtw_lt_15 = dtw
+  dtw_lt_15[dtw_lt_15 > 6] = NA
+  
+  image(t(dtw_lt_15[440:1,]))
+}
+# 
 
 # Evaluate Storage --------------------------------------------------------
 if (Evaluate_Storage==T){
