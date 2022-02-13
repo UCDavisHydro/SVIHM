@@ -31,3 +31,35 @@ _scratchwork_and_figure_tests
 Scenarios
 SWBM/scenario_archive
 MODFLOW/scenario_archive
+
+# -- Folders meant to be local only
+Run/
+
+# -- VS
+*.sln
+*.vfproj
+# User-specific files
+*.rsuser
+*.suo
+*.u2d
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Mono auto generated files
+mono_crash.*
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+BuildLog.htm

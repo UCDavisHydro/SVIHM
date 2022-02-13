@@ -1,0 +1,3 @@
+# Update_Drain_Inflows Input File
+MODFLOW\SVIHM.lst         / MODFLOW Listing (LST) file
+SWBM\Drains_m3day.txt     / SWBM Drains file
