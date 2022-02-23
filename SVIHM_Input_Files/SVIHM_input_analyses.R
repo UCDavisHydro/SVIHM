@@ -404,8 +404,8 @@ get_daily_precip_table=function(final_table_start_date=model_start_date,
                                         xs = c("fj", "cal", "gv", "et", "yr", "y2"))
   #Generate daily precip table to make the gap-filled records
   daily_precip_p_record = make_daily_precip(weather_table = noaa,
-                                                              daily_precip_start_date = final_table_start_date, 
-                                                              daily_precip_end_date = final_table_end_date)
+                                            daily_precip_start_date = final_table_start_date, 
+                                            daily_precip_end_date = final_table_end_date)
   p_record = fill_fj_cal_gv_gaps_regression_table(model_coeff=model_coeff, 
                                                station_table = station_table,
                                                daily_precip = daily_precip_p_record,
@@ -416,11 +416,18 @@ get_daily_precip_table=function(final_table_start_date=model_start_date,
   # p_record$interp_cal_fj_gv_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp, gv_interp), 
   #                                              MARGIN = 1, FUN = mean, na.rm=T)
   
-  p_record$interp_cal_fj_gv_mean =  apply(X = dplyr::select(p_record, PRCP_mm_fj, PRCP_mm_cal, PRCP_mm_gv), 
+  # p_record$interp_cal_fj_gv_mean =  apply(X = dplyr::select(p_record, PRCP_mm_fj, PRCP_mm_cal, PRCP_mm_gv), 
+  #                                         MARGIN = 1, FUN = mean, na.rm=T)
+  # p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, PRCP_mm_fj, PRCP_mm_cal), 
+  #                                         MARGIN = 1, FUN = mean, na.rm=T)
+  # p_record$interp_cal_gv_mean =  apply(X = dplyr::select(p_record, PRCP_mm_gv, PRCP_mm_cal), 
+  #                                      MARGIN = 1, FUN = mean, na.rm=T)
+  
+  p_record$interp_cal_fj_gv_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp, gv_interp), 
                                           MARGIN = 1, FUN = mean, na.rm=T)
-  p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, PRCP_mm_fj, PRCP_mm_cal), 
-                                          MARGIN = 1, FUN = mean, na.rm=T)
-  p_record$interp_cal_gv_mean =  apply(X = dplyr::select(p_record, PRCP_mm_gv, PRCP_mm_cal), 
+  p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record,fj_interp, cal_interp), 
+                                       MARGIN = 1, FUN = mean, na.rm=T)
+  p_record$interp_cal_gv_mean =  apply(X = dplyr::select(p_record, gv_interp, cal_interp,), 
                                        MARGIN = 1, FUN = mean, na.rm=T)
   
   # Prepare to combine original precip and new regressed gap-filled fj-cal average
@@ -446,8 +453,8 @@ get_daily_precip_table=function(final_table_start_date=model_start_date,
 }
 
 #Test run for AGU figures, 2019:
-# p_record_all_fj = get_daily_precip_table(final_table_start_date = as.Date("1935-10-01"), 
-#                               final_table_end_date = as.Date("2018-09-30"))
+# p_record_all_fj = get_daily_precip_table(final_table_start_date = as.Date("1935-10-01"),
+#                               final_table_end_date = as.Date("2020-09-30"))
 # wy_annual_totals = aggregate(p_record_all_fj$fj_interp, by=list(p_record_all_fj$water_year), FUN="sum")
 # wyat=wy_annual_totals
 # colnames(wyat)=c("wy", "PRCP_mm")
@@ -455,8 +462,9 @@ get_daily_precip_table=function(final_table_start_date=model_start_date,
 # grid()
 # agu_yrs = c(2010, 2014, 2015, 2017)
 # points(wyat$wy[wyat$wy %in% agu_yrs], wyat$PRCP_mm[wyat$wy %in% agu_yrs], pch=19, col="red")
-# write.csv(p_record_all_fj, file.path(agu_figure_dir, "interp_precip_1935_2018.csv"))
-
+# write.csv(p_record_all_fj, file.path("interp_precip_1935_2020.csv"))
+# raw_data = noaa[noaa$STATION %in% station_table@data$station,]
+# write.csv(raw_data, "raw_precip_data_6stns.csv")
 
 write_swbm_precip_input_file=function(){
   #read in original data (wys 1991-2011)
@@ -523,7 +531,7 @@ write_swbm_et_input_file=function(){
   
   
   #Original eto record
-  et_orig_input = read.table(file.path(ref_data_dir,"ref_et_1990_2011.txt"))
+  et_orig_input = read.table(file.path(ref_data_dir,"ref_et_1991_2011.txt"))
   et_orig = data.frame(Date = as.Date(et_orig_input$V3, format = "%d/%m/%Y"), ETo_mm = et_orig_input$V1*1000)
 
 
@@ -553,13 +561,20 @@ write_swbm_et_input_file=function(){
   et_stitched_2$ETo_mm = NA
   
   # 3a) Suture dates:
+  ## First Rationale:
   # last plausible ET record for the original input is June 2011. After that it flatlines for some reason.
   # first plausible CIMIS225 record is Apr 21, 2015. first full month is May 2015.
   # So, the stitched record will be:
   # original record 1991-June 30 2011, spatial CIMIS June 30 2011-Apr 20 2015, and 225 CIMIS Apr 21 2015-Sep 30 2018.
   # So, the stitched record will be:
   # original record 1991-June 30 2011, spatial CIMIS June 30 2011-Apr 20 2015, and 225 CIMIS Apr 21 2015-Sep 30 2018.
-  end_orig = as.Date("2011-06-30"); end_sp = as.Date("2015-04-20")
+  # end_orig = as.Date("2011-06-30"); end_sp = as.Date("2015-04-20")
+  
+  ## Second Rationale:
+  # I need to make the updated input files match the original calibrated input files
+  # as closely as possible. So the original ET record will extend all the way to 
+  # 2011-09-30. 
+  end_orig = as.Date("2011-09-30"); end_sp = as.Date("2015-04-20")
   
   #Assign original record
   et_stitched_2$ETo_mm[1:which(et_stitched_2$Date == end_orig)] = et_orig$ETo_mm[which(et_orig$Date==model_start_date):which(et_orig$Date == end_orig)]
@@ -592,6 +607,166 @@ write_swbm_et_input_file=function(){
 }
 
 # write_swbm_et_input_file()
+
+
+
+# COMPARE INPUTS ----------------------------------------------------------
+
+legacy_dir = "C:/Users/Claire/Documents/GitHub/SVIHM_master_2019/Scenarios/basecase"
+current_dir = "C:/Users/Claire/Documents/GitHub/SVIHM/Scenarios/basecase_input_match"
+
+
+# _ET comparison - checks out prior to June  ---------------------------------------------
+
+# leg_et = read.table(file.path(legacy_dir,"ref_et.txt"))
+# leg_et = data.frame(Date = as.Date(leg_et$V3, format = "%d/%m/%Y"), ETo_mm = leg_et$V1*1000)
+# 
+# cur_et = read.table(file.path(current_dir,"ref_et.txt"))
+# cur_et = data.frame(Date = as.Date(cur_et$V3, format = "%d/%m/%Y"), ETo_mm = cur_et$V1*1000)
+# 
+# dim(leg_et)
+# dim(cur_et)
+# 
+# cur_et = cur_et[cur_et$Date<=as.Date("2011-09-30"),]
+# leg_et = leg_et[leg_et$Date<=as.Date("2011-09-30"),]
+# 
+# et_tab = cur_et
+# et_tab$ETo_mm_legacy = leg_et$ETo_mm[match(et_tab$Date,leg_et$Date )]
+# dim(et_tab)
+# 
+# plot(et_tab$ETo_mm_legacy,et_tab$ETo_mm)
+# sum(et_tab$ETo_mm_legacy == et_tab$ETo_mm, na.rm=T)
+# sum(et_tab$ETo_mm_legacy != et_tab$ETo_mm, na.rm=T)
+# 
+# # View(et_tab[et_tab$ETo_mm_legacy != et_tab$ETo_mm,])
+# 
+# dim(et_tab)
+
+# To do: compare ETS outputs (confirm that messing with the extinction depth didn't change anything)
+
+# _precip comparison ------------------------------------------------------
+
+# leg_ppt = read.table(file.path(legacy_dir,"precip.txt"))
+# leg_ppt = data.frame(Date = as.Date(leg_ppt$V2, format = "%d/%m/%Y"), rain_mm = leg_ppt$V1*1000)
+# 
+# 
+# cur_ppt = read.table(file.path(current_dir,"precip.txt"))
+# cur_ppt = data.frame(Date = as.Date(cur_ppt$V2, format = "%d/%m/%Y"), rain_mm = cur_ppt$V1*1000)
+# 
+# dim(leg_ppt)
+# dim(cur_ppt)
+# 
+# cur_ppt = cur_ppt[cur_ppt$Date<=as.Date("2011-09-30"),]
+# leg_ppt = leg_ppt[leg_ppt$Date<=as.Date("2011-09-30"),]
+# 
+# ppt_tab = cur_ppt
+# ppt_tab$rain_mm_legacy = leg_ppt$rain_mm[match(ppt_tab$Date,leg_ppt$Date )]
+# dim(ppt_tab)
+# 
+# plot(ppt_tab$rain_mm_legacy,ppt_tab$rain_mm)
+# sum(ppt_tab$rain_mm_legacy == ppt_tab$rain_mm,na.rm=T)
+# sum(ppt_tab$rain_mm_legacy != ppt_tab$rain_mm, na.rm=T)
+
+
+# _kc values --------------------------------------------------------------
+
+# leg_kc_alf = read.table(file.path(legacy_dir,"kc_alfalfa.txt"))
+# leg_kc_alf = data.frame(Date = as.Date(leg_kc_alf$V2, format = "%d/%m/%Y"), kc_alf = as.numeric(leg_kc_alf$V1))
+# 
+# cur_kc_alf = read.table(file.path(current_dir,"kc_alfalfa.txt"))
+# cur_kc_alf = data.frame(Date = as.Date(cur_kc_alf$V2, format = "%d/%m/%Y"), kc_alf = cur_kc_alf$V1)
+# 
+# kc_alf_tab = cur_kc_alf
+# kc_alf_tab$kc_alf_legacy = leg_kc_alf$kc_alf[match(kc_alf_tab$Date,leg_kc_alf$Date )]
+# dim(kc_alf_tab)
+# 
+# plot(kc_alf_tab$kc_alf_legacy,kc_alf_tab$kc_alf)
+# sum(kc_alf_tab$kc_alf_legacy == kc_alf_tab$kc_alf,na.rm=T)
+# sum(kc_alf_tab$kc_alf_legacy != kc_alf_tab$kc_alf, na.rm=T)
+
+# View(kc_alf_tab[kc_alf_tab$kc_alf_legacy != kc_alf_tab$kc_alf,])
+
+# Super odd. There are only 8 mismatches. Wonder why. But sure, we can fix those 8 days.
+# Fixed.
+
+# leg_kc_grain = read.table(file.path(legacy_dir,"kc_grain.txt"))
+# leg_kc_grain = data.frame(Date = as.Date(leg_kc_grain$V2, format = "%d/%m/%Y"), kc_grain = as.numeric(leg_kc_grain$V1))
+# 
+# cur_kc_grain = read.table(file.path(current_dir,"kc_grain.txt"))
+# cur_kc_grain = data.frame(Date = as.Date(cur_kc_grain$V2, format = "%d/%m/%Y"), kc_grain = cur_kc_grain$V1)
+# 
+# kc_grain_tab = cur_kc_grain
+# kc_grain_tab$kc_grain_legacy = leg_kc_grain$kc_grain[match(kc_grain_tab$Date,leg_kc_grain$Date )]
+# dim(kc_grain_tab)
+# 
+# plot(kc_grain_tab$kc_grain_legacy,kc_grain_tab$kc_grain)
+# sum(kc_grain_tab$kc_grain_legacy == kc_grain_tab$kc_grain,na.rm=T)
+# sum(kc_grain_tab$kc_grain_legacy != kc_grain_tab$kc_grain, na.rm=T)
+
+#Fixed Kc grain. Still very small diffs but negligible.
+
+# leg_kc_pasture = read.table(file.path(legacy_dir,"kc_pasture.txt"))
+# leg_kc_pasture = data.frame(Date = as.Date(leg_kc_pasture$V2, format = "%d/%m/%Y"), kc_pasture = as.numeric(leg_kc_pasture$V1))
+# 
+# cur_kc_pasture = read.table(file.path(current_dir,"kc_pasture.txt"))
+# cur_kc_pasture = data.frame(Date = as.Date(cur_kc_pasture$V2, format = "%d/%m/%Y"), kc_pasture = cur_kc_pasture$V1)
+# 
+# kc_pasture_tab = cur_kc_pasture
+# kc_pasture_tab$kc_pasture_legacy = leg_kc_pasture$kc_pasture[match(kc_pasture_tab$Date,leg_kc_pasture$Date )]
+# dim(kc_pasture_tab)
+# 
+# plot(kc_pasture_tab$kc_pasture_legacy,kc_pasture_tab$kc_pasture)
+# sum(kc_pasture_tab$kc_pasture_legacy == kc_pasture_tab$kc_pasture,na.rm=T)
+# sum(kc_pasture_tab$kc_pasture_legacy != kc_pasture_tab$kc_pasture, na.rm=T)
+
+# View(kc_pasture_tab[kc_pasture_tab$kc_pasture_legacy != kc_pasture_tab$kc_pasture,])
+
+# Super odd. There are only 8 mismatches. Wonder why. But sure, we can fix those 8 days.
+# Fixed.
+
+
+# _streamflow inputs ------------------------------------------------------
+
+# leg_stream = read.table(file.path(legacy_dir,"streamflow_input.txt"), header = T)
+# 
+# cur_stream = read.table(file.path(current_dir,"streamflow_input.txt"), header = T)
+# 
+# colnames(leg_stream)
+# colnames(cur_stream)
+# 
+# dim(leg_stream)
+# dim(cur_stream)
+# 
+# nmonths = 252
+# 
+# for(trib in colnames(leg_stream)[2:13]){
+#   plot(leg_stream[,trib][1:nmonths], cur_stream[,trib][1:nmonths], main = trib)
+# }
+ # fixed in regression modeling. By hard-copying the orignal streamflow inputs.
+
+
+# _ SVIHM.ets ----------------------------
+
+# ET_depth_1_2019_vals = as.vector(as.matrix(read.table(file.path("C:/Users/Claire/Desktop/SVIHM_2019_ETS_depth.txt"))))
+# ET_depth_1_2019 = matrix(ET_depth_1_2019_vals, nrow = 440, ncol = 210, byrow = T)
+# image(t(ET_depth_1_2019)[,rev(1:440)])
+# 
+# ET_depth_1_vals = as.vector(as.matrix(read.table(file.path("C:/Users/Claire/Desktop/SVIHM_basecase_ETS_depth.txt"))))
+# ET_depth_1 = matrix(ET_depth_1_vals, nrow = 440, ncol = 210, byrow = T)
+# image(t(ET_depth_1)[,rev(1:440)])
+# 
+# 
+# par(mfrow = c(1,2))
+# 
+# ET_rate_1_2019_vals = as.vector(as.matrix(read.table(file.path("C:/Users/Claire/Desktop/SVIHM_2019_ET Rate.txt"))))
+# ET_rate_1_2019 = matrix(ET_rate_1_2019_vals, nrow = 440, ncol = 210, byrow = T)
+# image(t(ET_rate_1_2019)[,rev(1:440)])
+# 
+# ET_rate_1_vals = as.vector(as.matrix(read.table(file.path("C:/Users/Claire/Desktop/SVIHM_basecase_ET_Rate.txt"))))
+# ET_rate_1 = matrix(ET_rate_1_vals, nrow = 440, ncol = 210, byrow = T)
+# image(t(ET_rate_1)[,rev(1:440)])
+# 
+# sum(ET_rate_1_2019 == ET_rate_1)
 
 # scratchwork -------------------------------------------------------------
 
@@ -791,8 +966,8 @@ write_swbm_et_input_file=function(){
 
 # _long term precip trends ------------------------------------------------
 
-# #First, retrieve the interpolated records of everything
-# 
+#First, retrieve the interpolated records of everything
+
 # # Step 1. run setup and the NOAA data retrieval section in tabular_data_upload.R
 # noaa = data.frame(tbl(siskiyou_tables, "noaa_daily_data"))
 # # Step 2. run the setup and subfunctions sections of this script to get model_start_date, etc.
@@ -828,53 +1003,53 @@ write_swbm_et_input_file=function(){
 # #check for nas
 # sum(is.na(p_record$gv_interp))
 # 
-# #Then, aggregate by month and by water year
-# #monthly
-# p_monthly = p_record %>%
-#   dplyr::select(PRCP_mm_cal, PRCP_mm_fj, PRCP_mm_et, PRCP_mm_gv,
-#          PRCP_mm_yr,PRCP_mm_y2, PRCP_mm_orig,
-#          fj_interp, cal_interp, gv_interp, month_day1) %>%
-#   group_by(month_day1) %>%
-#   summarise_all(funs(sum), na.rm=TRUE)
-# 
-# p_monthly_melt = melt(p_monthly, id.vars = "month_day1")
-# p <- ggplot(p_monthly_melt, aes(month_day1, value, color = variable)) +
-#   geom_line(aes(group=variable))
-# p
-# 
-# #Then, aggregate by month and by water year
-# #yearly
-# p_wy = p_record %>%
-#   dplyr::select(#PRCP_mm_cal, PRCP_mm_fj, PRCP_mm_gv, # PRCP_mm_et,
-#                  # PRCP_mm_yr,PRCP_mm_y2,
-#                 # interp_cal_fj_gv_mean,
-#                 PRCP_mm_orig,
-#                 fj_interp, cal_interp, gv_interp,
-#                 water_year) %>%
-#   group_by(water_year) %>%
-#   summarise_all(funs(sum), na.rm=TRUE)
-# 
-# p_yearly_melt = melt(p_wy, id.vars = "water_year")
-# p <- ggplot(p_yearly_melt, aes(water_year, value/25.4, color = variable)) +
-#   geom_line(aes(group=variable))
-# p
+# # #Then, aggregate by month and by water year
+# # #monthly
+# # p_monthly = p_record %>%
+# #   dplyr::select(PRCP_mm_cal, PRCP_mm_fj, PRCP_mm_et, PRCP_mm_gv,
+# #          PRCP_mm_yr,PRCP_mm_y2, PRCP_mm_orig,
+# #          fj_interp, cal_interp, gv_interp, month_day1) %>%
+# #   group_by(month_day1) %>%
+# #   summarise_all(funs(sum), na.rm=TRUE)
+# # 
+# # p_monthly_melt = melt(p_monthly, id.vars = "month_day1")
+# # p <- ggplot(p_monthly_melt, aes(month_day1, value, color = variable)) +
+# #   geom_line(aes(group=variable))
+# # p
+# # 
+# # #Then, aggregate by month and by water year
+# # #yearly
+# # p_wy = p_record %>%
+# #   dplyr::select(#PRCP_mm_cal, PRCP_mm_fj, PRCP_mm_gv, # PRCP_mm_et,
+# #                  # PRCP_mm_yr,PRCP_mm_y2,
+# #                 # interp_cal_fj_gv_mean,
+# #                 PRCP_mm_orig,
+# #                 fj_interp, cal_interp, gv_interp,
+# #                 water_year) %>%
+# #   group_by(water_year) %>%
+# #   summarise_all(funs(sum), na.rm=TRUE)
+# # 
+# # p_yearly_melt = melt(p_wy, id.vars = "water_year")
+# # p <- ggplot(p_yearly_melt, aes(water_year, value/25.4, color = variable)) +
+# #   geom_line(aes(group=variable))
+# # p
 # 
 # #_Tanaka-Deas oct-march water year type break-points checking ----
 # 
 # p_record$interp_cal_fj_mean =  apply(X = dplyr::select(p_record, fj_interp, cal_interp),
 #                                         MARGIN = 1, FUN = mean, na.rm=F)
 # 
-# rainmo2 = aggregate(p_record$interp_cal_fj_mean,
+# rainmo = aggregate(p_record$interp_cal_fj_mean,
 #                     by = list(year(p_record$Date), month(p_record$Date)),
 #                     FUN = sum)
-# colnames(rainmo2) = c("year","month","precip_mm")
-# rainmo$precip_mm=rainmo$precip_m*1000
+# colnames(rainmo) = c("year","month","precip_mm")
+# rainmo$precip_m=rainmo$precip_mm/1000
 # rainmo = rainmo[order(rainmo$year, rainmo$month),]
 # plot(as.Date(paste(rainmo$year, rainmo$month, "01", sep = "-")),
 #      rainmo$precip_mm / 25.4, pch = 18, type = "o", ylim = c(0, 15),
 #      main = "SVIHM monthly rainfall record", ylab = "Monthly rainfall (in)", xlab = "")
 # grid()
-# rainmo2 = rainmo2[order(rainmo2$year, rainmo2$month),]
+# rainmo2 = rainmo#2[order(rainmo2$year, rainmo2$month),]
 # rainmo2 = rainmo2[as.Date(paste(rainmo2$year, rainmo2$month, "01", sep = "-")) >= as.Date("1990-10-01"),]
 # plot(as.Date(paste(rainmo2$year, rainmo2$month, "01", sep = "-")),
 #      rainmo2$precip_mm/25.4, pch = 18, type = "o", ylim = c(0, 15),
@@ -915,6 +1090,29 @@ write_swbm_et_input_file=function(){
 # # grid()
 # 
 # 
+# png(filename = "Scott Valley annual Rain record.png", width = 8, height = 5, units = "in", res = 300)
+# # Aggregate by water year
+# rain_wy = aggregate(p_record$interp_cal_fj_mean, by = list(p_record$water_year), FUN = sum)
+# rain_wy$color = gray((1:nrow(rain_wy)/nrow(rain_wy)))
+# #Assign water year type colors. Divide the years in thirds.
+# dry_breakpoint = rain_wy$x[order(rain_wy$x)][round(nrow(rain_wy) * 0.33)]
+# wet_breakpoint = rain_wy$x[order(rain_wy$x)][round(nrow(rain_wy) * 0.66)]
+# rain_wy$wy_type_color = "goldenrod"
+# rain_wy$wy_type_color[rain_wy$x <= dry_breakpoint] = "orangered"
+# rain_wy$wy_type_color[rain_wy$x >= wet_breakpoint] = "dodgerblue"
+# rain_mean = mean(rain_wy$x)
+# # barplot
+# rain_wy = rain_wy[rain_wy$Group.1>= 1991 & rain_wy$Group.1<= 2018 ,]
+# barplot(rain_wy$x/25.4, col = rain_wy$wy_type_color, names = 1991:2018, 
+#         ylab = "Annual Rainfall (in)",xlab = "Water Year",
+#         sub = "Based primarily on records from the Fort Jones and Callahan weather stations",
+#         main = "Scott Valley Rainfall Record")
+# grid()
+# abline(h=rain_mean/25.4, lty =2, lwd=2, col = "brown")
+# legend(x = "bottomleft", pch = c(15,15,15,NA), lty = c(NA,NA,NA,2), lwd = c(NA,NA,NA,2),
+#        col = c("orangered","goldenrod","dodgerblue","brown"), cex = 0.8,
+#        legend = c("Dry (<16.4 in)", "Average","Wet (>24.4 in)","1942-2020 Avg (21.0 in)"))
+# dev.off()
 # 
 # # Subset for only oct-march months
 # sv_oct_mar = p_record[month(p_record$Date) %in% c(10,11,12,1,2,3),
@@ -926,17 +1124,18 @@ write_swbm_et_input_file=function(){
 # annual_o_m = aggregate(sv_oct_mar$interp_cal_fj_mean, by = list(sv_oct_mar$wy), FUN = sum)
 # annual_o_m$color = gray((1:nrow(annual_o_m)/nrow(annual_o_m)))
 # #Assign water year type colors. Divide the years in thirds.
-# dry_breakpoint = annual_o_m$x[order(annual_o_m$x)][round(nrow(annual_o_m) * 0.33)] 
-# wet_breakpoint = annual_o_m$x[order(annual_o_m$x)][round(nrow(annual_o_m) * 0.66)] 
+# dry_breakpoint = annual_o_m$x[order(annual_o_m$x)][round(nrow(annual_o_m) * 0.33)]
+# wet_breakpoint = annual_o_m$x[order(annual_o_m$x)][round(nrow(annual_o_m) * 0.66)]
 # annual_o_m$wy_type_color = "goldenrod"
 # annual_o_m$wy_type_color[annual_o_m$x <= dry_breakpoint] = "orangered"
 # annual_o_m$wy_type_color[annual_o_m$x >= wet_breakpoint] = "dodgerblue"
+# 
 # 
 # # 1. Plot for full available data: 1944-2018
 # par(mfrow = c(2,1))
 # # annual_o_m = annual_o_m[annual_o_m$Group.1>1990,]
 # #plot over time
-# plot(annual_o_m$Group.1, annual_o_m$x / 25.4, 
+# plot(annual_o_m$Group.1, annual_o_m$x / 25.4,
 #      pch = 21, type = "o", main = "Oct-Mar Rainfall, 1944-2018",
 #      col = "black", ylim = c(0,30),
 #      #bg = annual_o_m$color,
@@ -960,16 +1159,16 @@ write_swbm_et_input_file=function(){
 # # 2. subset for their period of study: 1942-2008
 # annual_o_m = annual_o_m[annual_o_m$Group.1<= 2008,]
 # #plot over time
-# plot(annual_o_m$Group.1, annual_o_m$x / 25.4, 
+# plot(annual_o_m$Group.1, annual_o_m$x / 25.4,
 #      pch = 21, type = "o", main = "Oct-Mar Rainfall, 1942-2008",
-#      col = "black", 
+#      col = "black",
 #      #bg = annual_o_m$color,
 #      bg = annual_o_m$wy_type_color,
 #      xlab = "Water Year", ylab = "Oct-Mar Cumulative Rainfall, in.")
 # abline(h = mean(annual_o_m$x / 25.4), lty = 2)
 # grid()
 # #Plot in order
-# plot(annual_o_m$x[order(annual_o_m$x)] / 25.4, 
+# plot(annual_o_m$x[order(annual_o_m$x)] / 25.4,
 #      pch = 21, col = "black",
 #      main = "Oct-Mar Rainfall, 1942-2008, Sorted",
 #      bg = annual_o_m$wy_type_color[order(annual_o_m$x)],
@@ -1056,33 +1255,33 @@ write_swbm_et_input_file=function(){
 #This has dropped by 0.5 and 0.5, respectively.
 
 #_Color-code which station used to gap-fill -------------------------------
-# First: generate p_record going line-by-line through the "get_daily_precip_table()" function
-x_labs = p_record$Date
-keep_these = month(x_labs) == 10 & day(x_labs) == 1 & (year(x_labs) %% 5 == 0)
-x_labs = x_labs[keep_these]
-# x_labs[!keep_these] = NA
-
-barplot(height = p_record$fj_interp, width = .81,
-        border = p_record$fj_interp_color,
-        xaxt = "n", xlim = c(0,length(p_record$fj_interp)))
-axis(side=1,at=which(keep_these),labels=x_labs, las = 2)
-
-legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
-test1 = aggregate(p_record$fj_interp_color, by=list(p_record$fj_interp_color), FUN = length)
-test2 = merge(station_table@data, test1, by.x = "color", by.y="Group.1")
-
-plot(x = p_record$Date, y = p_record$fj_interp, main = "FJ daily precip data source",
-        col = p_record$fj_interp_color, pch = 18,
-     xlab = "Date", ylab = "")
-legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
-how_many_each_stn = aggregate(p_record$fj_interp_color, by=list(p_record$fj_interp_color), FUN = length)
-colnames(how_many_each_stn) = c("color","num_fj_interp")
-how_many_each_stn = merge(how_many_each_stn, station_table, by.x = "color",by.y="color")
-
-plot(x = p_record$Date, y = p_record$cal_interp,
-     col = p_record$cal_interp_color, pch = 18,
-     xlab = "Date", ylab = "")
-legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
+## First: generate p_record going line-by-line through the "get_daily_precip_table()" function
+# x_labs = p_record$Date
+# keep_these = month(x_labs) == 10 & day(x_labs) == 1 & (year(x_labs) %% 5 == 0)
+# x_labs = x_labs[keep_these]
+# # x_labs[!keep_these] = NA
+# 
+# barplot(height = p_record$fj_interp, width = .81,
+#         border = p_record$fj_interp_color,
+#         xaxt = "n", xlim = c(0,length(p_record$fj_interp)))
+# axis(side=1,at=which(keep_these),labels=x_labs, las = 2)
+# 
+# legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
+# test1 = aggregate(p_record$fj_interp_color, by=list(p_record$fj_interp_color), FUN = length)
+# test2 = merge(station_table@data, test1, by.x = "color", by.y="Group.1")
+# 
+# plot(x = p_record$Date, y = p_record$fj_interp, main = "FJ daily precip data source",
+#         col = p_record$fj_interp_color, pch = 18,
+#      xlab = "Date", ylab = "")
+# legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
+# how_many_each_stn = aggregate(p_record$fj_interp_color, by=list(p_record$fj_interp_color), FUN = length)
+# colnames(how_many_each_stn) = c("color","num_fj_interp")
+# how_many_each_stn = merge(how_many_each_stn, station_table, by.x = "color",by.y="color")
+# 
+# plot(x = p_record$Date, y = p_record$cal_interp,
+#      col = p_record$cal_interp_color, pch = 18,
+#      xlab = "Date", ylab = "")
+# legend(x = "topright", col = station_table$color, legend = station_table$abbrev, pch = 19)
 
 # # 
 # # # _Did I replicate original 1991-2011 precip record ------------------------------
@@ -1326,6 +1525,27 @@ legend(x = "topright", col = station_table$color, legend = station_table$abbrev,
 # hist(log10(p_record$PRCP_mm_orig), xlab = "log10 of Original Input daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6),freq = F)
 # hist(log10(p_record$interp_cal_fj_mean), xlab = "log10 of Interp FJ-Cal daily precip", main = NA, col = "wheat", xlim = c(-1.5,2), ylim = c(0,0.6),freq = F)
 # 
+
+
+# _How many NA precip values? ----------------------------------------------
+
+# #Fort Jones has way more than the Callahan station. Fckin NOAA.
+# 
+# fj = noaa[noaa$NAME == "FORT JONES RANGER STATION, CA US",]
+# fj$water_year = year(fj$DATE)
+# fj$water_year[month(fj$DATE) >9] = year(fj$DATE[month(fj$DATE) >9]) +1
+# na_by_yr = aggregate(fj$PRCP, by = list(fj$water_year), function(x){sum(is.na(x))})
+# plot(na_by_yr$Group.1, na_by_yr$x, xlab = "water year", ylab = "number of NAs", main = "FJ precip")
+# grid()
+# 
+cal = noaa[noaa$NAME == "CALLAHAN, CA US",]
+cal$water_year = year(cal$DATE)
+cal$water_year[month(cal$DATE) >9] = year(cal$DATE[month(cal$DATE) >9]) +1
+na_by_yr = aggregate(cal$PRCP, by = list(cal$water_year), function(x){sum(is.na(x))})
+plot(na_by_yr$Group.1, na_by_yr$x, xlab = "water year", ylab = "number of NAs", main = "Callahan precip")
+grid()
+
+
 # 
 # #_Precip (geography) ------------------------------------------------------
 # 
@@ -1576,3 +1796,44 @@ legend(x = "topright", col = station_table$color, legend = station_table$abbrev,
 # write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt"),
 #             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
+
+
+# SFR segment confirmation ------------------------------------------------
+
+
+#SFR munging. Still unsatisfying but can verify the segment numbers.
+
+dir_name = "C:/Users/Claire/Box/Scott_Only/Legacy Work Products/Scott_Legacy_GIS"
+layer_name = "SFR_Reaches_20180406"
+
+rch = readOGR(dsn = dir_name, layer = layer_name)
+rch$rowcollength = paste(rch$row, rch$col, round(rch$SHAPE_Leng,1), sep = "_")
+rch$rowcollength_nodec = paste(rch$row, rch$col, round(rch$SHAPE_Leng), sep = "_")
+# rch_rowcol_multiples = duplicated(x = rch$rowcol)
+# View(rch@data[rch_rowcol_multiples,])
+
+plot(rch)
+plot(rch[rch_rowcol_multiples,], col = "red", add=T,lwd=2)
+
+sfr_tab = read.csv(file.path(ref_data_dir, "SFR_Reaches_from_SFR_Template.csv"))
+sfr_tab$rowcollength = paste(sfr_tab$IRCH,sfr_tab$JRCH,round(sfr_tab$RCHLEN,1), sep = "_")
+sfr_tab$rowcollength_nodec = paste(sfr_tab$IRCH,sfr_tab$JRCH,round(sfr_tab$RCHLEN), sep = "_")
+
+sfr_tab_rowcollen_multiples = sfr_tab$rowcollength[duplicated(x = sfr_tab$rowcollength)]
+
+length(unique(sfr_tab$rowcollength))
+length(unique(rch$rowcollength))
+length(intersect(sfr_tab$rowcollength, rch$rowcollength))
+
+
+rch2 = sp::merge(x = rch, y = sfr_tab, by="rowcollength")
+
+rch2_nas = is.na(rch2$KRCH)
+View(rch2@data[rch2_nas,])
+intersect(rch2$rowcollength_nodec.x[rch2_nas], sfr_tab$rowcollength_nodec)
+# Can we fill in the gaps with the no-decimal version?
+# (To do, maybe)
+
+plot(rch2[rch2$ISEG == 9,], add=T, col = "green")
+
+plot(rch2[rch2$ISEG == 12,], add=T, col = "green")

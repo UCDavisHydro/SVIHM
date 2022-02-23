@@ -28,9 +28,13 @@ R_Files/Post-Processing/UniRandPar_out
 R_Files/Post-Processing/Results
 R_Files/Post-Processing/Results_2020
 _scratchwork_and_figure_tests
-Scenarios
+Scenarios/*
+!Scenarios/basecase/
 SWBM/scenario_archive
 MODFLOW/scenario_archive
+
+#-- Open excel files
+~*.xlsx
 
 # -- Folders meant to be local only
 Run/
