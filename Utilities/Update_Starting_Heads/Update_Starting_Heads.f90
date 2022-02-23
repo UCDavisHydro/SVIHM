@@ -72,7 +72,7 @@ program Update_Starting_Heads
     read(10,iostat=ierr) heads(1:ncol, 1:nrow)
     ! If it's the target sp, write it out
     if (kper == target_sp) then
-      write(outname,'("Starting_Heads_L",i1,"_test.txt")') ilay
+      write(outname,'("Starting_Heads_L",i1,".txt")') ilay
       write(fmt,'(a1,i3,"es16.8e2",a1)') "(", ncol, ")"  ! Nearly certian there's a smarter way...
       write(*,*) 'Writing file ', outname
       open(20, file=outname, status='replace', action='write', iostat=ierr)
