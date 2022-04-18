@@ -23,14 +23,13 @@ REM Old command: Rscript Update_SVIHM_Starting_Heads.R
 :: Command line arguments: heads_file_name SP_to_use
 call %bindir%\Update_Starting_Heads.exe SVIHM.hds 2
 
-cd ..\
 REM Update drain flows going into big slough
 REM Old command: Rscript Update_SVIHM_Drain_Inflows.R
 :: Reads in file Update_Drain_Inflows.in
 call %bindir%\Update_Drain_Inflows.exe
 
 REM re-run SWBM to update SFR inflows
-cd SWBM
+cd ..\SWBM
 call %bindir%\SWBM.exe
 
 REM Copy over new SWBM-generated MODFLOW files
