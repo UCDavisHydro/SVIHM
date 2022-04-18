@@ -1,0 +1,157 @@
+
+#-------------------------------------------------------------------------------------------------#
+
+#' Write SWBM Drains Input Files (Drain_m3day.txt, Drains_initial_m3day.txt)
+#'
+#' @param num_stress_periods Number of model stress periods, determining the length of values array
+#' to be written to the drains file
+#' @param output_dir directory to write the files in
+#' @param values Values to write to drain files, by default (NULL) will write zeroes
+#' @param drains_filename Optional, default "Drains_m3day.txt"
+#' @param drains_iniital_filename Optional, default "Drains_initial_m3day.txt"
+#' @param verbose T/F write status info to console (default: TRUE)
+#'
+#' @return None
+#' @export
+#'
+#' @examples
+write_SWBM_drain_files <- function(num_stress_periods,
+                                   output_dir,
+                                   values=NULL,
+                                   drains_filename="Drains_m3day.txt",
+                                   init_filename="Drains_initial_m3day.txt",
+                                   verbose=TRUE) {
+  if (is.null(values)) {
+    values <- rep(0, num_stress_periods)
+  } else if (length(values) != num_stress_periods) {
+    stop('values array too short - need one value for each stress period.')
+  }
+  drains_vector = c("#Initial Drain Flow", values)
+
+  if (verbose) {message(paste('Writing file: ', drains_filename))}
+
+  write.table(drains_vector, file = file.path(output_dir, drains_filename),
+              sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+  if (verbose) {message(paste('Writing SWBM file: ', init_filename))}
+  write.table(drains_vector, file = file.path(output_dir, init_filename),
+              sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+}
+
+#-------------------------------------------------------------------------------------------------#
+
+#' Write SWBM General Inputs File
+#'
+#' Writes all basecase values by default
+#'
+#' @param num_stress_periods Number of model stress periods
+#' @param output_dir directory to write the files to
+#' @param filename general input filename, general_inputs.txt by default
+#' @param recharge_scenario character
+#' @param flow_scenario character
+#' @param alf_irr_stop_mo integer Calendar month
+#' @param alf_irr_stop_day integer
+#' @param early_cutoff_flag character
+#' @param curtailment_scenario character
+#' @param curtail_start_mo integer
+#' @param curtail_start_day integer
+#' @param landuse_scenario character
+#' @param verbose T/F write status info to console (default: TRUE)
+#'
+#' @return None
+#' @export
+#'
+#' @examples
+write_SWBM_gen_inputs_file <- function(num_stress_periods,
+                                       output_dir,
+                                       filename="general_inputs.txt",
+                                       recharge_scenario="Basecase",
+                                       flow_scenario="Basecase",
+                                       alf_irr_stop_mo=8,
+                                       alf_irr_stop_day=31,
+                                       early_cutoff_flag="AllYears",
+                                       curtailment_scenario="NoCurtail",
+                                       curtail_start_mo=8,
+                                       curtail_start_day=15,
+                                       landuse_scenario="basecase",
+                                       verbose=TRUE) {
+
+  # Convert months from calendar months to WY months
+  if(alf_irr_stop_mo<9){alf_irr_stop_mo = alf_irr_stop_mo + 3
+  }else{alf_irr_stop_mo = alf_irr_stop_mo - 9}
+
+  if(curtail_start_mo<9){curtail_start_mo = curtail_start_mo + 3
+  }else{curtail_start_mo = curtail_start_mo - 9}
+
+  gen_inputs = c(
+    paste("2119  167", num_stress_periods,
+          "440  210  1.4 UCODE",
+          "! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST",
+          sep = "  "),
+    paste(recharge_scenario, flow_scenario,
+          "! Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims",
+          sep = "  "),
+    paste(alf_irr_stop_mo, alf_irr_stop_day, early_cutoff_flag,
+          "! alf_irr_stop_mo  alf_irr_stop_day early_alf_cutoff_scenario",
+          sep = "  "),
+    paste(curtailment_scenario, curtail_start_mo, curtail_start_day,
+          "! curtailment_scenario curtail_start_mo curtail_start_day",
+          sep = "  "),
+    paste(landuse_scenario, "! Basecase/Major_NatVeg")
+  )
+
+  if (verbose) {message(paste('Writing SWBM file: ', filename))}
+  write.table(gen_inputs, file = file.path(output_dir, filename),
+              sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+}
+
+#-------------------------------------------------------------------------------------------------#
+
+#' Write SWBM Instream Flow Available Ratio File
+#'
+#' @param avail_monthly Dataframe of ratio of instream flow available over the model period, as
+#' generated by \code{\link{build_cdfw_instream_flow_cal}}
+#' @param output_dir directory to write the files to
+#' @param filename general input filename, instream_flow_available_ratio.txt by default
+#' @param verbose T/F write status info to console (default: TRUE)
+#'
+#' @return
+#' @export
+#'
+#' @examples
+write_SWBM_instream_available_file <- function(avail_monthly, output_dir,
+                                               filename="instream_flow_available_ratio.txt",
+                                               verbose=TRUE) {
+
+  if (verbose) {message(paste('Writing SWBM file: ', filename))}
+  write.table(avail_monthly, file = file.path(output_dir, filename),
+              sep = " ", quote = FALSE, col.names = F, row.names = FALSE)
+}
+
+#-------------------------------------------------------------------------------------------------#
+
+#' Write SWBM Crop Coefficient (Kc) File
+#'
+#' @param kc_df Dataframe of days and coefficients (see
+#'   \code{\link{gen_daily_binary_crop_coefficients}} and
+#'   \code{\link{gen_daily_curve_crop_coefficients}})
+#' @param output_dir directory to write the files to
+#' @param filename general input filename, instream_flow_available_ratio.txt by default
+#' @param verbose T/F write status info to console (default: TRUE)
+#'
+#' @return
+#' @export
+#'
+#' @examples
+write_SWBM_crop_coefficient_file <- function(kc_df, output_dir, filename, verbose=TRUE) {
+  if (verbose) {message(paste('Writing SWBM Crop Coefficient file: ', filename))}
+
+  kc_df$day <- format(kc_df$Date, '%d/%m/%Y')
+  kc_df$kc = round(kc_df$kc, 4)
+
+  write.table(kc_df[,c('kc','day')],
+              file = file.path(output_dir, filename),
+              sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+}
+
+#-------------------------------------------------------------------------------------------------#
