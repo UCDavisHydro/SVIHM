@@ -2,16 +2,21 @@
 % Please edit documentation in R/plotting.R
 \name{plot.precip.cumulative}
 \alias{plot.precip.cumulative}
-\title{Title}
+\title{Cumulative Precipitation Comparison Plot}
 \usage{
 \method{plot}{precip.cumulative}(dates, ..., title = NULL, unit = "mm", col = NULL)
 }
 \arguments{
-\item{col}{}
-}
-\value{
+\item{dates}{array of dates of precip events}
 
+\item{...}{one or more arrays of precipitation at dates}
+
+\item{title}{title of plot (optional)}
+
+\item{unit}{character, the units the precipitation is measured in}
+
+\item{col}{array of colors for data (optional)}
 }
 \description{
-Title
+Cumulative Precipitation Comparison Plot
 }

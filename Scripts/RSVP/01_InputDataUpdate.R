@@ -8,6 +8,7 @@
 library(readr)
 library(RSVP)
 library(dataRetrieval)
+library(lubridate)
 library(cimir)
 
 # ------------------------------------------------------------------------------------------------#
@@ -16,10 +17,6 @@ library(cimir)
 # Dates
 start_year <- 1991 # WY 1991; do not change
 end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
-
-# Directory (Created in SVIHM_Input_Files/Updates)
-update_dir <- create_update_dir()
-scenario_dir <- create_scenario_update_dir()
 
 # Rainfall data requires NOAA CDO token
 # (free online: https://www.ncdc.noaa.gov/cdo-web/webservices/v2)
@@ -37,11 +34,13 @@ cimir::set_key(cimis_key)
 # Temporal discretization -------------------------------------------------------------------------
 
 model_start_date <- get_model_start(start_year)
-model_end_date <- Sys.Date()  #get_model_end(end_year)
+model_end_date <- as.Date(floor_date(Sys.Date(), 'month')-1)
 
 num_stress_periods <- calc_num_stress_periods(model_start_date, model_end_date)
 num_days <- days_in_month_diff(model_start_date, model_end_date)  # current setup: days = time steps
 
+# Directory (Created in SVIHM_Input_Files/Updates)
+update_dir <- create_update_dir(end_date = model_end_date)
 
 # Weather Data ------------------------------------------------------------------------------------
 

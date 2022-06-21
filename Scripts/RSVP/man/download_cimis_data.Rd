@@ -16,9 +16,6 @@ download_cimis_data(start_date, end_date, stations = 225, verbose = TRUE, ...)
 
 \item{...}{additional arguments passed to \code{\link[cimir]{cimis_data}}}
 }
-\value{
-
-}
 \description{
 
 }

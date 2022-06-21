@@ -28,8 +28,6 @@ the regression (optional, default = 3)}
 List of daily mean dataframes (FJ followed by order above)
 
 DataFrame of single, combined dataset
-
-
 }
 \description{
 Reads in primary gauge (Fort Jones) and input/tributary gauge daily.

@@ -15,9 +15,6 @@ complete_monthly(
 \arguments{
 \item{drop_extra}{}
 }
-\value{
-
-}
 \description{
 Complete monthly time series by filling with NA values
 }

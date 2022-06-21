@@ -9,9 +9,6 @@ predict_and_destandardize(gauge, lm_object, lm_nodata = NULL)
 \arguments{
 \item{lm_nodata}{}
 }
-\value{
-
-}
 \description{
 Title
 }

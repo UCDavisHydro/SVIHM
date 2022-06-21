@@ -27,9 +27,6 @@ write_SVIHM_head_obs_file(
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
-\value{
-
-}
 \description{
 TODO: Accept data as arguments? Automate new data download?
 }

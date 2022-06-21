@@ -23,9 +23,6 @@ update_OC_stress_periods(
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
-\value{
-
-}
 \description{
 Write SVIHM MODFLOW Output Control File (OC) with Updated Number of Stress Periods
 }

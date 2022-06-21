@@ -27,9 +27,6 @@ update_DIS_stress_periods(
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
-\value{
-
-}
 \description{
 Uses the reference SVIHM DIS file as a template and write a new version with the updated
 temporal discretization at the specified directory.

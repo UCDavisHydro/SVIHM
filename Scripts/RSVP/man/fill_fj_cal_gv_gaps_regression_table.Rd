@@ -23,9 +23,6 @@ fill_fj_cal_gv_gaps_regression_table(
 
 \item{end_date}{End of data period}
 }
-\value{
-
-}
 \description{
 Use best available regression to fill in gaps in precip records for FJ and Cal
 }

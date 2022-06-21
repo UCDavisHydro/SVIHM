@@ -18,9 +18,6 @@ gauge_regression_prep(
 \arguments{
 \item{col_rename}{}
 }
-\value{
-
-}
 \description{
 Title
 }

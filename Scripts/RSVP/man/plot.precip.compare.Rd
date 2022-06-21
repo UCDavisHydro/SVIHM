@@ -29,9 +29,6 @@
 
 \item{legend_names}{names added to legend to describe precip1 and precip2}
 }
-\value{
-
-}
 \description{
 Creates plot showing identical (color 1) and differing (color 2, color 3) precipitation data
 }

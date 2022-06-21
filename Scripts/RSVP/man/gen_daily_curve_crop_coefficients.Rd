@@ -40,9 +40,6 @@ to ignore}
 
 \item{irr_demand_mult}{Irrigation demand multiplier, default 1}
 }
-\value{
-
-}
 \description{
 Currently used for grain (see: default values). Uses a curve to represent crop stages.
 }

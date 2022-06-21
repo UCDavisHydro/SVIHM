@@ -9,9 +9,6 @@ get_fj_flow_file_name(start_date, end_date)
 \arguments{
 \item{end_date}{}
 }
-\value{
-
-}
 \description{
 Codifies a pattern for naming
 }

@@ -21,9 +21,6 @@ Expects, at a minimum, columns "ETo_mm" and "Date"}
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
-\value{
-
-}
 \description{
 Writes the Soil Water Balance Model (SWBM) evapotranspiration (ET) input file (ref_et_monthly.txt).
 }

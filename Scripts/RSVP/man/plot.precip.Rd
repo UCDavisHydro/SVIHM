@@ -19,9 +19,6 @@
 
 \item{border}{color of bar borders (optional)}
 }
-\value{
-
-}
 \description{
 Precipitation Bar Chart
 }

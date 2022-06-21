@@ -9,16 +9,15 @@ library(RSVP)
 start_year <- 1991 # WY 1991; do not change
 end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
 
-# Directory (Created in SVIHM_Input_Files/Updates)
-# TODO automate finding latest version
-update_dir <- file.path('../../SVIHM_Input_Files/Updates/2022-04-13/')
+# Directory (Created in SVIHM_Input_Files/Updates) - Grabs latest version
+update_dir <- latest_dir(data_dir['update_dir','loc'])
 
 # ------------------------------------------------------------------------------------------------#
 
 # Temporal discretization -------------------------------------------------------------------------
 
 model_start_date <- get_model_start(start_year)
-model_end_date <- as.Date('2022-03-31')  #TODO get from update_dir?
+model_end_date <- as.Date(basename(update_dir)) #as.Date('2022-03-31')
 
 num_stress_periods <- calc_num_stress_periods(model_start_date, model_end_date)
 num_days <- days_in_month_diff(model_start_date, model_end_date)  # current setup: days = time steps

@@ -85,7 +85,7 @@ days_in_month_diff <- function(start, end) {
   end_day <- as.numeric(format(end, '%d'))
   # Get months, get difference between months
   model_months <- seq.Date(from = start, to = end, by = "month")
-  model_end_date_plus_one = as.Date(paste(end_year, as.numeric(end_month)+1, end_day, sep = "-"))
+  model_end_date_plus_one = as.Date(ceiling_date(end+30)) #as.Date(paste(end_year, end_month+1, end_day, sep = "-"))
   model_months_plus_one = seq(from = start, to = model_end_date_plus_one, by = "month")
 
   return(as.numeric(diff(model_months_plus_one)))
@@ -335,6 +335,7 @@ calc_num_stress_periods <- function(model_start, model_end, interval='month') {
   return(length(seq.Date(from = model_start, to = model_end, by = interval)))
 }
 
+#-------------------------------------------------------------------------------------------------#
 
 # File Management  -------------------------------------------------------------
 
@@ -348,8 +349,8 @@ calc_num_stress_periods <- function(model_start, model_end, interval='month') {
 #'
 #' @examples
 #' create_update_dir()
-create_update_dir <- function() {
-  update_dir <- file.path(data_dir['update_dir','loc'], Sys.Date())
+create_update_dir <- function(end_date) {
+  update_dir <- file.path(data_dir['update_dir','loc'], end_date)
   if (!dir.exists(update_dir)) {
     message(paste('Creating Directory:',update_dir))
     dir.create(update_dir, recursive = T)
@@ -360,6 +361,79 @@ create_update_dir <- function() {
   return(update_dir)
 }
 
+#-------------------------------------------------------------------------------------------------#
+
+#' Return Latest (most recent) Directory in a Directory
+#'
+#' @param dir path to directory to search through
+#'
+#' @return Latest directory full filepath
+#' @author Leland Scantlebury
+#' @export
+#'
+#' @examples
+latest_dir <- function(dir) {
+  fdf <- file.info(list.files(path=dir, include.dirs = T, full.names = T))
+  fdf <- fdf[fdf[['isdir']]==T,]
+  return(rownames(fdf)[which.max(fdf$mtime)])
+}
+
+#-------------------------------------------------------------------------------------------------#
+
 # Misc. -------------------------------------------------------------------
 
+#' Time Series Observation & Simulation Dataframe CombineR
+#'
+#' @param obs_df_list list of observation data frames
+#' @param sim_df_list list of simulation data frames
+#' @param group_names char array of names corresponding to obs-sim dataframe pairs. Intended
+#' to allow datasets to be subset easily after the merge
+#' @param date_cols char array of date column names for obs and sim dataframes, respectively.
+#' Default: c('Date','Date')
+#' @param val_cols char array of value column names for obs and sim dataframes, respectively
+#' @param col_rename bool, rename value columns obs and sim (downside: user may lose track of units).
+#' Default: TRUE
+#' @param save_cols char array, names of extra columns to preserve in merge. Default: empty.
+#'
+#' @note identical val columns between sim/obs datasets likely will fail during the subset step
+#' since the second val_col will likely be renamed during the date merge
+#'
+#' @return dataframe of Date, Obs, Sim, group and save_cols
+#' @export
+#'
+#' @examples
+ts_obs_sim_combine <- function(obs_df_list, sim_df_list, group_names, date_cols=c('Date','Date'),
+                   val_cols, col_rename=T, save_cols=c()) {
+  # Verify
+  if (length(obs_df_list) != length(sim_df_list)) {
+    stop('Must pass identical length lists of obs and sim dataframes')
+  }
+  if (length(obs_df_list) != length(group_names)) {
+    stop('Must pass one name per dataset in lists')
+  }
+  #TODO will subetting break if both val_cols are the same??
 
+  # Process
+  merged <- mapply(merge,
+                   obs_df_list, sim_df_list,
+                   MoreArgs = list('by.x'=date_cols[1], 'by.y'=date_cols[2]),
+                   SIMPLIFY = F)
+  i <- 1
+  merged <- lapply(merged, function(x) {
+    # Subset
+    x <- x[,c(date_cols[1], val_cols, save_cols)]
+    if (col_rename) {
+      names(x)[2:3] <- c('obs','sim')
+    }
+    # Add Name
+    x$group <- group_names[i]
+    i <<- i + 1
+    return(x)
+  })
+
+  # All together now
+  merged <- do.call(rbind, merged)
+
+  # Done!
+  return(merged)
+}

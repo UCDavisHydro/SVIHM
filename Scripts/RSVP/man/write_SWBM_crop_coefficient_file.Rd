@@ -17,9 +17,6 @@ write_SWBM_crop_coefficient_file(kc_df, output_dir, filename, verbose = TRUE)
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
-\value{
-
-}
 \description{
 Write SWBM Crop Coefficient (Kc) File
 }

@@ -21,9 +21,6 @@ get_daily_precip_table(
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
-\value{
-
-}
 \description{
 Get table of daily precipitation
 }

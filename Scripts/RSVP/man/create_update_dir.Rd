@@ -4,7 +4,7 @@
 \alias{create_update_dir}
 \title{Create Update Directory}
 \usage{
-create_update_dir()
+create_update_dir(end_date)
 }
 \value{
 new or existing update directory

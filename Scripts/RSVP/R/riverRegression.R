@@ -40,12 +40,12 @@ get_tributary_flows <- function(start_date=as.Date('1990-10-01'),
   rm.preWY1973  <- lm(normLogAF_trib ~ normLogAF_FJ, data = do.call(rbind, preWY1973_FJ))
   rm.postWY1973 <- lm(normLogAF_trib ~ normLogAF_FJ, data = do.call(rbind, postWY1973_FJ))
 
-  #-- Alternative: Regression individually...
-  all.rm.preWY1973 <- lapply(preWY1973_FJ, function(x) {
-    if (nrow(x) > 0) {
-      rm <- lm(normLogAF_trib ~ normLogAF_FJ, data = x)
-    }
-  })
+  # #-- Alternative: Regression individually...
+  # all.rm.preWY1973 <- lapply(preWY1973_FJ, function(x) {
+  #   if (nrow(x) > 0) {
+  #     rm <- lm(normLogAF_trib ~ normLogAF_FJ, data = x)
+  #   }
+  # })
 
   #-- pRepare (Essentially need to add back any cutoff data, fill missing months with NAs)
   preWY1973 <- mapply(gauge_regression_prep, mnthly_all, preWY1973, SIMPLIFY = F)

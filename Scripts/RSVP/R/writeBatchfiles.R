@@ -59,7 +59,9 @@ write_update_prep_batchfile <- function(update_dir, output_dir=data_dir['svihm_d
   relpath <- gsub('/', '\\', relpath, fixed=T)
 
   # Write normal batchfile
-  write_scenario_prep_batchfile(output_dir=output_dir, filename = filename, write_end = F)
+  write_scenario_prep_batchfile(output_dir=output_dir,
+                                filename = filename,
+                                write_end = F)
 
   # New lines
   write(':: Copy Updated Files to run folders', file = f, append=T)

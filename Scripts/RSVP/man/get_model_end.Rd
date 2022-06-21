@@ -11,9 +11,6 @@ get_model_end(end_year, water_years = TRUE)
 
 \item{water_years}{Boolean}
 }
-\value{
-
-}
 \description{
 Get Model End Date
 }

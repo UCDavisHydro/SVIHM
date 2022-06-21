@@ -35,9 +35,6 @@ gen_daily_binary_crop_coefficients(
 
 \item{irr_demand_mult}{Irrigation demand multiplier, default 1}
 }
-\value{
-
-}
 \description{
 Currently used for alfalfa and pasture. Binary coefficients for growing/dormant.
 }
