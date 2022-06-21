@@ -3,7 +3,7 @@ program Update_Drain_Inflows
 !-------------------------------------------------------------------------------------------------!
 !
 !-------------------------------------------------------------------------------------------------!
-  integer              :: i, nsp, sp, ts, ierr, ipos
+  integer              :: i, nsp, sp, ts, ierr, ipos, ls(10), rs(10)
   integer,allocatable  :: nstp(:)
   real*8               :: splen, mult, drn_out, prev_out
   character(200)       :: line
@@ -69,7 +69,8 @@ program Update_Drain_Inflows
     call FindLine(10, 'DRAINS', .true.)
     ! Read in cumulative value
     read(10,'(a200)') line
-    read(line(24:40), *) drn_out
+    call multisplit(ierr,7,ls,rs,line)  ! Thanks Dr. Doherty
+    read(line(ls(3):rs(3)), *) drn_out
     ! Write increase over previous SP, as TS average, to SWBM file
     write(20,'(f16.8)') (drn_out-prev_out)/nstp(i)
     prev_out = drn_out
@@ -118,7 +119,7 @@ end subroutine FindLine
 subroutine FindBudgetLine(unitno, sp, ts, move_back)
   implicit none
   
-  integer                  :: current_sp, current_ts, success
+  integer                  :: current_sp, current_ts, success, ierr, ls(15), rs(15)
   integer, intent(in)      :: unitno, sp, ts
   character(200)           :: line
   logical, intent(in)      :: move_back
@@ -128,8 +129,10 @@ subroutine FindBudgetLine(unitno, sp, ts, move_back)
   do while (success == 0)
     call FindLine(10, 'VOLUMETRIC BUDGET', .true.)
     read(10,'(a200)') line
-    read(line(57:61),*), current_ts
-    read(line(80:85),*), current_sp
+    call multisplit(ierr, 15, ls, rs, line)
+    read(line(ls(11):rs(11)),*), current_ts
+    ! Assume SP is last substring (index is inconsistent between MF versions)
+    read(line(maxval(ls):maxval(rs)),*), current_sp
     if ((current_sp == sp).and.(current_ts == ts)) then
       success = 1
       if (move_back) backspace(unitno)
@@ -140,3 +143,78 @@ subroutine FindBudgetLine(unitno, sp, ts, move_back)
   end do
   
 end subroutine FindBudgetLine
+
+!-----------------------------------------------------------------------------!
+
+    SUBROUTINE multisplit(IFAIL,NUM,LW,RW,CLINE)
+
+! -- Subroutine multisplit splits a string into blank-delimited fragments.
+
+! -- Subroutine arguments are as follows:-
+!       ifail:    returned as non-zero in case of failure
+!       num:      number of substrings to find in line (max?)
+!       lw:       array of substring start indeces
+!       rw:       array of substring end indeces
+!       cline:    character string
+
+! -- Author:-
+!       John Doherty
+
+       INTEGER IFAIL,NW,NBLC,J,I
+       INTEGER NUM,NBLNK
+       INTEGER LW(NUM),RW(NUM)
+       CHARACTER*(*) CLINE
+       IFAIL=0
+       NW=0
+       NBLC=LEN_TRIM(CLINE)
+       IF((NBLC.NE.0).AND.(INDEX(CLINE,CHAR(9)).NE.0)) THEN
+         CALL TABREM(CLINE)
+         NBLC=LEN_TRIM(CLINE)
+       ENDIF
+       IF(NBLC.EQ.0) THEN
+         IFAIL=-1
+         RETURN
+       END IF
+       J=0
+5      IF(NW.EQ.NUM) RETURN
+       DO 10 I=J+1,NBLC
+         IF((CLINE(I:I).NE.' ').AND.(CLINE(I:I).NE.',').AND.&
+         (ICHAR(CLINE(I:I)).NE.9)) GO TO 20
+10     CONTINUE
+       IFAIL=1
+       RETURN
+20     NW=NW+1
+       LW(NW)=I
+       DO 30 I=LW(NW)+1,NBLC
+         IF((CLINE(I:I).EQ.' ').OR.(CLINE(I:I).EQ.',').OR.&
+         (ICHAR(CLINE(I:I)).EQ.9)) GO TO 40
+30     CONTINUE
+       RW(NW)=NBLC
+       IF(NW.LT.NUM) IFAIL=1
+       RETURN
+40     RW(NW)=I-1
+       J=RW(NW)
+       GO TO 5
+
+    END subroutine multisplit
+
+!-----------------------------------------------------------------------------!
+    
+subroutine TABREM(CLINE)
+
+! -- Subroutine TABREM removes tabs from a string.
+
+! -- Subroutine arguments are as follows:-
+!       cline:    character string
+
+
+       INTEGER I
+       CHARACTER*(*) CLINE
+
+       DO 10 I=1,LEN(CLINE)
+10     IF(ICHAR(CLINE(I:I)).EQ.9) CLINE(I:I)=' '
+
+       RETURN
+  end subroutine tabrem
+
+!-----------------------------------------------------------------------------!
