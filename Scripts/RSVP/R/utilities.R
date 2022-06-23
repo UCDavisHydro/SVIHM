@@ -337,6 +337,26 @@ calc_num_stress_periods <- function(model_start, model_end, interval='month') {
 
 #-------------------------------------------------------------------------------------------------#
 
+#' MODFLOW Model Time to Date
+#'
+#' Assumes sp in months, and ts in days! Rounds to nearest day to prevent minor numerical errors
+#'
+#' @param sp Stress period
+#' @param ts Time Step
+#' @param origin_date Date at ts=0
+#'
+#' @return
+#' @author Leland Scantlebury
+#' @export
+#'
+#' @examples
+mftime2date <- function(sp, ts, origin_date) {
+  # Note: I hate sp/ts math - Leland
+  return(ceiling_date(origin_date %m+% months(sp-1) %m+% days(ts-1), unit='days'))
+}
+
+#-------------------------------------------------------------------------------------------------#
+
 # File Management  -------------------------------------------------------------
 
 #' Create Update Directory

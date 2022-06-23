@@ -2,6 +2,7 @@ library(RSVP)
 library(viridis)
 library(hydroGOF)
 library(RMODFLOW)
+library(ggplot2)
 
 #/////////////////-
 # V I S U A L S
@@ -12,7 +13,7 @@ library(RMODFLOW)
 origin_date <- as.Date('1990-09-30')
 
 # Directories
-run_dir <- file.path('../../Run/')
+run_dir <- file.path('C:/Projects/SVIHM/Run/')
 mf_dir <- file.path(run_dir, 'MODFLOW')
 # TODO automate finding latest version
 update_dir <- latest_dir(data_dir['update_dir','loc'])  #file.path('../../SVIHM_Input_Files/Updates/2022-04-13/')
@@ -94,6 +95,9 @@ sfrcompare <- calc_split_sample_stats.grouped(stream_combined$Date, stream_combi
                                               cal_split,
                                               FUNs = list(NSE, rmse, KGE),
                                               FUN_names = c('NSE', 'RMSE', 'KGE'))
+#-- Write Out
+write.csv(hob_compare, file.path(out_dir, 'hob_compare.csv'))
+write.csv(sfrcompare, file.path(out_dir, 'sfr_compare.csv'))
 #-------------------------------------------------------------------------------------------------#
 
 #-------------------------------------------------------------------------------------------------#
@@ -188,12 +192,45 @@ dev.off()
 #-------------------------------------------------------------------------------------------------#
 
 #-------------------------------------------------------------------------------------------------#
+# Volumetric Budget -------------------------------------------------------
 
+mfnam <- rmf_read_nam(file.path(mf_dir,'SVIHM.nam'))
+mfdis <- rmf_read_dis(file.path(mf_dir,'SVIHM.dis'), nam=mfnam)
+
+bud <- rmf_read_budget(file.path(mf_dir,'SVIHM.lst'))
+
+# Plot!
+pdf(file.path(out_dir,'VBudget.pdf'), width=11, height=8.5)
+# Over time
+p <- rmf_plot(bud, dis = mfdis, type='bar')  # Hacky fake plot
+pdates <- mftime2date(sp=1,ts=ggplot_build(p)$layout$panel_params[[1]]$x$breaks, origin_date)
+p <- rmf_plot(bud, dis = mfdis, type='bar') + scale_x_continuous("nstp", labels = pdates)
+print(p)
+p <- rmf_plot(bud, dis = mfdis, type='bar', net=T) + scale_x_continuous("nstp", labels = pdates)
+print(p)
+# Error
+p <- rmf_plot(bud, dis=mfdis, what='difference') + scale_x_continuous("nstp", labels = pdates)
+print(p)
+p <- rmf_plot(bud, dis=mfdis, what='discrepancy') + scale_x_continuous("nstp", labels = pdates)
+print(p)
+# Cumulative, gross and net
+p <- rmf_plot(bud, dis = mfdis, timesteps=-1, what='cumulative')
+print(p)
+p <- rmf_plot(bud, dis = mfdis, timesteps=-1, what='cumulative', net=T) +
+  geom_text(aes(label = value), color='black', vjust=-1.0)
+print(p)
+p <- rmf_plot(bud, dis = mfdis, type='bar', what='cumulative', fluxes=c('storage'), net=T) +
+     scale_x_continuous("nstp", labels = pdates)
+print(p)
+# Done
+dev.off()
+#-------------------------------------------------------------------------------------------------#
+
+#-------------------------------------------------------------------------------------------------#
 # Heads/DTW ---------------------------------------------------------------
 
 # Read in MF Files
-mfnam <- RMODFLOW::rmf_read_nam(file.path(mf_dir,'SVIHM.nam'))
-mfdis <- RMODFLOW::rmf_read_dis(file.path(mf_dir,'SVIHM.dis'), nam=mfnam)
+
 mfbas <- RMODFLOW::rmf_read_bas(file.path(mf_dir,'SVIHM.bas'), nam=mfnam, dis=mfdis)
 mfhds <- RMODFLOW::rmf_read_hed(file.path(mf_dir,'SVIHM.hds'), dis=mfdis)
 
@@ -205,7 +242,7 @@ for (sp in 1:length(mfdis$perlen)) { #length(mfdis$perlen)) {
   message(paste('Heads - Plotting: SP:'), sp, '| TS:',ts)
 
   # Find in time
-  outdate <- origin_date %m+% (months(sp)-1) %m+% days(ts)
+  outdate <- mftime2date(sp, ts, origin_date)
 
   p <- rmf_plot(mfhds, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, colour_palette = viridis, legend='Heads') +
        rmf_plot(mfhds, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, type='contour', label=F, add=T) +
@@ -222,7 +259,7 @@ for (sp in 1:length(mfdis$perlen)) {
   message(paste('DTW - Plotting: SP:'), sp, '| TS:',ts)
 
   # Find in time
-  outdate <- origin_date %m+% (months(sp)-1) %m+% days(ts)
+  outdate <- mftime2date(sp, ts, origin_date)
 
   # Prepare
   l <- ifelse(sp == 1, 0, cumsum(mfdis$nstp)[sp-1]) + ifelse(sp < 0, dis$nstp[sp], ts)
@@ -243,7 +280,7 @@ for (sp in 1:length(mfdis$perlen)) {
   message(paste('FC - Plotting: SP:'), sp, '| TS:',ts)
 
   # Find in time
-  outdate <- origin_date %m+% (months(sp)-1) %m+% days(ts)
+  outdate <- mftime2date(sp, ts, origin_date)
 
   # Prepare
   l <- ifelse(sp == 1, 0, cumsum(mfdis$nstp)[sp-1]) + ifelse(sp < 0, dis$nstp[sp], ts)
