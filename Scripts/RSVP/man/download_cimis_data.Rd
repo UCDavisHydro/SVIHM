@@ -11,18 +11,37 @@ download_cimis_data(start_date, end_date, stations = 225, verbose = TRUE, ...)
 
 \item{end_date}{data request end date}
 
-\item{stations}{CIMIS stations (default is 225, Scott Valley)
-#' @param verbose T/F write status info to console (default: TRUE)}
+\item{stations}{CIMIS stations (default is 225, Scott Valley)}
+
+\item{verbose}{T/F write status info to console (default: TRUE)}
 
 \item{...}{additional arguments passed to \code{\link[cimir]{cimis_data}}}
 }
+\value{
+Tibble of requested data
+}
 \description{
-
+Quick wrapper for cimir package data request function. Obtains the full set of "default"
+measurements (see \code{\link[cimir]{data_items}}. Can request from multiple stations, but the
+default is just station 225 (Scott Valley). CIMIS only allows requests of 1750 records
+at a time, data is requested in a loop to build the full record.
 }
 \details{
 CIMIS key must be set by \code{\link[cimir]{set_key}} before using this function.
 
 More options are available from the full \code{\link[cimir]{cimis_data}} function.
+}
+\examples{
+\dontrun{
+et225 <- download_cimis_data(start_date = as.Date('2015-10-01'),
+                             end_date = as.Date('2016-9-30'),
+                             stations = 225,
+                             items = 'day-eto')
+}
+}
+\seealso{
+\code{\link[cimir]{cimis_data}}, \code{\link[cimir]{data_items}},
+\code{\link{build_daily_et_df}}
 }
 \author{
 Leland Scantlebury

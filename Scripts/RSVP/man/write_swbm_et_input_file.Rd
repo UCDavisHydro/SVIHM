@@ -24,6 +24,21 @@ Expects, at a minimum, columns "ETo_mm" and "Date"}
 \description{
 Writes the Soil Water Balance Model (SWBM) evapotranspiration (ET) input file (ref_et_monthly.txt).
 }
+\examples{
+\dontrun{
+model_start_date <- get_model_start(1991)
+model_end_date <- as.Date(floor_date(Sys.Date(), 'month')-1)
+update_dir <- create_update_dir(end_date = model_end_date)
+
+et <- build_daily_et_df(model_start_date, model_end_date)
+write_swbm_et_input_file(et_record = et,
+                         output_dir = update_dir,
+                         filename = 'ref_et.txt')
+}
+}
+\seealso{
+\code{\link{build_daily_et_df}}
+}
 \author{
 Claire Kouba, Leland Scantlebury
 }

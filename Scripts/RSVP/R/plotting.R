@@ -1,5 +1,4 @@
 
-
 # Precipitation -----------------------------------------------------------
 
 #-------------------------------------------------------------------------------------------------#
@@ -13,10 +12,16 @@
 #' @param col color of bars (optional)
 #' @param border color of bar borders (optional)
 #'
-#' @return
+#' @return Plot
+#' @author Leland Scantlebury
 #' @export
 #'
 #' @examples
+#' # Read
+#' precip <- read.table('../../SVIHM_Input_Files/Scenario_Development/precip_regressed_orig.txt',
+#'                      header = F, col.names = c('prcp','date'))
+#' # Plot
+#' plot.precip(precip$date, unit = 'm')
 plot.precip <- function(dates, precip, unit='mm', title=NULL, col=NULL, border=par("fg")){
   barplot(height = precip,
           names.arg = dates,
@@ -46,10 +51,32 @@ plot.precip <- function(dates, precip, unit='mm', title=NULL, col=NULL, border=p
 #' @param colors colors for data (identical, precip1, precip2) (optional)
 #' @param legend_names names added to legend to describe precip1 and precip2
 #'
-#' @return
+#' @return Plot
+#' @author Leland Scantlebury
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' # Read
+#' precip1 <- read.table('../../SVIHM_Input_Files/Scenario_Development/precip_regressed_orig.txt',
+#'                       header = F, col.names = c('prcp','date'))
+#' precip2 <- read.table('../../SVIHM_Input_Files/Scenario_Development/precip_regressed.txt',
+#'                       header = F, col.names = c('prcp','date'))
+#' precip1$date <- as.Date(precip1$date, format='%d/%m/%Y')
+#' precip2$date <- as.Date(precip2$date, format='%d/%m/%Y')
+#'
+#' # Subset
+#' precip1 <- precip1[precip1$date > '2011-9-30',]
+#' precip2 <- precip2[precip2$date > '2011-9-30',]
+#' precip2 <- precip2[precip2$date <= max(precip1$date),]
+#'
+#' # Plot
+#' plot.precip.compare(precip1$date,
+#'                     precip1$prcp,
+#'                     precip2$prcp,
+#'                     unit = 'm',
+#'                     legend_names = c('Original','New'))
+#' }
 plot.precip.compare <- function(dates, precip1, precip2, unit='mm', title=NULL, colors=NULL,
                                legend_names){
   if (is.null(colors)) {
@@ -79,10 +106,30 @@ plot.precip.compare <- function(dates, precip1, precip2, unit='mm', title=NULL, 
 #' @param unit character, the units the precipitation is measured in
 #' @param col array of colors for data (optional)
 #'
-#' @return
+#' @return Plot
 #' @export
 #'
-#' @examples
+#' @examples \dontrun{
+#' # Read
+#' precip1 <- read.table('../../SVIHM_Input_Files/Scenario_Development/precip_regressed_orig.txt',
+#'                       header = F, col.names = c('prcp','date'))
+#' precip2 <- read.table('../../SVIHM_Input_Files/Scenario_Development/precip_regressed.txt',
+#'                       header = F, col.names = c('prcp','date'))
+#' precip1$date <- as.Date(precip1$date, format='%d/%m/%Y')
+#' precip2$date <- as.Date(precip2$date, format='%d/%m/%Y')
+#'
+#' # Subset
+#' precip1 <- precip1[precip1$date > '2011-9-30',]
+#' precip2 <- precip2[precip2$date > '2011-9-30',]
+#' precip2 <- precip2[precip2$date <= max(precip1$date),]
+#'
+#' # Plot
+#' plot.precip.cumulative(precip1$date,
+#'                        precip1$prcp,
+#'                        precip2$prcp,
+#'                        unit='m',
+#'                        col=c('blue','red'))
+#' }
 plot.precip.cumulative <- function(dates, ..., title=NULL, unit='mm', col=NULL){
 
   # Convert multiple datasets to list
@@ -114,6 +161,37 @@ plot.precip.cumulative <- function(dates, ..., title=NULL, unit='mm', col=NULL){
 # Time Series -------------------------------------------------------------
 
 #-------------------------------------------------------------------------------------------------#
+#' Setup Time Series Plot
+#'
+#' Sets up background, grid, and axes for a times series plot. Plots no actual data
+#'
+#' @seealso \code{\link{plot.gw.hydrograph_wMap}},\code{\link{plot.stream.hydrograph_wMap}}
+#'
+#' @param dates Array of dates, or list of arrays (for multiple datasets passed to ...)
+#' (only used to determine axis limits)
+#' @param ... Array(s) of data to be plotted (only used to determine axis limits)
+#' @param xlabel X-axis label
+#' @param ylabel Y-axis label
+#' @param log 'y' to log10 transform y-axis (default linear = '')
+#' @param interval time interval to draw x-axis grid at (optional, default 'year')
+#' @param bgcolor background color of plot (optional, default 'grey90')
+#' @param gridcolor color of major gridlines (optional, default 'white')
+#' @param gridcolor2 color of minor gridlines (only used for log plots) (optional, default 'grey93')
+#' @param las numeric in {0,1,2,3}; the style of axis labels. See \code{\link[base]{par}} (default 2)
+#' @param xlim_override overrides x axis limits with provided values (optional)
+#' @param ylim_min_diff overrides y axis limits with provided values (optional)
+#'
+#' @return Plot Setup
+#' @author Leland Scantlebury
+#' @export
+#'
+#' @examples
+#' # Fake data
+#' dates <- seq.Date(as.Date('1991-10-01'), as.Date('2001-9-30'), 'month')
+#' ys <- runif(length(dates), 5, 50)
+#'
+#' # Plot
+#' plot.ts_setup(dates, ys, xlabel='X', ylabel='Y')
 plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', bgcolor='grey90',
                           gridcolor='white', gridcolor2='grey93', las=2, xlim_override=NULL, ylim_min_diff=10) {
 
@@ -181,7 +259,6 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
     axis(2,tck=1,col=gridcolor,labels=TRUE,las=1)
   }
 
-
   #-- Clean up
   title(xlab=xlabel, ylab=ylabel)
   box()
@@ -189,6 +266,49 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
 
 #-------------------------------------------------------------------------------------------------#
 
+#' Plot Hydrograph w/ Map of Scott Valley
+#'
+#' @param dates Array of dates, or two arrays of dates corresponding to obs & sim
+#' @param obs Array of observed data, plotted as points
+#' @param sim Array of simulated (modeled) data, plotted as a line
+#' @param xloc real-world map x coordinate of location being plotted (UTM Zone 10)
+#' @param yloc real-world map y coordinate of location being plotted (UTM Zone 10)
+#' @param map_xs real-world map x coordinates of all data locations (UTM Zone 10)
+#' @param map_ys real-world map y coordinates of all data locations (UTM Zone 10)
+#' @param ylabel Y-axis label
+#' @param log 'y' to log10 transform y-axis (default linear = '')
+#' @param title Plot title
+#' @param colors Colors for obs & sim data, respectively
+#' @param map_x_offset x Buffer around map points (optional, default 0)
+#' @param map_y_offset y Buffer around map points (optional, default 0)
+#' @param mapbmar Margins on map bottom, used to move it up and down (and possibly avoid margin
+#' errors) (optional, default 30)
+#' @param ... extra options passed to \code{\link{plot.ts_setup}}
+#'
+#' @return Plot
+#' @author Leland Scantlebury
+#' @export
+#'
+#' @examples
+#' # Real locations
+#' hob_locs <- read.csv(file.path(data_dir['ref_data_dir','loc'], 'hob_wells.csv'),
+#'                      row.names=1, stringsAsFactors = F)
+#' locx <- hob_locs[1,'x']
+#' locy <- hob_locs[1,'y']
+#'
+#' # Fake Data
+#' dates <- seq.Date(as.Date('1991-10-01'), as.Date('2001-9-30'), 'month')
+#' obs <- runif(length(dates), 5, 50)
+#' sim <- obs - runif(length(dates), -5, 5)
+#'
+#' # May have to print to PDF to avoid figure margins error
+#' \dontrun{
+#'   pdf('plot_gw_hydrograph_wMap_example.pdf', width=11, height=8.5)
+#'   plot.gw.hydrograph_wMap(dates, obs, sim,
+#'                           locx, locy, hob_locs[,'x'], hob_locs[,'y'],
+#'                           ylabel='Y', title='Water Levels at Loc 1')
+#'   dev.off()
+#' }
 plot.gw.hydrograph_wMap <- function(dates, obs, sim, xloc, yloc, map_xs, map_ys, ylabel, log='',
                                  title=NULL, colors=NULL, map_x_offset=0, map_y_offset=0,
                                  mapbmar=30, ...) {
@@ -227,16 +347,60 @@ plot.gw.hydrograph_wMap <- function(dates, obs, sim, xloc, yloc, map_xs, map_ys,
 
   #-- Time Series
   par(mar=c(6,6,0.5,0.5))  #bottom, left, top, right
-  plot.ts_setup(dates, obs, sim, xlabel='Date', ylabel=ylabel, log=log)
+  plot.ts_setup(dates, obs, sim, xlabel='Date', ylabel=ylabel, log=log, ...)
   points(dates[[1]], obs, pch=16, col='dodgerblue2')
   lines(dates[[2]], sim, col='black')
 }
 
 #-------------------------------------------------------------------------------------------------#
 
+#' Plot Stream Hydrograph w/ Map of Scott Valley
+#'
+#' @param dates Array of dates, or two arrays of dates corresponding to obs & sim
+#' @param obs Array of observed data
+#' @param sim Array of simulated (modeled) data
+#' @param xloc real-world map x coordinate of location being plotted (UTM Zone 10)
+#' @param yloc real-world map y coordinate of location being plotted (UTM Zone 10)
+#' @param map_xs real-world map x coordinates of all data locations (UTM Zone 10)
+#' @param map_ys real-world map y coordinates of all data locations (UTM Zone 10)
+#' @param ylabel Y-axis label
+#' @param log 'y' to log10 transform y-axis (default linear = '')
+#' @param title Plot title
+#' @param colors Colors for obs & sim data, respectively
+#' @param map_x_offset x Buffer around map points (optional, default 0)
+#' @param map_y_offset y Buffer around map points (optional, default 0)
+#' @param mapbmar Margins on map bottom, used to move it up and down (and possibly avoid margin
+#' errors) (optional, default 30)
+#' @param zero_rep value to replace zeroes with (optional, only used with log='y')
+#' @param ... extra options passed to \code{\link{plot.ts_setup}}
+#'
+#' @return Plot
+#' @author Leland Scantlebury
+#' @export
+#'
+#' @examples
+#' sfr_locs <- read.csv(file.path(data_dir['ref_data_dir','loc'], 'sfr_gages.csv'),
+#'                      row.names=1, stringsAsFactors = F)
+#'
+#' dates <- seq.Date(as.Date('1991-10-01'), as.Date('2001-9-30'), 'month')
+#' obs <- runif(length(dates), 1, 50)
+#' sim <- obs - runif(length(dates), -7, 1)
+#' sim[sim < 0] <- 0
+#'
+#' locx <- sfr_locs[1,'x']
+#' locy <- sfr_locs[1,'y']
+#'
+#' # May have to print to PDF to avoid figure margins error
+#' \dontrun{
+#' pdf('plot_stream_hydrograph_wMap_example.pdf', width=11, height=8.5)
+#' plot.stream.hydrograph_wMap(dates, obs, sim,
+#'                             locx, locy, sfr_locs[,'x'], sfr_locs[,'y'],
+#'                             ylabel='Y', log='y', title='Hydrgraph at Gauge 1')
+#' dev.off()
+#' }
 plot.stream.hydrograph_wMap <- function(dates, obs, sim, xloc, yloc, map_xs, map_ys, ylabel, log='',
                                  title=NULL, colors=NULL, map_x_offset=0, map_y_offset=0,
-                                 mapbmar=30, zero_rep=NA, ...) {
+                                 mapbmar=30, zero_rep=1e-1, ...) {
 
   #-- Coerce dates to list if not list (Hacky)
   if (typeof(dates) != 'list') {
@@ -285,8 +449,37 @@ plot.stream.hydrograph_wMap <- function(dates, obs, sim, xloc, yloc, map_xs, map
 
 #-------------------------------------------------------------------------------------------------#
 
+#' Compare Time Series Data Before and After A Specified Date
+#'
+#' Intended for comparing pre-post calibration periods
+#'
+#' @param dates Array of dates (must be same for obs & sim)
+#' @param obs Array of observed data
+#' @param sim Array of simulated (modeled) data
+#' @param split_date Date to split values on, based on dates array
+#' @param ylabel Y-axis label
+#' @param log 'y' to log10 transform y-axis (default linear = '')
+#' @param pre_title Title for pre split_date period
+#' @param post_title Title for post split_date period
+#' @param colors Colors for obs and sim data
+#' @param zero_rep value to replace zeroes with (optional, only used with log='y')
+#' @param ... extra options passed to \code{\link{plot.ts_setup}}
+#'
+#' @return Plot
+#' @author Leland Scantlebury
+#' @export
+#'
+#' @examples
+#' dates <- seq.Date(as.Date('1991-10-01'), as.Date('2001-9-30'), 'month')
+#' obs <- runif(length(dates), 1, 50)
+#' sim <- obs - runif(length(dates), -7, 5)
+#' sim[sim < 0] <- 0
+#'
+#' plot.pre_post_compare(dates, obs, sim, split_date = as.Date('1995-9-30'),
+#'                       ylabel='Streamflow [m^3]',
+#'                       pre_title = 'Pre-WY1995', post_title = 'Post-WY1995')
 plot.pre_post_compare <- function(dates, obs, sim, split_date, ylabel, log='',
-                                  pre_title=NULL, post_title=NULL, colors=NULL, zero_rep=NA, ...) {
+                                  pre_title=NULL, post_title=NULL, colors=NULL, zero_rep=1e-1, ...) {
 
   #-- Handle zeros (only for log plot)
   if (log=='y') {
@@ -329,18 +522,26 @@ plot.pre_post_compare <- function(dates, obs, sim, split_date, ylabel, log='',
 #' Plots coordinate data, with a specific highlighted coordinate, on a map of the SVIHM model with
 #' the SFR river shown. Intended to be a minimap in the corner of a time series (etc) plot
 #'
+#' @seealso \code{\link{plot.gw.hydrograph_wMap}},\code{\link{plot.stream.hydrograph_wMap}}
+#'
 #' @param xloc numeric UTM 10N x-coordinate of highlighted location
 #' @param yloc numeric UTM 10N x-coordinate of highlighted location
 #' @param map_xs numeric UTM 10N x-coordinates of locations
 #' @param map_ys numeric UTM 10N x-coordinates of locations
-#' @param map_x_offset
-#' @param map_y_offset
+#' @param map_x_offset x Buffer around map points
+#' @param map_y_offset y Buffer around map points
 #'
-#' @return
+#' @return Plot
 #' @author Leland Scantlebury
 #' @export
 #'
 #' @examples
+#' hob_locs <- read.csv(file.path(data_dir['ref_data_dir','loc'], 'hob_wells.csv'),
+#'                      row.names=1, stringsAsFactors = F)
+#' locx <- hob_locs[5,'x']
+#' locy <- hob_locs[5,'y']
+#'
+#' plot.svihm_minimap(locx, locy, hob_locs[,'x'], hob_locs[,'y'], map_x_offset = 0, map_y_offset = 0)
 plot.svihm_minimap <- function(xloc, yloc, map_xs, map_ys, map_x_offset, map_y_offset) {
   map_xmin <- sf::st_bbox(sv_shp_grid_outline)$xmin - map_x_offset
   map_xmax <- sf::st_bbox(sv_shp_grid_outline)$xmax + map_x_offset
@@ -361,7 +562,39 @@ plot.svihm_minimap <- function(xloc, yloc, map_xs, map_ys, map_x_offset, map_y_o
 
 # Scatterplots ------------------------------------------------------------
 
-plot.scatterbox <- function(obs, sim, groups, xlab='Observation', ylab='Simulation', pch=1,
+#' 1:1 Scatterplot w/ Boxplots on Top and Bottom
+#'
+#' Used to show the fit of simulated data to observed data, with boxplots to account for the
+#' density of the data
+#'
+#' @param obs Array of observed data
+#' @param sim Array of simulated (modeled) data
+#' @param groups Array of groups that sim, obs values belong to (optional, or same length as sim & obs)
+#' @param xlab X-axis label (default 'Observed Values')
+#' @param ylab Y-axis label (default 'Simulated Values')
+#' @param pch Plotting 'character', i.e., symbol to use. See \code{\link[base]{points}} (default 1)
+#' @param col Colors for groups
+#' @param log T/F whether to log transform axes
+#' @param zero_rep value to replace zeroes with (optional, only used with log=T)
+#'
+#' @return Plot
+#' @author Leland Scantlebury
+#' @export
+#'
+#' @examples
+#' # Fake Data
+#' obs <- runif(250, 1, 10)
+#' sim <- obs - runif(250, -2, 2)
+#' sim[sim < 0] <- 0
+#'
+#' # No Groups
+#' plot.scatterbox(obs, sim)
+#'
+#' # With Groups
+#' groups <- rep('Group1',250)
+#' groups[obs*sim > 55] <- 'Group2'
+#' plot.scatterbox(obs, sim, groups = groups)
+plot.scatterbox <- function(obs, sim, groups=NA, xlab='Observed Values', ylab='Simulated Values', pch=1,
                             col=NULL, log=F, zero_rep=1e-01) {
   layout(matrix(c(2,5,1,3,4,4), 3, 2, byrow = TRUE), heights = c(1,5,0.5), widths = c(7,1.25))
 
@@ -377,6 +610,9 @@ plot.scatterbox <- function(obs, sim, groups, xlab='Observation', ylab='Simulati
     obs[obs == 0] <- zero_rep
     sim[sim == 0] <- zero_rep
   }
+
+  #-- Handle No Groups
+  if (is.na(groups[1])) {groups <- rep('Values',length(sim))}
 
   #-- Plot 1, main scatter
   par(mar=c(4.0, 4.3, 0.0, 0.0)) # bottom, left, top, right

@@ -30,6 +30,16 @@ Combines 3 datasets to create a final evapotranspiration dataset for SVIHM:
 - CIMIS Station 225 (Scott Valley) measured ET (from 2015-04-19 to current)
 - Spatial SVIHM ET data for gap between datasets
 }
+\examples{
+\dontrun{
+model_start_date <- get_model_start(1991)
+model_end_date <- as.Date(floor_date(Sys.Date(), 'month')-1)
+et <- build_daily_et_df(model_start_date, model_end_date)
+}
+}
+\seealso{
+\code{\link{download_cimis_data}}, \code{\link{write_swbm_et_input_file}}
+}
 \author{
 Claire Kouba, Leland Scantlebury
 }

@@ -17,6 +17,32 @@
 
 \item{col}{array of colors for data (optional)}
 }
+\value{
+Plot
+}
 \description{
 Cumulative Precipitation Comparison Plot
+}
+\examples{
+\dontrun{
+# Read
+precip1 <- read.table('../../SVIHM_Input_Files/Scenario_Development/precip_regressed_orig.txt',
+                      header = F, col.names = c('prcp','date'))
+precip2 <- read.table('../../SVIHM_Input_Files/Scenario_Development/precip_regressed.txt',
+                      header = F, col.names = c('prcp','date'))
+precip1$date <- as.Date(precip1$date, format='\%d/\%m/\%Y')
+precip2$date <- as.Date(precip2$date, format='\%d/\%m/\%Y')
+
+# Subset
+precip1 <- precip1[precip1$date > '2011-9-30',]
+precip2 <- precip2[precip2$date > '2011-9-30',]
+precip2 <- precip2[precip2$date <= max(precip1$date),]
+
+# Plot
+plot.precip.cumulative(precip1$date,
+                       precip1$prcp,
+                       precip2$prcp,
+                       unit='m',
+                       col=c('blue','red'))
+}
 }

@@ -4,7 +4,7 @@
 #' Download CIMIS Station Data
 #'
 #' Quick wrapper for cimir package data request function. Obtains the full set of "default"
-#' measurements (see \code{\link[cimir]{data_items}. Can request from multiple stations, but the
+#' measurements (see \code{\link[cimir]{data_items}}. Can request from multiple stations, but the
 #' default is just station 225 (Scott Valley). CIMIS only allows requests of 1750 records
 #' at a time, data is requested in a loop to build the full record.
 #'
@@ -15,14 +15,22 @@
 #' @param start_date data request start date
 #' @param end_date data request end date
 #' @param stations CIMIS stations (default is 225, Scott Valley)
-#' #' @param verbose T/F write status info to console (default: TRUE)
+#' @param verbose T/F write status info to console (default: TRUE)
 #' @param ... additional arguments passed to \code{\link[cimir]{cimis_data}}
 #'
-#' @return
+#' @return Tibble of requested data
 #' @author Leland Scantlebury
-#' @export
+#' @seealso \code{\link[cimir]{cimis_data}}, \code{\link[cimir]{data_items}},
+#' \code{\link{build_daily_et_df}}
 #'
+#' @export
 #' @examples
+#' \dontrun{
+#' et225 <- download_cimis_data(start_date = as.Date('2015-10-01'),
+#'                              end_date = as.Date('2016-9-30'),
+#'                              stations = 225,
+#'                              items = 'day-eto')
+#'}
 download_cimis_data <- function(start_date, end_date, stations=225, verbose=TRUE, ...) {
 
   # Concatenate if multiple stations passed
@@ -80,9 +88,15 @@ download_cimis_data <- function(start_date, end_date, stations=225, verbose=TRUE
 #'
 #' @return dataframe of ET data from start_date to end_date
 #' @author Claire Kouba, Leland Scantlebury
+#' @seealso \code{\link{download_cimis_data}}, \code{\link{write_swbm_et_input_file}}
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' model_start_date <- get_model_start(1991)
+#' model_end_date <- as.Date(floor_date(Sys.Date(), 'month')-1)
+#' et <- build_daily_et_df(model_start_date, model_end_date)
+#' }
 build_daily_et_df <- function(start_date,
                               end_date,
                               ref_data_dir=data_dir['ref_data_dir','loc'],
@@ -184,11 +198,21 @@ build_daily_et_df <- function(start_date,
 #' @param filename Filename (optional, default: ref_et_monthly.txt)
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
-#' @return
 #' @author Claire Kouba, Leland Scantlebury
+#' @seealso \code{\link{build_daily_et_df}}
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' model_start_date <- get_model_start(1991)
+#' model_end_date <- as.Date(floor_date(Sys.Date(), 'month')-1)
+#' update_dir <- create_update_dir(end_date = model_end_date)
+#'
+#' et <- build_daily_et_df(model_start_date, model_end_date)
+#' write_swbm_et_input_file(et_record = et,
+#'                          output_dir = update_dir,
+#'                          filename = 'ref_et.txt')
+#' }
 write_swbm_et_input_file <- function(et_record,
                                      output_dir,
                                      filename="ref_et_monthly.txt",

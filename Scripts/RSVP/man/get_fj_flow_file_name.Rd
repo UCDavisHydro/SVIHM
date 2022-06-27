@@ -7,8 +7,18 @@
 get_fj_flow_file_name(start_date, end_date)
 }
 \arguments{
-\item{end_date}{}
+\item{start_date}{Start date of data}
+
+\item{end_date}{End date of data}
 }
 \description{
 Codifies a pattern for naming
+}
+\examples{
+fname <- get_fj_flow_file_name(start_date = as.Date('2015-10-01'),
+                               end_date = as.Date('2016-9-30'))
+
+}
+\author{
+Leland Scantlebury
 }

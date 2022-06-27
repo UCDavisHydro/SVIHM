@@ -19,6 +19,19 @@
 
 \item{border}{color of bar borders (optional)}
 }
+\value{
+Plot
+}
 \description{
 Precipitation Bar Chart
+}
+\examples{
+# Read
+precip <- read.table('../../SVIHM_Input_Files/Scenario_Development/precip_regressed_orig.txt',
+                     header = F, col.names = c('prcp','date'))
+# Plot
+plot.precip(precip$date, unit = 'm')
+}
+\author{
+Leland Scantlebury
 }
