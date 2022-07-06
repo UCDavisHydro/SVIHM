@@ -2,6 +2,7 @@
 .Rhistory
 *.rec
 *.#*
+_*.*
 *._*
 *.DS_Store
 *.pdf
