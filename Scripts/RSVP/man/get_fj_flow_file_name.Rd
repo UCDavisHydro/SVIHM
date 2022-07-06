@@ -11,6 +11,9 @@ get_fj_flow_file_name(start_date, end_date)
 
 \item{end_date}{End date of data}
 }
+\value{
+String filename
+}
 \description{
 Codifies a pattern for naming
 }

@@ -197,6 +197,10 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
 
   pdat <- list(...)
 
+  if (length(pdat) < 1) {
+    stop('Must pass at least one set of y-axis data as second argument to plot.ts_setup')
+  }
+
   #-- Unlist dates if needed
   if (typeof(dates) == 'list') { dates <- do.call("c", dates) }
 
