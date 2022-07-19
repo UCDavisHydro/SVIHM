@@ -20,9 +20,9 @@ fj_usgs_id <- "11519500"
 #'
 #' @examples
 download_USGS_flow <- function(site_no, start_date, end_date, parameterCd="00060") {
-  flow = readNWISdv(siteNumbers = site_no, parameterCd=parameterCd,
+  flow = dataRetrieval::readNWISdv(siteNumbers = site_no, parameterCd=parameterCd,
                        startDate=start_date, endDate = end_date)
-  return(renameNWISColumns(flow))
+  return(dataRetrieval::renameNWISColumns(flow))
 }
 
 # SVIHM specific functions ------------------------------------------------

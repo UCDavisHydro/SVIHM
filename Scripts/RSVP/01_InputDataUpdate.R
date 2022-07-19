@@ -5,10 +5,7 @@
 # 3. Streamflow
 # 4. Tributary Inflow (calculated from FJ Streamflow)
 #
-library(readr)
 library(RSVP)
-library(dataRetrieval)
-library(lubridate)
 library(cimir)
 
 # ------------------------------------------------------------------------------------------------#
