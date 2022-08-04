@@ -80,6 +80,8 @@ download_cimis_data <- function(start_date, end_date, stations=225, verbose=TRUE
 #' - CIMIS Station 225 (Scott Valley) measured ET (from 2015-04-19 to current)
 #' - Spatial SVIHM ET data for gap between datasets
 #'
+#' Uses linear interpolation to fill missing daily ET data (with a message)
+#'
 #' @param start_date Start of data period
 #' @param end_date End of data period
 #' @param ref_data_dir Reference data directory
@@ -104,18 +106,18 @@ build_daily_et_df <- function(start_date,
 
   #-- Obtain Data Sources
   et225 <- download_cimis_data(start_date = as.Date('2015-04-19'),
-                               end_date = model_end_date,
+                               end_date = end_date,
                                verbose=verbose, items = 'day-eto')
-  et225$month1 = lubridate::floor_date(et225$Date, unit = "month")
-  et225_monthly = aggregate(et225$Value, by = list(et225$month1), FUN = sum, na.rm=T)
-  colnames(et225_monthly) = c("Date", "ETo_mm")
+  #LS et225$month1 = lubridate::floor_date(et225$Date, unit = "month")
+  #LS et225_monthly = aggregate(et225$Value, by = list(et225$month1), FUN = sum, na.rm=T)
+  #LS colnames(et225_monthly) = c("Date", "ETo_mm")
 
   et_dl_aug2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report_aug2019.csv"))
   et_sp = data.frame(Date = et_dl_aug2019$Date, ETo_mm = et_dl_aug2019$ETo..mm)
   et_sp$Date = as.Date(et_sp$Date, format = "%m/%d/%Y")
-  et_sp$month1 = lubridate::floor_date(et_sp$Date, unit = "month")
-  et_sp_monthly = aggregate(et_sp$ETo_mm, by = list(et_sp$month1), FUN = sum, na.rm=T)
-  colnames(et_sp_monthly) = c("Date", "ETo_mm")
+  #LS et_sp$month1 = lubridate::floor_date(et_sp$Date, unit = "month")
+  #LS et_sp_monthly = aggregate(et_sp$ETo_mm, by = list(et_sp$month1), FUN = sum, na.rm=T)
+  #LS colnames(et_sp_monthly) = c("Date", "ETo_mm")
 
   # Original eto record
   et_orig_input = read.table(file.path(ref_data_dir,"ref_et_1991_2011.txt"))
@@ -124,9 +126,9 @@ build_daily_et_df <- function(start_date,
   #-- Processing (leap days, avg daily by month)
   model_days = seq(from = start_date, to = end_date, by = "days")
   model_months = seq(from = start_date, to = end_date, by = "month")
-  num_days <- days_in_month_diff(model_start_date, model_end_date)
+  num_days <- days_in_month_diff(start_date, end_date)
 
-  # Add leap days to et record. This is easy, because they are constant values for each month.
+  # Add leap days to 1991-2011 et record. This is easy, because they are constant values for each month.
   leap_days = as.Date(paste0(c(1992, 1996, 2000, 2004, 2008), "-02-29"))
   leap_day_values = rep(NA, 5)
   for(i in 1:length(leap_days)){ leap_day_values[i] = et_orig$ETo_mm[et_orig$Date == leap_days[i]-1]} #assign the Feb 28 value to Feb 29
@@ -135,13 +137,13 @@ build_daily_et_df <- function(start_date,
   et_orig = et_orig[order(et_orig$Date),]
 
   # add number of days per month to monthly data frames
-  num_days_df = data.frame(month_day1 = model_months, num_days = num_days)
-  et_sp_monthly$num_days = as.numeric(num_days_df$num_days[match(et_sp_monthly$Date, num_days_df$month_day1)])
-  et225_monthly$num_days = as.numeric(num_days_df$num_days[match(et225_monthly$Date, num_days_df$month_day1)])
+  #LS num_days_df = data.frame(month_day1 = model_months, num_days = num_days)
+  #LS et_sp_monthly$num_days = as.numeric(num_days_df$num_days[match(et_sp_monthly$Date, num_days_df$month_day1)])
+  #LS et225_monthly$num_days = as.numeric(num_days_df$num_days[match(et225_monthly$Date, num_days_df$month_day1)])
 
   # Calculate monthly averages
-  et_sp_monthly$daily_avg_by_mo = et_sp_monthly$ETo_mm / et_sp_monthly$num_days
-  et225_monthly$daily_avg_by_mo = et225_monthly$ETo_mm / et225_monthly$num_days
+  #LS et_sp_monthly$daily_avg_by_mo = et_sp_monthly$ETo_mm / et_sp_monthly$num_days
+  #LS et225_monthly$daily_avg_by_mo = et225_monthly$ETo_mm / et225_monthly$num_days
 
   #Initialize stitched original-monthly record
   et_stitched_2 = data.frame(Date = model_days)
@@ -172,14 +174,24 @@ build_daily_et_df <- function(start_date,
   # Assign each day in the Spatial Cimis chunk of the record the monthly average ET value from the et_sp_monthly table.
   # Generate indices by matching the floor_date of each day in stitched_2 with the date in et_sp_monthly.
   et_stitched_2$ETo_mm[sp_indices_stitched] =
-    et_sp_monthly$daily_avg_by_mo[match(lubridate::floor_date(et_stitched_2$Date[sp_indices_stitched], unit="month"), et_sp_monthly$Date )]
+    et_sp$ETo_mm[match(lubridate::floor_date(et_stitched_2$Date[sp_indices_stitched], unit="day"), et_sp$Date )]
 
   # Assign CIMIS225 record
   # declare indices
   indices225_stitched = which(et_stitched_2$Date == (end_sp+1)):length(et_stitched_2$Date)
   # indices225_daily = which(et225$Date== (end_sp +1)):which(et_sp$Date == model_end_date)
   et_stitched_2$ETo_mm[indices225_stitched] =
-    et225_monthly$daily_avg_by_mo[match(lubridate::floor_date(et_stitched_2$Date[indices225_stitched], unit="month"), et225_monthly$Date )]
+    et225$Value[match(lubridate::floor_date(et_stitched_2$Date[indices225_stitched], unit="days"), et225$Date )]
+
+  # Linear interpolate to fill missing data (a single day, as of 8/3/2022)
+  n_missing <- nrow(et_stitched_2[is.na(et_stitched_2$ETo_mm),])
+  if (n_missing > 0) {
+    if (verbose) {
+      message(paste('Filling',n_missing,'missing daily ET value(s) using linear interpolation.'))
+    }
+    # infill using zoo
+    et_stitched_2$ETo_mm <- zoo::na.approx(et_stitched_2$ETo_mm)
+  }
 
   if (verbose) {message('ET data processing complete.')}
 

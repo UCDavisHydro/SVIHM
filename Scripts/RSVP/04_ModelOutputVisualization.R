@@ -12,8 +12,10 @@ library(ggplot2)
 
 origin_date <- as.Date('1990-09-30')
 
+create_sp_charts = FALSE  # Many SPs, very slow
+
 # Directories
-run_dir <- file.path('C:/Projects/SVIHM/Run/')
+run_dir <- file.path('../../Run/')
 mf_dir <- file.path(run_dir, 'MODFLOW')
 # TODO automate finding latest version
 update_dir <- latest_dir(data_dir['update_dir','loc'])  #file.path('../../SVIHM_Input_Files/Updates/2022-04-13/')
@@ -231,68 +233,71 @@ dev.off()
 
 # Read in MF Files
 
-mfbas <- RMODFLOW::rmf_read_bas(file.path(mf_dir,'SVIHM.bas'), nam=mfnam, dis=mfdis)
-mfhds <- RMODFLOW::rmf_read_hed(file.path(mf_dir,'SVIHM.hds'), dis=mfdis)
+if (create_sp_charts) {
 
-#-- Loop over SP plotting
-# Heads
-pdf(file.path(out_dir,'Head_Maps.pdf'), width=8.5, height=11)
-for (sp in 1:length(mfdis$perlen)) { #length(mfdis$perlen)) {
-  ts <- mfdis$perlen[sp]
-  message(paste('Heads - Plotting: SP:'), sp, '| TS:',ts)
+  mfbas <- RMODFLOW::rmf_read_bas(file.path(mf_dir,'SVIHM.bas'), nam=mfnam, dis=mfdis)
+  mfhds <- RMODFLOW::rmf_read_hed(file.path(mf_dir,'SVIHM.hds'), dis=mfdis)
 
-  # Find in time
-  outdate <- mftime2date(sp, ts, origin_date)
+  #-- Loop over SP plotting
+  # Heads
+  pdf(file.path(out_dir,'Head_Maps.pdf'), width=8.5, height=11)
+  for (sp in 1:length(mfdis$perlen)) { #length(mfdis$perlen)) {
+    ts <- mfdis$perlen[sp]
+    message(paste('Heads - Plotting: SP:'), sp, '| TS:',ts)
 
-  p <- rmf_plot(mfhds, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, colour_palette = viridis, legend='Heads') +
-       rmf_plot(mfhds, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, type='contour', label=F, add=T) +
-       ggplot2::ggtitle(paste('SVIHM |', outdate,'| SP: ', sp, '- TS:', ts))
-  print(p)
+    # Find in time
+    outdate <- mftime2date(sp, ts, origin_date)
+
+    p <- rmf_plot(mfhds, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, colour_palette = viridis, legend='Heads') +
+         rmf_plot(mfhds, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, type='contour', label=F, add=T) +
+         ggplot2::ggtitle(paste('SVIHM |', outdate,'| SP: ', sp, '- TS:', ts))
+    print(p)
+
+  }
+  dev.off()
+
+  # Depth to Water (DTW)
+  pdf(file.path(out_dir,'DTW_Maps.pdf'), width=8.5, height=11, onefile = T)
+  for (sp in 1:length(mfdis$perlen)) {
+    ts <- mfdis$perlen[sp]
+    message(paste('DTW - Plotting: SP:'), sp, '| TS:',ts)
+
+    # Find in time
+    outdate <- mftime2date(sp, ts, origin_date)
+
+    # Prepare
+    l <- ifelse(sp == 1, 0, cumsum(mfdis$nstp)[sp-1]) + ifelse(sp < 0, dis$nstp[sp], ts)
+    wt <- rmf_convert_hed_to_water_table(mfhds, l = l)
+    dtw <- mfdis$top - wt
+
+    p <- rmf_plot(dtw, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, colour_palette = viridis, legend='Depth to Water') +
+         rmf_plot(dtw, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, type='contour', label=F, add=T) +
+         ggplot2::ggtitle(paste('SVIHM |', outdate,'| SP: ', sp, '- TS:', ts))
+    print(p)
+  }
+  dev.off()
+
+  # Flooded Cells
+  pdf(file.path(out_dir,'FloodedCells_Maps.pdf'), width=8.5, height=11, onefile = T)
+  for (sp in 1:length(mfdis$perlen)) {
+    ts <- mfdis$perlen[sp]
+    message(paste('FC - Plotting: SP:'), sp, '| TS:',ts)
+
+    # Find in time
+    outdate <- mftime2date(sp, ts, origin_date)
+
+    # Prepare
+    l <- ifelse(sp == 1, 0, cumsum(mfdis$nstp)[sp-1]) + ifelse(sp < 0, dis$nstp[sp], ts)
+    wt <- rmf_convert_hed_to_water_table(mfhds, l = l)
+    fc <- wt - mfdis$top
+    fc[fc < 0] <- 0
+
+    p <- rmf_plot(fc, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, colour_palette = inferno, legend='Water Depth Above Surface') +
+      ggplot2::ggtitle(paste('SVIHM |', outdate,'| SP: ', sp, '- TS:', ts))
+
+    print(p)
+  }
+  dev.off()
 
 }
-dev.off()
-
-# Depth to Water (DTW)
-pdf(file.path(out_dir,'DTW_Maps.pdf'), width=8.5, height=11, onefile = T)
-for (sp in 1:length(mfdis$perlen)) {
-  ts <- mfdis$perlen[sp]
-  message(paste('DTW - Plotting: SP:'), sp, '| TS:',ts)
-
-  # Find in time
-  outdate <- mftime2date(sp, ts, origin_date)
-
-  # Prepare
-  l <- ifelse(sp == 1, 0, cumsum(mfdis$nstp)[sp-1]) + ifelse(sp < 0, dis$nstp[sp], ts)
-  wt <- rmf_convert_hed_to_water_table(mfhds, l = l)
-  dtw <- mfdis$top - wt
-
-  p <- rmf_plot(dtw, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, colour_palette = viridis, legend='Depth to Water') +
-       rmf_plot(dtw, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, type='contour', label=F, add=T) +
-       ggplot2::ggtitle(paste('SVIHM |', outdate,'| SP: ', sp, '- TS:', ts))
-  print(p)
-}
-dev.off()
-
-# Flooded Cells
-pdf(file.path(out_dir,'FloodedCells_Maps.pdf'), width=8.5, height=11, onefile = T)
-for (sp in 1:length(mfdis$perlen)) {
-  ts <- mfdis$perlen[sp]
-  message(paste('FC - Plotting: SP:'), sp, '| TS:',ts)
-
-  # Find in time
-  outdate <- mftime2date(sp, ts, origin_date)
-
-  # Prepare
-  l <- ifelse(sp == 1, 0, cumsum(mfdis$nstp)[sp-1]) + ifelse(sp < 0, dis$nstp[sp], ts)
-  wt <- rmf_convert_hed_to_water_table(mfhds, l = l)
-  fc <- wt - mfdis$top
-  fc[fc < 0] <- 0
-
-  p <- rmf_plot(fc, dis=mfdis, bas=mfbas, k=1, kper=sp, kstp=ts, colour_palette = inferno, legend='Water Depth Above Surface') +
-    ggplot2::ggtitle(paste('SVIHM |', outdate,'| SP: ', sp, '- TS:', ts))
-
-  print(p)
-}
-dev.off()
-
 #-------------------------------------------------------------------------------------------------#
