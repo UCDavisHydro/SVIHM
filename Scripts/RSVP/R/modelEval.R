@@ -9,7 +9,7 @@
 #' @param FUNs Function(s) to calculate statistics using. Must accept arguments as (sim, obs)
 #' @param FUN_names Names of functions in FUNs, used for DF column names
 #'
-#' @return Dataframe of statistics
+#' @return Dataframe of statistics. Stats will be NA if less than 2 sim/obs pairs in date split.
 #' @seealso \code{\link{calc_split_sample_stats.grouped}},
 #' \code{\link{print.split_sample_stats}},
 #'
@@ -45,8 +45,17 @@ calc_split_sample_stats <- function(dates, sim, obs, split_date, FUNs, FUN_names
   res <- lapply(FUNs, function(f) {
     fname <- FUN_names[i]
     all <- f(sim, obs)
-    pre_stat <- f(sim[dates < split_date], obs[dates < split_date])
-    pst_stat <- f(sim[dates >= split_date], obs[dates >= split_date])
+
+    # Pre
+    if (length(dates[dates < split_date]) > 1) {
+      pre_stat <- f(sim[dates < split_date], obs[dates < split_date])
+    } else { pre_stat <- NA }
+
+    # Post
+    if (length(dates[dates >= split_date]) > 1) {
+      pst_stat <- f(sim[dates >= split_date], obs[dates >= split_date])
+    } else { pst_stat <- NA }
+
     i <<- i + 1
     return(data.frame('Statistic' = fname, 'All' = all, 'Pre' = pre_stat, 'Post' = pst_stat))
   })
@@ -142,7 +151,7 @@ print.split_sample_stats <- function(sampledf, group=NA, side) {
     df <- sampledf
   } else {
     strout <- paste(group,'-')
-    grpdf <- sampledf[sampledf$Group == group,]
+    df <- sampledf[sampledf$Group == group,]
   }
   # Add stats
   for (stat in df$Statistic) {

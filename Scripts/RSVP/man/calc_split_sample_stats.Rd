@@ -20,7 +20,7 @@ calc_split_sample_stats(dates, sim, obs, split_date, FUNs, FUN_names)
 \item{FUN_names}{Names of functions in FUNs, used for DF column names}
 }
 \value{
-Dataframe of statistics
+Dataframe of statistics. Stats will be NA if less than 2 sim/obs pairs in date split.
 }
 \description{
 Calculate Split Sample Statistics
