@@ -23,7 +23,8 @@ program Update_Starting_Heads
   integer              :: i, j, k, ierr, kstp, kper, ncol, nrow, nsp, nlay, ilay, target_sp, end_sp
   integer              :: get_nlay
   real                 :: pertim, totim
-  real,allocatable     :: heads(:,:,:), temp_heads(:,:,:)
+  real,allocatable     :: temp_heads(:,:,:)
+  real*8,allocatable   :: heads(:,:,:)
   character(len=16)    :: text, fmt
   character(len=60)    :: hds_file, outname
   
@@ -80,7 +81,7 @@ program Update_Starting_Heads
   
   ! Allocate, Initialize
   allocate(temp_heads(ncol, nrow, nlay), heads(ncol, nrow, nlay))
-  heads = 0.0
+  heads = 0.0d0
   
   ! Get to it
   write(*,*) 'Reading:'
