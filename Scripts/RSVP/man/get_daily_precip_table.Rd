@@ -8,6 +8,7 @@ get_daily_precip_table(
   start_date,
   end_date,
   ref_data_dir = data_dir["ref_data_dir", "loc"],
+  na_fill = 0,
   verbose = TRUE
 )
 }
@@ -18,6 +19,8 @@ get_daily_precip_table(
 
 \item{ref_data_dir}{Reference data directory
 (optional, default: SVIHM/SVIHM_Input_Files/reference_data)}
+
+\item{na_fill}{value to fill with if all precip sources are missing values for a given day}
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }

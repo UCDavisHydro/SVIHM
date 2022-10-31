@@ -24,7 +24,8 @@ Imports:
   RMODFLOW
 Suggests:
   readr,
-  hydroGOF
+  hydroGOF,
+  remotes
 Depends: 
   R (>= 2.10),
   lubridate

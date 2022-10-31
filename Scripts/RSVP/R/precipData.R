@@ -8,6 +8,7 @@
 #' @param end_date End of data period
 #' @param ref_data_dir Reference data directory
 #'                     (optional, default: SVIHM/SVIHM_Input_Files/reference_data)
+#' @param na_fill value to fill with if all precip sources are missing values for a given day
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
 #' @return
@@ -18,6 +19,7 @@
 get_daily_precip_table <- function(start_date,
                                    end_date,
                                    ref_data_dir=data_dir['ref_data_dir','loc'],
+                                   na_fill=0.0,
                                    verbose=TRUE) {
 
   # Use pre-created SVIHM stations dataset
@@ -98,6 +100,11 @@ get_daily_precip_table <- function(start_date,
   # p_record$stitched = NA
   # p_record$stitched[orig_record] = p_record$PRCP_mm_orig[orig_record]
   # p_record$stitched[updated_record] = p_record$interp_cal_fj_mean[updated_record]
+
+  if (nrow(p_record[is.na(p_record$stitched),]) > 0) {
+    message(paste('-',nrow(p_record[is.na(p_record$stitched),]), 'missing values filled with', na_fill))
+    p_record[is.na(p_record$stitched), 'stitched'] <- na_fill
+  }
 
   if (verbose) {message('Precipitation data processing complete.')}
   return(p_record)

@@ -97,7 +97,9 @@ write_SWBM_gen_inputs_file <- function(num_stress_periods,
     paste(curtailment_scenario, curtail_start_mo, curtail_start_day,
           "! curtailment_scenario curtail_start_mo curtail_start_day",
           sep = "  "),
-    paste(landuse_scenario, "! Basecase/Major_NatVeg")
+    paste(landuse_scenario, "! Basecase/Major_NatVeg"),
+    paste('irr_ditch.txt           ! Irrigation Ditch Module Input File')
+
   )
 
   if (verbose) {message(paste('Writing SWBM file: ', filename))}

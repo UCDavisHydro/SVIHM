@@ -1,5 +1,6 @@
 2119  167  336  440  210  1.4 UCODE  ! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST
-Basecase  Basecase  ! Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims
-11  31  AllYears  ! alf_irr_stop_mo  alf_irr_stop_day early_alf_cutoff_scenario
-NoCurtail  11  15  ! curtailment_scenario curtail_start_mo curtail_start_day
-basecase ! Basecase/Major_NatVeg
+Basecase  Basecase                   ! Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims
+11  31  AllYears                     ! alf_irr_stop_mo  alf_irr_stop_day early_alf_cutoff_scenario
+NoCurtail  11  15                    ! curtailment_scenario curtail_start_mo curtail_start_day
+basecase                             ! Basecase/Major_NatVeg
+irr_ditch.txt                        ! Irrigation Ditch Module Input File

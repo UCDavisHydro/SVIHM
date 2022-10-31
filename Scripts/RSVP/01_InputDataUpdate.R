@@ -38,11 +38,13 @@ num_stress_periods <- calc_num_stress_periods(model_start_date, model_end_date)
 num_days <- days_in_month_diff(model_start_date, model_end_date)  # current setup: days = time steps
 
 # Directory (Created in SVIHM_Input_Files/Updates)
-update_dir <- create_update_dir(end_date = model_end_date)
+update_dir <- create_update_dir(end_date = model_end_date + 1)  # +1 for start of next month, first day not simulated
+
 
 # Weather Data ------------------------------------------------------------------------------------
 
 # Precip
+rnoaa::meteo_clear_cache(force = TRUE)  # Been having issues with rnoaa cache updating...
 prcp <- get_daily_precip_table(model_start_date, model_end_date)
 write_swbm_precip_input_file(p_record = prcp, output_dir = update_dir, filename = 'precip.txt')
 
@@ -61,4 +63,3 @@ fjd_model <- download_fort_jones_flow(model_start_date,
 
 tribs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd_model)
 write_tributary_input_file(tribs, output_dir = update_dir, start_date=model_start_date, end_date=model_end_date)
-
