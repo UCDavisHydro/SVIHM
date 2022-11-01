@@ -352,7 +352,7 @@ calc_num_stress_periods <- function(model_start, model_end, interval='month') {
 #' @examples
 mftime2date <- function(sp, ts, origin_date) {
   # Note: I hate sp/ts math - Leland
-  return(ceiling_date(origin_date %m+% months(sp-1) %m+% days(ts-1), unit='days'))
+  return(origin_date %m+% days(1) %m+% months(sp-1) %m+% days(ts-1))
 }
 
 #-------------------------------------------------------------------------------------------------#

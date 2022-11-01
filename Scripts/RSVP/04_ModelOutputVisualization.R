@@ -243,7 +243,7 @@ if (create_sp_charts) {
   pdf(file.path(out_dir,'Head_Maps.pdf'), width=8.5, height=11)
   for (sp in 1:length(mfdis$perlen)) { #length(mfdis$perlen)) {
     ts <- mfdis$perlen[sp]
-    message(paste('Heads - Plotting: SP:'), sp, '| TS:',ts)
+    message(paste('Writing: SP:'), sprintf("%03d", sp), '| TS:',sprintf("%02d", ts))
 
     # Find in time
     outdate <- mftime2date(sp, ts, origin_date)
