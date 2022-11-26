@@ -9,7 +9,7 @@ Description: R functions for pre-processing, post-processing, and scenario devel
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.2
 Imports:
   RColorBrewer,
   zoo,

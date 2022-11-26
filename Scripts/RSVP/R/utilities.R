@@ -23,17 +23,17 @@ water_year_end_date <- function(year, water_years=TRUE) {
 #' Get water year for dates
 #'
 #' @param dates array of Dates
-#' @param wy_start_month Water Year start month (9 (Sept) by default)
+#' @param wy_start_month Water Year start month (10 (Oct) by default)
 #'
 #' @return array of water years
 #' @export
 #'
 #' @examples
-#' get_water_year(c(as.Date('1991-09-31'), as.Date('1991-10-01')))
-get_water_year <- function(dates, wy_start_month=9){
+#' get_water_year(c(as.Date('1991-09-30'), as.Date('1991-10-01')))
+get_water_year <- function(dates, wy_start_month=10){
   yr <- as.numeric(format(dates, '%Y'))
   mn <- as.numeric(format(dates, '%m'))
-  yr[mn > wy_start_month] <- yr[mn > wy_start_month] + 1
+  yr[mn >= wy_start_month] <- yr[mn >= wy_start_month] + 1
   return(yr)
 }
 

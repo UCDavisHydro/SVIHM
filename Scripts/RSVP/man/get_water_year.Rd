@@ -4,12 +4,12 @@
 \alias{get_water_year}
 \title{Get water year for dates}
 \usage{
-get_water_year(dates, wy_start_month = 9)
+get_water_year(dates, wy_start_month = 10)
 }
 \arguments{
 \item{dates}{array of Dates}
 
-\item{wy_start_month}{Water Year start month (9 (Sept) by default)}
+\item{wy_start_month}{Water Year start month (10 (Oct) by default)}
 }
 \value{
 array of water years
@@ -18,5 +18,5 @@ array of water years
 Get water year for dates
 }
 \examples{
-get_water_year(c(as.Date('1991-09-31'), as.Date('1991-10-01')))
+get_water_year(c(as.Date('1991-09-30'), as.Date('1991-10-01')))
 }
