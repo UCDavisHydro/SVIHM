@@ -8,8 +8,7 @@ build_cdfw_instream_flow_cal(
   model_start_date,
   model_end_date,
   fort_jones_flows,
-  cdfw_file = file.path(data_dir["ref_data_dir", "loc"],
-    "cdfw_2017_instream_flows.csv")
+  cdfw_file = file.path(data_dir["ref_data_dir", "loc"], "cdfw_2017_instream_flows.csv")
 )
 }
 \arguments{

@@ -186,6 +186,46 @@ complete_monthly <- function(df, date_col='Date', start_date=NULL, end_date=NULL
 
 #-------------------------------------------------------------------------------------------------#
 
+#' Find periods of time series with data
+#'
+#' @param df Data.frame of time series data
+#' @param max_missing_days Maximum number of days allowed to be missing before constituting a
+#' separate data period
+#' @param date_col Column with Date-type values
+#' @param value_col Column with data whereupon non-NA values constitute data being present
+#'
+#' @return Data.frame with period starts and ends as dates
+#' @export
+#'
+#' @examples
+#' # Load tributary data
+#' daily_all <- read_gauge_daily_data()
+#'
+#' # Subset to South Fork
+#' sf <- df <- daily_all$South_Fork
+#'
+#' # Get data periods where no more than a month of data is missing
+#' sf_periods <- find_data_periods(sf, max_missing_days=30, value_col='mean_cfs')
+find_data_periods <- function(df, max_missing_days, date_col='Date', value_col='value') {
+
+  # Remove missing
+  df <- df[!is.na(df[value_col]),]
+
+  # Calc day diff
+  df[1:nrow(df)-1, 'diff_head'] <- diff(df[,date_col])
+  df[2:nrow(df), 'diff_tail'] <- diff(df[,date_col])
+
+  # Find ranges
+  starts <- c(df[1,date_col], na.omit(df[df$diff_tail > max_missing_days,date_col]))
+  ends   <- c(na.omit(df[df$diff_head > max_missing_days,date_col]), df[nrow(df),date_col])
+
+  have_data <- data.frame('Start' = starts, 'End' = ends)
+
+  return(have_data)
+}
+
+#-------------------------------------------------------------------------------------------------#
+
 # Statistics --------------------------------------------------------------
 
 #' Add basic stats (mean, sd) to dataframe attributes

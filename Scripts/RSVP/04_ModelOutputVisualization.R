@@ -17,8 +17,8 @@ create_sp_charts = FALSE  # Many SPs, very slow
 # Directories
 run_dir <- file.path('../../Run/')
 mf_dir <- file.path(run_dir, 'MODFLOW')
-# TODO automate finding latest version
-update_dir <- latest_dir(data_dir['update_dir','loc'])  #file.path('../../SVIHM_Input_Files/Updates/2022-04-13/')
+
+update_dir <- latest_dir(data_dir['update_dir','loc'])
 
 out_dir <- file.path(run_dir, 'Plots')
 
@@ -220,6 +220,9 @@ p <- rmf_plot(bud, dis = mfdis, timesteps=-1, what='cumulative')
 print(p)
 p <- rmf_plot(bud, dis = mfdis, timesteps=-1, what='cumulative', net=T) +
   geom_text(aes(label = value), color='black', vjust=-1.0)
+print(p)
+p <- rmf_plot(bud, dis = mfdis, type='bar', what='rates', fluxes=c('storage'), net=T) +
+  scale_x_continuous("nstp", labels = pdates)
 print(p)
 p <- rmf_plot(bud, dis = mfdis, type='bar', what='cumulative', fluxes=c('storage'), net=T) +
      scale_x_continuous("nstp", labels = pdates)
