@@ -123,6 +123,52 @@ resample2monthly <- function(df, value_col, date_col='Date', FUN, ...) {
 
 #-------------------------------------------------------------------------------------------------#
 
+#' Aggregate value to Daily, Monthly, or Yearly
+#'
+#' @param dates array of Date values
+#' @param values array of values to be aggregated
+#' @param interval aggregation interval: 'd' for daily, 'm' for monthly, 'y' for yearly
+#' @param date_col Name of output DF column for date (default: 'Date')
+#' @param FUN function to aggregate by
+#' @param ... Optional values passed to \code{\link{aggregate}}
+#'
+#' @return Data.frame of aggregated values, with a Date column (only of type 'Date' if daily)
+#' @export
+#'
+#' @examples
+#' # Some made up data
+#' dates <- as.Date(c('1988-11-30','1988-11-30','1988-11-30',
+#'                    '1988-12-01','1988-12-01','1988-12-01'))
+#' values <- c(12,13,14,14,15,16)
+#' # Use function to average by day
+#' avg <- aggregate.Date(dates, values, interval='d', FUN=mean)
+aggregate.Date <- function(dates, values, interval, date_col='Date', FUN, ...) {
+
+  # Pick date format code
+  if (interval=='m') {
+    fmt <- '%Y-%m'
+  } else if (interval=='d') {
+    fmt <- '%Y-%m-%d'
+  } else if (interval=='y') {
+    fmt <- '%Y'
+  } else {
+    stop('Invalid interval (d - Day, m - Month, y - Year)')
+  }
+
+  aggie <- do.call(data.frame, aggregate(values, by=list(format(dates, fmt)), FUN=FUN, ...))
+  # "Fix" column names
+  names(aggie)[1] <- date_col
+  names(aggie)[2:ncol(aggie)] <- gsub('x.', '', names(aggie)[2:ncol(aggie)])
+  # Make date a date if daily
+  if (interval=='d') {
+    aggie[,date_col] <- as.Date(aggie[,date_col])
+  }
+
+  return(aggie)
+}
+
+#-------------------------------------------------------------------------------------------------#
+
 #' Two-Sided date subset
 #'
 #' @param df Data.frame of time series data
