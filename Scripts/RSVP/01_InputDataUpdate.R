@@ -49,9 +49,15 @@ prcp <- get_daily_precip_table(model_start_date, model_end_date)
 write_swbm_precip_input_file(p_record = prcp, output_dir = update_dir, filename = 'precip.txt')
 
 # ET
-et <- build_daily_et_df(model_start_date, model_end_date)
+# Requests to CIMIS frequently fail, so the code is setup to try 25 times before giving up.
+for (i in 1:25) {
+  message('CIMIS Attempt ',i,"/ 25")
+  et <- tryCatch(build_daily_et_df(model_start_date, model_end_date),
+                 error=function(cond) {return(NA)})
+  if (max(!is.na(et))) { break }
+  else if (i==25) { stop('Repeated CIMIS queries failed. Server may be down.')}
+}
 write_swbm_et_input_file(et_record = et, output_dir = update_dir, filename = 'ref_et.txt')
-
 
 # River Flows -------------------------------------------------------------------------------------
 
