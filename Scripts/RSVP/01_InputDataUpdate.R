@@ -67,5 +67,17 @@ fjd_model <- download_fort_jones_flow(model_start_date,
                                     output_dir = update_dir,
                                     save_csv = TRUE)
 
-tribs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd_model)
-write_tributary_input_file(tribs, output_dir = update_dir, start_date=model_start_date, end_date=model_end_date)
+tribs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd_model, monthly = F, one_regression = F)
+
+# Combine East and South Fork stream records into one volumetric record (since that is how it's simulated in SVIHM)
+tribs <- combine_east_and_south_fork(tribs_list = tribs)
+
+tribs_regressed = write_trib_file_for_partitioning(gauges = tribs, output_dir = update_dir,filename = 'daily_streamflow_records_regressed.txt',
+                           start_date=model_start_date, end_date=model_end_date, monthly = F,
+                           old_tribs_df = NA
+                           )
+
+write_streamflow_by_subws_input_file(tribs_df = tribs_regressed, #gauges = tribs,
+                                     output_dir = update_dir,filename = 'daily_streamflow_input.txt',
+                                     start_date=model_start_date, end_date=model_end_date, monthly = F)
+

@@ -44,7 +44,7 @@ download_cimis_data <- function(start_date, end_date, stations=225, verbose=TRUE
     end_date <- Sys.Date()
   }
 
-  # Create sequence of dates seperated by <= 1750 days
+  # Create sequence of dates separated by <= 1750 days
   req_dates <- c(seq.Date(start_date, end_date, 1749), end_date)
   req_list <- list()
 
@@ -102,15 +102,27 @@ download_cimis_data <- function(start_date, end_date, stations=225, verbose=TRUE
 build_daily_et_df <- function(start_date,
                               end_date,
                               ref_data_dir=data_dir['ref_data_dir','loc'],
+                              api_download = TRUE,
+                              local_file = FALSE, update_dir = NA, local_et_filename = "daily.csv",
                               verbose=TRUE) {
 
   #-- Obtain Data Sources
-  et225 <- download_cimis_data(start_date = as.Date('2015-04-19'),
-                               end_date = end_date,
-                               verbose=verbose, items = 'day-eto')
-  #LS et225$month1 = lubridate::floor_date(et225$Date, unit = "month")
-  #LS et225_monthly = aggregate(et225$Value, by = list(et225$month1), FUN = sum, na.rm=T)
-  #LS colnames(et225_monthly) = c("Date", "ETo_mm")
+  if(api_download==TRUE){
+    et225 <- download_cimis_data(start_date = as.Date('2015-04-19'),
+                                 end_date = end_date,
+                                 verbose=verbose, items = 'day-eto')
+    #LS et225$month1 = lubridate::floor_date(et225$Date, unit = "month")
+    #LS et225_monthly = aggregate(et225$Value, by = list(et225$month1), FUN = sum, na.rm=T)
+    #LS colnames(et225_monthly) = c("Date", "ETo_mm")
+  }
+  if(api_download == FALSE & local_file == TRUE){
+    et225=read.csv(file.path(update_dir, local_et_filename))
+    if(!is.element(el = "ETo_mm", set = colnames(et225))){
+      colnames(et225)[grepl(pattern = "ETo", x = colnames(et225)) &
+                        grepl(pattern = "mm", x = colnames(et225))] = "ETo_mm"
+    }
+    et225$Date = as.Date(et225$Date, format = "%m/%d/%Y")
+  }
 
   et_dl_aug2019 = read.csv(file.path(ref_data_dir,"spatial_eto_report_aug2019.csv"))
   et_sp = data.frame(Date = et_dl_aug2019$Date, ETo_mm = et_dl_aug2019$ETo..mm)
@@ -132,7 +144,7 @@ build_daily_et_df <- function(start_date,
   leap_days = as.Date(paste0(c(1992, 1996, 2000, 2004, 2008), "-02-29"))
   leap_day_values = rep(NA, 5)
   for(i in 1:length(leap_days)){ leap_day_values[i] = et_orig$ETo_mm[et_orig$Date == leap_days[i]-1]} #assign the Feb 28 value to Feb 29
-  # Jeez, it's the same for each february except 2004. What weird formula made this?
+  # Jeez, it's the same for each February except 2004. What weird formula made this?
   et_orig = rbind(et_orig, data.frame(Date = leap_days, ETo_mm = leap_day_values)) #append leap days
   et_orig = et_orig[order(et_orig$Date),]
 
@@ -180,8 +192,14 @@ build_daily_et_df <- function(start_date,
   # declare indices
   indices225_stitched = which(et_stitched_2$Date == (end_sp+1)):length(et_stitched_2$Date)
   # indices225_daily = which(et225$Date== (end_sp +1)):which(et_sp$Date == model_end_date)
-  et_stitched_2$ETo_mm[indices225_stitched] =
-    et225$Value[match(lubridate::floor_date(et_stitched_2$Date[indices225_stitched], unit="days"), et225$Date )]
+  # LS I'm getting a crash here, I think it's because local files have different column names. Fixed with an If
+  if(api_download == FALSE & local_file == TRUE){
+    et_stitched_2$ETo_mm[indices225_stitched] =
+      et225$ETo_mm[match(lubridate::floor_date(et_stitched_2$Date[indices225_stitched], unit="days"), et225$Date)]
+  } else {
+    et_stitched_2$ETo_mm[indices225_stitched] <-
+      et225$Value[match(lubridate::floor_date(et_stitched_2$Date[indices225_stitched], unit="days"), et225$Date )]
+  }
 
   # Linear interpolate to fill missing data (a single day, as of 8/3/2022)
   n_missing <- nrow(et_stitched_2[is.na(et_stitched_2$ETo_mm),])
@@ -239,5 +257,5 @@ write_swbm_et_input_file <- function(et_record,
   # Write
   if (verbose) {message(paste('Writing file: ', filename))}
   write.table(et_out, file = file.path(output_dir, filename),
-              sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+              sep = " ", quote = FALSE, col.names = TRUE, row.names = FALSE)
 }

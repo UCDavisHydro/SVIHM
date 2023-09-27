@@ -8,7 +8,8 @@
 #' @param end_date End of data period
 #' @param ref_data_dir Reference data directory
 #'                     (optional, default: SVIHM/SVIHM_Input_Files/reference_data)
-#' @param na_fill value to fill with if all precip sources are missing values for a given day
+#' @param na_fill string of NA filling behavior, 'average' for averages of the preceding and next-day-with-data values,
+#' pass a numeric value to fill NA with that value, or NA for no filling (default: 'average')
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
 #' @return
@@ -19,7 +20,7 @@
 get_daily_precip_table <- function(start_date,
                                    end_date,
                                    ref_data_dir=data_dir['ref_data_dir','loc'],
-                                   na_fill=0.0,
+                                   na_fill='average',
                                    verbose=TRUE) {
 
   # Use pre-created SVIHM stations dataset
@@ -86,7 +87,26 @@ get_daily_precip_table <- function(start_date,
   p_record$stitched = p_record$PRCP_mm_orig
   p_record$stitched[is.na(p_record$PRCP_mm_orig)] = p_record$interp_cal_fj_mean[is.na(p_record$PRCP_mm_orig)]
 
+  # Fill any remaining NaN values (days with no rainfall data at any of the 6 stations)
+  # with averages of the preceding and next-day-with-data values
+  if (na_fill=='average') {
+    nan_indices = which(is.nan(p_record$stitched))
+    for(i in 1:length(nan_indices)){
+      nan_index = nan_indices[i]
+      days_with_data_indices = which(!is.nan(p_record$stitched))
+      next_index_with_data = min(days_with_data_indices[days_with_data_indices > nan_index])
+      p_record$stitched[nan_index] = mean(c(p_record$stitched[nan_index - 1],
+                                          p_record$stitched[next_index_with_data]))
+    }
+  } else if (!is.na(na_fill)) {
+    na_fill = as.numeric(na_fill)
+    if (nrow(p_record[is.na(p_record$stitched),]) > 0) {
+      message(paste('-',nrow(p_record[is.na(p_record$stitched),]), 'missing values filled with', na_fill))
+      p_record[is.na(p_record$stitched), 'stitched'] <- na_fill
+    }
+  }
   #Note: this include filling the leap days missing in the original record :)
+
 
   # orig_record_end_date = as.Date("2011-09-30"); orig_record_start_date = as.Date("1990-10-01")
   # orig_record = p_record$Date <= orig_record_end_date & p_record$Date >= orig_record_start_date
@@ -101,10 +121,7 @@ get_daily_precip_table <- function(start_date,
   # p_record$stitched[orig_record] = p_record$PRCP_mm_orig[orig_record]
   # p_record$stitched[updated_record] = p_record$interp_cal_fj_mean[updated_record]
 
-  if (nrow(p_record[is.na(p_record$stitched),]) > 0) {
-    message(paste('-',nrow(p_record[is.na(p_record$stitched),]), 'missing values filled with', na_fill))
-    p_record[is.na(p_record$stitched), 'stitched'] <- na_fill
-  }
+
 
   if (verbose) {message('Precipitation data processing complete.')}
   return(p_record)
@@ -504,7 +521,88 @@ write_swbm_precip_input_file <- function(p_record,
 
   if (verbose) {message(paste('Writing file: ', filename))}
   write.table(daily_precip_updated, file = file.path(output_dir, filename),
-              sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
+              sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE) # Current SWBM (9/25/2023) doesn't use a header on THIS file
+
+}
+
+
+#-------------------------------------------------------------------------------------------------#
+
+#' Calculate SWBM Precipitation Factors
+#'
+#' Relates each landuse polygon (field) to spatially distributed rainfall data.
+#' Generates a multiplication factor for each field to modify the model-domain-wide daily
+#' precipitation input record.
+#'
+#' @param poly_filename Filename containing table of land use polygons
+#' @param output_dir Directory to write file
+#' @param rainfall_records Dataframe containing daily precipitation records (includes
+#' public weather station data and date collected from private gauges).
+#' @param rainfall_locations Dataframe containing locations for each rainfall record (includes
+#' public weather station data and date collected from private gauges).
+#' @param verbose T/F write status info to console (default: TRUE)
+#'
+#' @return A two-column dataframe containing the SWBM polygon (field) ID; and the precip
+#' multiplication factor.
+#' @author Leland Scantlebury and Claire Kouba
+#' @export
+#'
+#' @examples
+#'
+calc_swbm_spatial_precip_factors <- function(
+                                          poly_tab_filename = "polygons_table.txt",
+                                          poly_shapefile_filename = NA,
+                                          rainfall_records = NA,
+                                          rainfall_locations = NA,
+                                          verbose=TRUE){
+
+  if(is.na(poly_shapefile_filename) | is.na(rainfall_records) | is.na(rainfall_locations)){
+    print("Information for spatial rainfall variability not available.")
+    print("Generating precip factors corresponding to no spatial variability (all field factors = 1).")
+
+    poly_tab = read.table(file.path(data_dir['time_indep_dir','loc'], poly_tab_filename),
+                          comment.char = "!", fill = T, header = T)
+    precip_factors = data.frame(SWBM_id = poly_tab$SWBM_id,
+                                  ppt_fact = 1)
+
+  } else {
+    # PLACEHOLDER: spatially relate fields to krigged precip data?
+    # Make different factor for each month?
+  }
+
+  return(precip_factors)
+
+}
+
+
+
+#-------------------------------------------------------------------------------------------------#
+
+#' Write SWBM Precipitation Factor File
+#'
+#' Writes the Soil Water Balance Model (SWBM) precipitation factor file (precip_factors.txt).
+#' Consists of one factor per land use polygon (i.e., field). Is used to multiply the
+#' daily precip value to implement spatial precipitation gradients.
+#'
+#' @param output_dir Directory to write file
+#' @param filename Precip factors filename
+#' @param precip_factors_df A two-column dataframe containing the SWBM polygon (field) ID; and the
+#' precip multiplication factor.
+#' @param verbose T/F write status info to console (default: TRUE)
+#'
+#' @return None
+#' @author Leland Scantlebury and Claire Kouba
+#' @export
+#'
+#' @examples
+write_swbm_precip_factor_file <- function(output_dir,
+                                          filename = "precip_factors.txt",
+                                          precip_factors_df,
+                                          verbose=TRUE){
+
+  if (verbose) {message(paste('Writing file: ', filename))}
+  write.table(precip_factors_df, file = file.path(output_dir, filename),
+              sep = " ", quote = FALSE, col.names = T, row.names = FALSE)
 
 }
 

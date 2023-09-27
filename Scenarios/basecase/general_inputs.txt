@@ -1,6 +1,6 @@
-2119  167  336  440  210  1.4 UCODE  ! num_fields, num_irr_wells, num_stress_periods, nrow, ncol, RD_Mult, UCODE/PEST
-Basecase  Basecase                   ! Basecase/MAR/ILR/MAR_ILR, Basecase/Flow_Lims
-11  31  AllYears                     ! alf_irr_stop_mo  alf_irr_stop_day early_alf_cutoff_scenario
-NoCurtail  11  15                    ! curtailment_scenario curtail_start_mo curtail_start_day
-basecase                             ! Basecase/Major_NatVeg
-irr_ditch.txt                        ! Irrigation Ditch Module Input File
+SVIHM  1991  2119  6  167  0  8  ! modelName, WYstart, npoly, nlandcover, nAgWells, nMuniWells, nSubws
+FALSE  TRUE  12  395  440  210  ! inflow_is_vol, daily_sw, nSFR_inflow_segs, nmonths, nrows, ncols
+1.4  UCODE  ! RD_Mult, UCODE/PEST
+TRUE  ! using_neighbor_irr_rule (do farmers look to neighbor behavior for irrigation onset [TRUE] or only own field's soil moisture [FALSE])
+irr_ditch.txt            ! Irrigation Ditch Module Input File
+basecase !scenario_id (used only in postprocessing)

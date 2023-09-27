@@ -13,7 +13,7 @@ write_SWBM_crop_coefficient_file(kc_df, output_dir, filename, verbose = TRUE)
 
 \item{output_dir}{directory to write the files to}
 
-\item{filename}{general input filename, instream_flow_available_ratio.txt by default}
+\item{filename}{input filename, instream_flow_available_ratio.txt by default}
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }

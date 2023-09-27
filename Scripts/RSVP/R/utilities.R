@@ -85,7 +85,7 @@ days_in_month_diff <- function(start, end) {
   end_day <- as.numeric(format(end, '%d'))
   # Get months, get difference between months
   model_months <- seq.Date(from = start, to = end, by = "month")
-  model_end_date_plus_one = as.Date(ceiling_date(end+30)) #as.Date(paste(end_year, end_month+1, end_day, sep = "-"))
+  model_end_date_plus_one = as.Date(ceiling_date(end+28)) #as.Date(paste(end_year, end_month+1, end_day, sep = "-"))
   model_months_plus_one = seq(from = start, to = model_end_date_plus_one, by = "month")
 
   return(as.numeric(diff(model_months_plus_one)))
@@ -211,19 +211,19 @@ subset.DateTwoSided <- function(df, start=NULL, end=NULL, date_col='Date', inclu
 #' @export
 #'
 #' @examples
-complete_monthly <- function(df, date_col='Date', start_date=NULL, end_date=NULL, drop_extra=T) {
+complete_ts <- function(df, date_col='Date', by="month", start_date=NULL, end_date=NULL, drop_extra=T) {
   if (drop_extra) {
     df <- subset.DateTwoSided(df, start = start_date, end = end_date,
                               date_col = date_col, include_end=T)
   }
   if (is.null(start_date)) { start_date <- min(df[,date_col])}
   if (is.null(end_date)) { end_date <- max(df[,date_col])}
-  all_mnths <- data.frame(Date = seq.Date(start_date, end_date, by="month"))
+  complete <- data.frame(Date = seq.Date(start_date, end_date, by=by))
   # Rename to date_col if necessary
   if (date_col != 'Date') {
-    names(all_mnths)[names(all_mnths) == 'Date'] <- date_col
+    names(complete)[names(complete) == 'Date'] <- date_col
   }
-  out <- merge(df, all_mnths, by=date_col, all=T)
+  out <- merge(df, complete, by=date_col, all=T)
   # Not really much of a time saver if you have to copy it over each time, eh?
   attr(out, 'mean') <- attr(df, 'mean')
   attr(out, 'sd') <- attr(df, 'sd')

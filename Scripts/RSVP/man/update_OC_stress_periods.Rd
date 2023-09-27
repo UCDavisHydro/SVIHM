@@ -9,6 +9,7 @@ update_OC_stress_periods(
   num_stress_periods,
   output_dir,
   filename = "SVIHM.oc",
+  monthly = T,
   verbose = TRUE
 )
 }
@@ -20,6 +21,8 @@ update_OC_stress_periods(
 \item{output_dir}{Directory to write OC file in}
 
 \item{filename}{character name of file to write (default: SVIHM.hob)}
+
+\item{monthly}{T/F Write print/save statements only at month ends (as opposed to at every time step, F)}
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }

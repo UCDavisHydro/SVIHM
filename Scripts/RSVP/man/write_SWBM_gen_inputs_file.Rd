@@ -5,27 +5,37 @@
 \title{Write SWBM General Inputs File}
 \usage{
 write_SWBM_gen_inputs_file(
-  num_stress_periods,
   output_dir,
+  num_stress_periods,
   filename = "general_inputs.txt",
-  recharge_scenario = "Basecase",
-  flow_scenario = "Basecase",
-  alf_irr_stop_mo = 8,
-  alf_irr_stop_day = 31,
-  early_cutoff_flag = "AllYears",
-  curtailment_scenario = "NoCurtail",
-  curtail_start_mo = 8,
-  curtail_start_day = 15,
-  landuse_scenario = "basecase",
+  modelName = "SVIHM",
+  WYstart = 1991,
+  npoly = 2119,
+  nlandcover = 6,
+  nAgWells = 167,
+  nMuniWells = 0,
+  nSubws = 8,
+  inflow_is_vol = FALSE,
+  daily_sw = TRUE,
+  nSFR_inflow_segs = 12,
+  nrows = 440,
+  ncols = 210,
+  RD_Mult = 1.4,
+  calib_software = "UCODE",
+  using_neighbor_irr_rule = TRUE,
+  scenario_id = "basecase",
+  irr_ditch_file = "irr_ditch.txt",
   verbose = TRUE
 )
 }
 \arguments{
-\item{num_stress_periods}{Number of model stress periods}
-
 \item{output_dir}{directory to write the files to}
 
+\item{num_stress_periods}{Number of model stress periods}
+
 \item{filename}{general input filename, general_inputs.txt by default}
+
+\item{verbose}{T/F write status info to console (default: TRUE)}
 
 \item{recharge_scenario}{character}
 
@@ -44,8 +54,6 @@ write_SWBM_gen_inputs_file(
 \item{curtail_start_day}{integer}
 
 \item{landuse_scenario}{character}
-
-\item{verbose}{T/F write status info to console (default: TRUE)}
 }
 \value{
 None

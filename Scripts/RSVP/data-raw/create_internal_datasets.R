@@ -50,5 +50,20 @@ stream_metadata <- data.frame(name=streams,
 
 #-------------------------------------------------------------------------------------------------#
 
+#-- Soil Water Balance Model Tables
+
+# Irrigation
+swbm_irrtype <- data.frame('Name'=c('Flood', 'Wheel Line', 'Center Pivot', 'No Source', 'Unknown'),
+                           'Code'=c(      1,            2,              3,         555,       999),
+                           row.names=1)
+# Land Use
+swbm_lutype <- data.frame('Name'=c('Alfalfa', 'Pasture', 'ET_NoIrr', 'NoET_NoIrr', 'Water'),
+                          'Code'=c(       25,         2,          3,            4,       6),
+                          row.names=1)
+
 #-- Add to internal data
-usethis::use_data(data_dir, stream_metadata, internal = T, overwrite = T)
+usethis::use_data(data_dir,
+                  stream_metadata,
+                  swbm_irrtype,
+                  swbm_lutype,
+                  internal = T, overwrite = T)
