@@ -10,6 +10,7 @@
 #'                     (optional, default: SVIHM/SVIHM_Input_Files/reference_data)
 #' @param na_fill string of NA filling behavior, 'average' for averages of the preceding and next-day-with-data values,
 #' pass a numeric value to fill NA with that value, or NA for no filling (default: 'average')
+#' @param use_corrected_fj T/F use local file to correct Fort Jones (FJ) precip data (NOAA API has missing values present in file)
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
 #' @return
@@ -21,6 +22,7 @@ get_daily_precip_table <- function(start_date,
                                    end_date,
                                    ref_data_dir=data_dir['ref_data_dir','loc'],
                                    na_fill='average',
+                                   use_corrected_fj=TRUE,
                                    verbose=TRUE) {
 
   # Use pre-created SVIHM stations dataset
@@ -29,6 +31,23 @@ get_daily_precip_table <- function(start_date,
   # Obtain precip data from NOAA API
   if (verbose) {message('Obtaining NOAA Precipitation Data')}
   noaa_prcp <- download_meteo_data(noaa_stations$id, start_date, end_date, datatypeid = "PRCP")
+
+  # Inject fort jones overwrite data (data missing from NOAA API, but present in NOAA PDFs)
+  if (use_corrected_fj) {
+    fj_corrected <- read.csv(file.path(data_dir['ref_data_dir','loc'], 'fj_precip_missingdata.csv'))
+    fj_corrected$Date <- as.Date(fj_corrected$Date, '%m/%d/%Y')
+    fj_corrected$precip_pdf_mm <- fj_corrected$precip_pdf_in * 25.4
+    fj_temp <- merge(noaa_prcp[noaa_prcp$id==noaa_stations[noaa_stations$name_short=='fj','id'],],
+                     fj_corrected, by.x='date', by.y='Date', all.x=T)
+    fj_temp[!is.na(fj_temp$precip_pdf_mm),'prcp'] <- fj_temp[!is.na(fj_temp$precip_pdf_mm), 'precip_pdf_mm']
+    # A little safety check
+    if (nrow(noaa_prcp[noaa_prcp$id==noaa_stations[noaa_stations$name_short=='fj','id'],]) == nrow(fj_temp)) {
+      message(paste('Correcting',length(fj_temp[!is.na(fj_temp$precip_pdf_mm),'prcp']),'values missing from FJ precip gauge data'))
+      noaa_prcp[noaa_prcp$id==noaa_stations[noaa_stations$name_short=='fj','id'],'prcp'] <- fj_temp$prcp
+    } else {
+      stop('Error adding corrected FJ precip data.')
+    }
+  }
 
   # Create station-to-station distance matrix
   #TODO This isn't being used, right?
@@ -95,6 +114,11 @@ get_daily_precip_table <- function(start_date,
       nan_index = nan_indices[i]
       days_with_data_indices = which(!is.nan(p_record$stitched))
       next_index_with_data = min(days_with_data_indices[days_with_data_indices > nan_index])
+      if (nan_index == nrow(p_record)) {
+        # If the last day is an NA... a little trick to average between previous and zero
+        next_index_with_data = nrow(p_record)
+        p_record$stitched[next_index_with_data] <- 0
+      }
       p_record$stitched[nan_index] = mean(c(p_record$stitched[nan_index - 1],
                                           p_record$stitched[next_index_with_data]))
     }

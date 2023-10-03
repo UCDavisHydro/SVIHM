@@ -9,6 +9,7 @@ get_daily_precip_table(
   end_date,
   ref_data_dir = data_dir["ref_data_dir", "loc"],
   na_fill = "average",
+  use_corrected_fj = TRUE,
   verbose = TRUE
 )
 }
@@ -22,6 +23,8 @@ get_daily_precip_table(
 
 \item{na_fill}{string of NA filling behavior, 'average' for averages of the preceding and next-day-with-data values,
 pass a numeric value to fill NA with that value, or NA for no filling (default: 'average')}
+
+\item{use_corrected_fj}{T/F use local file to correct Fort Jones (FJ) precip data (NOAA API has missing values present in file)}
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
