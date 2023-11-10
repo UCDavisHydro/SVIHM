@@ -38,7 +38,8 @@ num_stress_periods <- calc_num_stress_periods(model_start_date, model_end_date)
 num_days <- days_in_month_diff(model_start_date, model_end_date)  # current setup: days = time steps
 
 # Directory (Created in SVIHM_Input_Files/Updates)
-update_dir <- create_update_dir(end_date = model_end_date)
+update_dir <- create_update_dir(end_date = model_end_date + 1)  # +1 for start of next month, first day not simulated
+
 
 # Weather Data ------------------------------------------------------------------------------------
 
@@ -54,9 +55,14 @@ et <- build_daily_et_df(model_start_date, model_end_date)
 # save in update_dir, and use this workaround
 
 if(!exists("et")){
-  et <- build_daily_et_df(start_date = model_start_date, end_date = model_end_date,
-                          api_download = F, local_file = T, update_dir = update_dir)
-
+# Requests to CIMIS frequently fail, so the code is setup to try 25 times before giving up.
+  for (i in 1:25) {
+    message('CIMIS Attempt ',i,"/ 25")
+    et <- tryCatch(build_daily_et_df(model_start_date, model_end_date),
+                   error=function(cond) {return(NA)})
+    if (max(!is.na(et))) { break }
+    else if (i==25) { stop('Repeated CIMIS queries failed. Server may be down.')}
+  }
 }
 write_swbm_et_input_file(et_record = et, output_dir = update_dir, filename = 'ref_et.txt')
 
@@ -69,7 +75,7 @@ fjd_model <- download_fort_jones_flow(model_start_date,
                                     output_dir = update_dir,
                                     save_csv = TRUE)
 
-tribs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd_model)
+tribs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd_model, monthly = F, one_regression = F)
 # PLACEHOLDER:
 # Workaround, 4/19/2023, to maintain consistency with old model inputs through WY2018
 tribs_2018 = read.table(file = file.path(data_dir["ref_data_dir","loc"],"streamflow_input_through_wy2018.txt"), header = T)
@@ -84,6 +90,6 @@ tribs_regressed = write_trib_file_for_partitioning(gauges = tribs, output_dir = 
                            )
 
 write_streamflow_by_subws_input_file(tribs_df = tribs_regressed, #gauges = tribs,
-                                     output_dir = update_dir,
-                                     start_date=model_start_date, end_date=model_end_date)
+                                     output_dir = update_dir,filename = 'daily_streamflow_input.txt',
+                                     start_date=model_start_date, end_date=model_end_date, monthly = F)
 
