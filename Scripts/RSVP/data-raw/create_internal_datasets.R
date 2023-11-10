@@ -32,7 +32,7 @@ if (!all(dir.exists(data_dir$loc))) {
 #-- Create stream_metadata.R, an internal dataframe full of information about stream/creek data files
 
 streams = c('FJ','East_Fork','South_Fork','Sugar','Etna','French','Patterson','Kidder','Moffett','Mill','Shackleford')
-
+prms_seg = c(139, 22, 31, 37, 67, 53, 86, 93, 109, 132, 135)
 gauge_daily_mean_files <- c('USGS_11519500_WY_1942_2018.txt',  # Can (should) be replaced with latest version
                             'East_Fork_Scott_River_R_input.txt',
                             'South_Fork_Scott_River_R_input.txt',
@@ -46,7 +46,8 @@ gauge_daily_mean_files <- c('USGS_11519500_WY_1942_2018.txt',  # Can (should) be
                             'Shackleford_Creek_R_input.txt')
 
 stream_metadata <- data.frame(name=streams,
-                              daily_mean_file=gauge_daily_mean_files)
+                              daily_mean_file=gauge_daily_mean_files,
+                              PRMS_seg=prms_seg)
 
 #-------------------------------------------------------------------------------------------------#
 
