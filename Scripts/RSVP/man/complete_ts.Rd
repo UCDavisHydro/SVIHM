@@ -2,7 +2,7 @@
 % Please edit documentation in R/utilities.R
 \name{complete_ts}
 \alias{complete_ts}
-\title{Complete monthly time series by filling with NA values}
+\title{Complete time series by filling with NA values}
 \usage{
 complete_ts(
   df,
@@ -17,5 +17,5 @@ complete_ts(
 \item{drop_extra}{}
 }
 \description{
-Complete monthly time series by filling with NA values
+Complete time series by filling with NA values
 }

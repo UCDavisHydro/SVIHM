@@ -199,7 +199,7 @@ subset.DateTwoSided <- function(df, start=NULL, end=NULL, date_col='Date', inclu
 
 #-------------------------------------------------------------------------------------------------#
 
-#' Complete monthly time series by filling with NA values
+#' Complete time series by filling with NA values
 #'
 #' @param df
 #' @param date_col

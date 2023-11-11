@@ -1,9 +1,5 @@
 
 #-------------------------------------------------------------------------------------------------#
-#TODO Refactor so it simply calls two functions, one for pre and one for post, then combines and returns
-#TODO remove start/end, only use regression cutoff and (list?) of breaks
-#TODO use a list of means and sds (and mapply?) rather than the attributes (have to copy so many times)
-# Alternatively, introduce a merge.wAttr() function
 get_tributary_flows <- function(start_date=as.Date('1990-10-01'),
                                 end_date,
                                 fj_update = NULL,
@@ -185,6 +181,10 @@ read_gauge_daily_data <-  function(sf_reg_dir=data_dir['sf_reg_dir', 'loc']){
   # Loop over streams reading in pre-downloaded time series datasets
   daily_means_all = list()
   for (i in 1:nrow(stream_metadata)) {
+    if (is.na(stream_metadata[i,'daily_mean_file'])) {
+      message(paste('No obs data for stream:', stream_metadata[i,'name']))
+      next
+    }
     df <- read.table(file.path(sf_reg_dir, stream_metadata[i,'daily_mean_file']),
                                        header = T,
                                        stringsAsFactors = F,
@@ -198,7 +198,7 @@ read_gauge_daily_data <-  function(sf_reg_dir=data_dir['sf_reg_dir', 'loc']){
     daily_means_all[[i]] <- df
   }
 
-  names(daily_means_all) <- stream_metadata$name
+  names(daily_means_all) <- stream_metadata[!is.na(stream_metadata$daily_mean_file), 'name']
 
   return(daily_means_all)
 }
