@@ -10,7 +10,9 @@
   groups = NA,
   xlab = "Observed Values",
   ylab = "Simulated Values",
+  title = NA,
   pch = 1,
+  leg_cex = 1,
   col = NULL,
   log = F,
   zero_rep = 0.1
@@ -28,6 +30,8 @@
 \item{ylab}{Y-axis label (default 'Simulated Values')}
 
 \item{pch}{Plotting 'character', i.e., symbol to use. See \code{\link[base]{points}} (default 1)}
+
+\item{leg_cex}{Legend size parameter cex (default 1.0)}
 
 \item{col}{Colors for groups}
 

@@ -501,7 +501,8 @@ write_trib_file_for_partitioning <- function(gauges,
     # Subset by date
     out <- subset.DateTwoSided(x, start_date, end_date, include_end=T)
     # Convert to m3/day and rename
-    m3_col_name <- paste0(x$stream_name[[1]],'_Avg_Flow_m3day')  # Terrible legacy name
+    current_name <- names(gauges)[i]
+    m3_col_name <- paste0(current_name,'_Avg_Flow_m3day')  # Terrible legacy name
     if (monthly) {
       names(out)[names(out)=='Date'] <- 'Month'
       out[,m3_col_name] <- (out$pred_AF * 1233.48)/days_in_mon # AF/mon to m^3/day
@@ -601,7 +602,8 @@ write_streamflow_by_subws_input_file <- function(gauges=NA, tribs_df = NA, # fun
       # Subset by date
       out <- subset.DateTwoSided(x, start_date, end_date, include_end=T)
       # Convert to m3/day and rename
-      m3_col_name <- paste0(x$stream_name[[1]],'_Avg_Flow_m3day')  # Terrible legacy name
+      current_name <- names(gauges)[i]
+      m3_col_name <- paste0(current_name,'_Avg_Flow_m3day')  # Terrible legacy name
       if (monthly) {
         names(out)[names(out)=='Date'] <- 'Month'
         out[,m3_col_name] <- (out$pred_AF * 1233.48)/days_in_mon # AF/mon to m^3/day

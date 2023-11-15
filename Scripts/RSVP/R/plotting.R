@@ -577,6 +577,7 @@ plot.svihm_minimap <- function(xloc, yloc, map_xs, map_ys, map_x_offset, map_y_o
 #' @param xlab X-axis label (default 'Observed Values')
 #' @param ylab Y-axis label (default 'Simulated Values')
 #' @param pch Plotting 'character', i.e., symbol to use. See \code{\link[base]{points}} (default 1)
+#' @param leg_cex Legend size parameter cex (default 1.0)
 #' @param col Colors for groups
 #' @param log T/F whether to log transform axes
 #' @param zero_rep value to replace zeroes with (optional, only used with log=T)
@@ -598,9 +599,13 @@ plot.svihm_minimap <- function(xloc, yloc, map_xs, map_ys, map_x_offset, map_y_o
 #' groups <- rep('Group1',250)
 #' groups[obs*sim > 55] <- 'Group2'
 #' plot.scatterbox(obs, sim, groups = groups)
-plot.scatterbox <- function(obs, sim, groups=NA, xlab='Observed Values', ylab='Simulated Values', pch=1,
+plot.scatterbox <- function(obs, sim, groups=NA, xlab='Observed Values', ylab='Simulated Values',
+                            title=NA,
+                            pch=1,
+                            leg_cex=1.0,
                             col=NULL, log=F, zero_rep=1e-01) {
-  layout(matrix(c(2,5,1,3,4,4), 3, 2, byrow = TRUE), heights = c(1,5,0.5), widths = c(7,1.25))
+  #layout(matrix(c(2,5,1,3,4,4), 3, 2, byrow = TRUE), heights = c(1,5,0.5), widths = c(7,1.25))
+  layout(matrix(c(4,4,1,3,2,5), 3, 2, byrow = TRUE), heights = c(0.5,5,1), widths = c(7,1.25))
 
   if (is.null(col)) {
     col <- c('#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f',
@@ -663,20 +668,20 @@ plot.scatterbox <- function(obs, sim, groups=NA, xlab='Observed Values', ylab='S
   #-- Outline
   box()
 
-  # Plot 2 - Top boxplot (delta 18 O)
+  # Plot 2 - Bottom boxplot (Observed)
   par(mar=c(0.0, 4.3, 0.5, 0.0)) # bottom, left, top, right
 
   boxplot(obs ~ groups, pdat, col=col, horizontal = T, axes=F, xlab='', ylab='',
           ylim=plim[1:2], xaxs="i",yaxs="i", log=substr(log,1,1))
 
-  # Plot 3 - Side boxplot (delta 2H)
+  # Plot 3 - Side boxplot (Simulated)
   par(mar=c(4.0, 0.0, 0.0, 0.5)) # bottom, left, top, right
 
   boxplot(sim ~ groups, pdat, col=col, axes=F, xlab='', ylab='',
           ylim=plim[3:4], xaxs="i",yaxs="i", log=substr(log,2,2))
 
-  # Plot 4 - Legend
-  par(mar=c(0.0, 0.5, 0.0, 0.5)) # bottom, left, top, right
+  # Plot 4 - Legend & Title
+  par(mar=c(0.0, 0.5, 2.5, 0.5)) # bottom, left, top, right
   plot(c(0),c(1), type='n', axes=F, xlab='', ylab='')
   legend(x='center',
          bg=F,
@@ -686,7 +691,8 @@ plot.scatterbox <- function(obs, sim, groups=NA, xlab='Observed Values', ylab='S
          pch=c(NA, rep(pch, length(unique(groups)))),
          lty=c(2, rep(NA, length(unique(groups)))),
          bty='n',
-         cex=1.0)
+         cex=leg_cex)
+  if (!is.na(title)) { title(main=title)}
 
   # Plot 5 - Fakeout
   par(mar=c(0.0, 0.0, 0.5, 0.5)) # bottom, left, top, right

@@ -11,7 +11,7 @@ new or existing update directory
 }
 \description{
 For ModelUpdate.R to create/check if update directory exists. File formula is
-SVIHM_Input_Files/Updates/<current date>
+SVIHM_Input_Files/Updates/\link{current date}
 }
 \examples{
 create_update_dir()

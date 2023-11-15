@@ -448,7 +448,7 @@ mftime2date <- function(sp, ts, origin_date) {
 #' Create Update Directory
 #'
 #' For ModelUpdate.R to create/check if update directory exists. File formula is
-#' SVIHM_Input_Files/Updates/<current date>
+#' SVIHM_Input_Files/Updates/[current date]
 #'
 #' @return new or existing update directory
 #' @export
