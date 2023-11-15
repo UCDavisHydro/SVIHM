@@ -178,7 +178,6 @@ plot.precip.cumulative <- function(dates, ..., title=NULL, unit='mm', col=NULL){
 #' @param gridcolor color of major gridlines (optional, default 'white')
 #' @param gridcolor2 color of minor gridlines (only used for log plots) (optional, default 'grey93')
 #' @param las numeric in {0,1,2,3}; the style of axis labels. See \code{\link[base]{par}} (default 2)
-#' @param xlim_override overrides x axis limits with provided values (optional)
 #' @param ylim_min_diff overrides y axis limits with provided values (optional)
 #'
 #' @return Plot Setup
@@ -204,12 +203,8 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
   #-- Unlist dates if needed
   if (typeof(dates) == 'list') { dates <- do.call("c", dates) }
 
-  #-- Axis limits
-  if (is.null(xlim_override)) {
-    xlim <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates),'month'), interval)
-  } else {
-    xlim <- xlim_override
-  }
+  #-- xAxis breaks
+  xlim <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates),'year'), interval)
 
   #-- Handle log10 y
   if (log=='y') {
@@ -231,7 +226,7 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
        yaxt = 'n',
        xlab = NA,
        ylab = NA,
-       xlim = range(min(xlim),max(xlim)),
+       xlim = c(floor_date(min(dates), 'month'),ceiling_date(max(dates),'month')),
        ylim = ylim,
        log = log,
        pch  = NA)
@@ -247,6 +242,8 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
   axis(1,at=xlim, labels=NA, tck=1, col=gridcolor, las=2)
 
   if(tolower(interval) == 'year'){
+    xlim_mon <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates),'year'), 'month')
+    axis(1,at=xlim_mon, labels=FALSE, tck=1, col=gridcolor2, las=las, cex.axis=1)
     axis(1,at=xlim, labels=format(xlim, "%Y"), tck=1, col=gridcolor, las=las, cex.axis=1)
   } else if (tolower(interval) == 'month'){
     axis(1,at=xlim, labels=format(xlim, "%b-%Y"), tck=1, col=gridcolor, las=las, cex.axis=1)
@@ -506,14 +503,14 @@ plot.pre_post_compare <- function(dates, obs, sim, split_date, ylabel, log='',
 
   #-- Pre Plot TS
   par(mar=c(4,3,2,1))  #bottom, left, top, right
-  plot.ts_setup(pre_dates, pre_obs, pre_sim, xlabel='Date', ylabel=ylabel, log=log, ...)
+  plot.ts_setup(pre_dates, pre_obs, pre_sim, xlabel='Water Year Date', ylabel=ylabel, log=log, ...)
   lines(pre_dates, pre_obs, col='dodgerblue2')
   lines(pre_dates, pre_sim, col='black')
   title(main=pre_title)
 
   #-- Post Plot TS
   par(mar=c(4,3,2,1))  #bottom, left, top, right
-  plot.ts_setup(pst_dates, pst_obs, pst_sim, xlabel='Date', ylabel=ylabel, log=log, ...)
+  plot.ts_setup(pst_dates, pst_obs, pst_sim, xlabel='Water Year Date', ylabel=ylabel, log=log, ...)
   lines(pst_dates, pst_obs, col='dodgerblue2')
   lines(pst_dates, pst_sim, col='black')
   title(main=post_title)

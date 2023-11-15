@@ -41,8 +41,6 @@
 
 \item{las}{numeric in {0,1,2,3}; the style of axis labels. See \code{\link[base]{par}} (default 2)}
 
-\item{xlim_override}{overrides x axis limits with provided values (optional)}
-
 \item{ylim_min_diff}{overrides y axis limits with provided values (optional)}
 }
 \value{
