@@ -9,8 +9,6 @@ _*.*
 *.png
 *.jpg
 *.hds
-*.dat
-*_par*
 *unirandpar*
 *covrandpar*
 R_Files/Post-Processing/*.txt

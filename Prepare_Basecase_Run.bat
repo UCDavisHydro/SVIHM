@@ -19,13 +19,10 @@ xcopy SVIHM_Input_Files\time_independent_input_files\SFR_inflow_segments.txt Run
 xcopy SVIHM_Input_Files\time_independent_input_files\ag_well_summary.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\ag_well_list_by_polygon.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\muni_well_summary.txt Run\SWBM /Y /I
-xcopy SVIHM_Input_Files\time_independent_input_files\muni_well_list_by_polygon.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\print_daily.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\polygons_table.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\precip_factors.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\landcover_table.txt Run\SWBM /Y /I
-xcopy SVIHM_Input_Files\time_independent_input_files\MAR_depth.txt Run\SWBM /Y /I
-xcopy SVIHM_Input_Files\time_independent_input_files\curtailment_fractions.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\irr_ditch.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\SVIHM.* Run\MODFLOW /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\SVIHM_tabfiles.nam Run\MODFLOW\SVIHM.nam /Y /I
@@ -34,7 +31,6 @@ xcopy SVIHM_Input_Files\time_independent_input_files\SVIHM_*_template.txt Run\SW
 
 :: Copy files from scenario folder to run folder (in some cases, overwrite)
 xcopy Scenarios\%scen%\*.txt Run\SWBM /Y /I
-xcopy Scenarios\%scen%\*.zone Run\SWBM /Y /I
 xcopy Scenarios\%scen%\SVIHM.* Run\MODFLOW /Y /I
 
 :: Copy in generic run batch file
