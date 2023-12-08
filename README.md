@@ -25,6 +25,8 @@ Updating and visualizing the model requires [R](https://cran.r-project.org/) and
 3. `03_UpdateVisualization.R` visualizes the newly downloaded data *under construction*
 4. `04_ModelOutputVisualization.R` creates a large number of graphs showcasing the model fitness and results
 
+While RSVP can be used as an R Package, it is more advisable to open it as a *project* in RStudio. Instructions for working with projects in RStudio are given [here](https://support.posit.co/hc/en-us/articles/200526207-Using-RStudio-Projects).
+
 ## Updating the Model
 The update script is located in `SVIHM\Scripts\RSVP\01_InputDataUpdate.R`. As it mentioned in the "Settings" section of the script, special access codes from [NOAA](https://www.ncdc.noaa.gov/cdo-web/webservices/v2) and [CIMIS](https://cimis.water.ca.gov/) are required to access their online data. These codes are accessed in the script currently by reading the files named `_noaa_cdo_token.txt` and `_CIMIS_API_key.txt`. They are included in the repository since they are intended to be unique to the user (to prevent overuse). The easiest path for a new user is to simply create these files within the `SVIHM\Scripts\RSVP` directory. The text file should have nothing in it except the token.
 
