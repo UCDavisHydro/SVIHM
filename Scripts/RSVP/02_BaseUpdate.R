@@ -59,7 +59,7 @@ fjd$Date <- as.Date(fjd$Date)
 
 
 sfr_subws_flow_partitioning <- gen_sfr_flow_partition(model_start_date, model_end_date, update_dir, monthly=F,
-                                                              streamflow_records_file="daily_streamflow_records_regressed.txt")
+                                                              streamflow_records_file="streamflow_records_regressed.txt")
 subws_inflow_filename = file.path(update_dir,"daily_streamflow_input.txt")
 subws_irr_inflows <- process_sfr_inflows(model_start_date, model_end_date,
                                          stream_inflow_filename = subws_inflow_filename,
