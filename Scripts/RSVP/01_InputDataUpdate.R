@@ -74,6 +74,13 @@ fjd_model <- download_fort_jones_flow(model_start_date,
                                     model_end_date,
                                     output_dir = update_dir,
                                     save_csv = TRUE)
+# Temporary fix -----------
+# For some reason, 2024-03-01 is missing *daily* flow as of 2024-04-03. Replacing with a value calculated from hourly.
+# Revist during next update... may need a more robust solution for NAs
+fjd_model <- complete_ts(fjd_model, by='day', keep_col_order = T)
+fjd_model[fjd_model$Date==as.Date('2024-03-01'),]$Flow <- 910.0
+write.csv(fjd_model, list.files(update_dir, pattern = 'FJ (USGS 11519500)*'), row.names = FALSE)
+# End temporary fix -------
 
 tribs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd_model, monthly = F, one_regression = F)
 

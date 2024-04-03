@@ -10,11 +10,12 @@ complete_ts(
   by = "month",
   start_date = NULL,
   end_date = NULL,
-  drop_extra = T
+  drop_extra = T,
+  keep_col_order = F
 )
 }
 \arguments{
-\item{drop_extra}{}
+\item{keep_col_order}{}
 }
 \description{
 Complete time series by filling with NA values

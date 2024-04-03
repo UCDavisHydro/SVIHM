@@ -206,12 +206,14 @@ subset.DateTwoSided <- function(df, start=NULL, end=NULL, date_col='Date', inclu
 #' @param start_date
 #' @param end_date
 #' @param drop_extra
+#' @param keep_col_order
 #'
 #' @return
 #' @export
 #'
 #' @examples
-complete_ts <- function(df, date_col='Date', by="month", start_date=NULL, end_date=NULL, drop_extra=T) {
+complete_ts <- function(df, date_col='Date', by="month", start_date=NULL, end_date=NULL, drop_extra=T, keep_col_order=F) {
+  col_order <- names(df)
   if (drop_extra) {
     df <- subset.DateTwoSided(df, start = start_date, end = end_date,
                               date_col = date_col, include_end=T)
@@ -227,6 +229,7 @@ complete_ts <- function(df, date_col='Date', by="month", start_date=NULL, end_da
   # Not really much of a time saver if you have to copy it over each time, eh?
   attr(out, 'mean') <- attr(df, 'mean')
   attr(out, 'sd') <- attr(df, 'sd')
+  if (keep_col_order) {out <- out[,col_order]}
   return(out)
 }
 
