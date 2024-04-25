@@ -40,6 +40,7 @@ create_sp_charts = FALSE  # Many SPs, very slow
 # mf5_dir = s5_dir
 
 
+
 # # Plot 2: 2022 what-if curtailment scenarios
 # s1 = "basecase_2023.06.05"
 # s1_dir <- file.path('../../Scenarios',s1)
@@ -61,25 +62,36 @@ create_sp_charts = FALSE  # Many SPs, very slow
 # swbm4_dir = file.path(s4_dir, 'SWBM')
 # mf4_dir <- file.path(s4_dir, 'MODFLOW')
 
-### Plot 3: 2023 curtailment forecasts
-s1 = "basecase_2023.06.05_curtail_00_pct_2023"
+
+# ### Plot 3: 2023 curtailment forecasts
+# s1 = "basecase_2023.06.05_curtail_00_pct_2023"
+# s1_dir <- file.path('../../Scenarios', s1)
+# swbm1_dir = file.path(s1_dir, 'SWBM')
+# mf1_dir <- file.path(s1_dir, 'MODFLOW')
+# s2 = "basecase_2023.06.05_curtail_10_pct_2023"
+# s2_dir <- file.path('../../Scenarios',s2)
+# swbm2_dir = file.path(s2_dir, 'SWBM')
+# mf2_dir <- file.path(s2_dir, 'MODFLOW')
+# # more scenarios?
+# s3 = "basecase_2023.06.05_curtail_30_pct_2023"
+# s3_dir <- file.path('../../Scenarios',s3)
+# swbm3_dir = file.path(s3_dir, 'SWBM')
+# mf3_dir <- file.path(s3_dir, 'MODFLOW')
+# s4 = "basecase_2023.06.05_curtail_50_pct_2023"
+# s4_dir <- file.path('../../Scenarios',s4)
+# swbm4_dir = file.path(s4_dir, 'SWBM')
+# mf4_dir <- file.path(s4_dir, 'MODFLOW')
+
+
+### Plot 4: Flow difference maps for 2024 MAR applications
+s1 = "basecase_noMAR_thru_2024.03.31"
 s1_dir <- file.path('../../Scenarios', s1)
 swbm1_dir = file.path(s1_dir, 'SWBM')
 mf1_dir <- file.path(s1_dir, 'MODFLOW')
-s2 = "basecase_2023.06.05_curtail_10_pct_2023"
+s2 = "basecase_thru_2024.03.31"
 s2_dir <- file.path('../../Scenarios',s2)
 swbm2_dir = file.path(s2_dir, 'SWBM')
 mf2_dir <- file.path(s2_dir, 'MODFLOW')
-# more scenarios?
-s3 = "basecase_2023.06.05_curtail_30_pct_2023"
-s3_dir <- file.path('../../Scenarios',s3)
-swbm3_dir = file.path(s3_dir, 'SWBM')
-mf3_dir <- file.path(s3_dir, 'MODFLOW')
-s4 = "basecase_2023.06.05_curtail_50_pct_2023"
-s4_dir <- file.path('../../Scenarios',s4)
-swbm4_dir = file.path(s4_dir, 'SWBM')
-mf4_dir <- file.path(s4_dir, 'MODFLOW')
-
 
 
 
@@ -88,8 +100,8 @@ update_dir <- latest_dir(data_dir['update_dir','loc'])  #file.path('../../SVIHM_
 plot_data_dir = file.path('../../SVIHM_Input_Files/reference_data_for_plots/')
 
 
-# plots1_dir <- file.path(s1_dir, 'Plots')
-# plots2_dir <- file.path(s2_dir, 'Plots')
+plots1_dir <- file.path(s1_dir, 'Plots')
+plots2_dir <- file.path(s2_dir, 'Plots')
 #plots3_dir <- file.path(s3_dir, "Plots")
 #plots4_dir <- file.path(s4_dir, "Plots")
 out_dir = file.path('../../Scenarios', "_Comparison_Plots")
@@ -215,6 +227,11 @@ save_sfr_array = function(scen_dir){
     # saveRDS(object=reach_array,file=file.path(plot_data_dir,"sfr_reach_array.Rdata"))
     saveRDS(object=reach_array,file=file.path(plots_dir,"sfr_reach_array.rds"))
   }
+}
+
+# if it's daily sfr data:
+aggregate_daily_sfr_array_to_monthly = function(sfr_array){
+  # assumes SFR array
 }
 
 # Read in reach arrays
