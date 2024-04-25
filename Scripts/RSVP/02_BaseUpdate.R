@@ -17,14 +17,15 @@ current_scenario = "basecase" # default is "basecase". Affects a variety of inpu
 
 # Current coded-up scenario names:
 # "basecase"
+# "basecase_noMAR"
 # "curtail_00_pct_all_years"
 # "curtail_10_pct_2022"
 # "curtail_30_pct_2022"
 # "curtail_50_pct_2022"
-forecast_2023_curtail = c("basecase_2023.06.05_curtail_00_pct_2023",
-                          "basecase_2023.06.05_curtail_10_pct_2023",
-                          "basecase_2023.06.05_curtail_30_pct_2023",
-                          "basecase_2023.06.05_curtail_50_pct_2023")
+# forecast_2023_curtail = c("basecase_2023.06.05_curtail_00_pct_2023",
+#                           "basecase_2023.06.05_curtail_10_pct_2023",
+#                           "basecase_2023.06.05_curtail_30_pct_2023",
+#                           "basecase_2023.06.05_curtail_50_pct_2023")
 
 # ------------------------------------------------------------------------------------------------#
 
@@ -34,7 +35,7 @@ model_start_date <- get_model_start(start_year)
 model_end_date <- as.Date(basename(update_dir))-1
 
 # For June 2023 attempts at forecasting the impact of 2023 curtailment:
-if(current_scenario %in% forecast_2023_curtail){model_end_date <- as.Date('2023-12-31')}
+# if(current_scenario %in% forecast_2023_curtail){model_end_date <- as.Date('2023-12-31')}
 # for running the curtailment writing function and generating modflow inputs.
 # For non-curtailment SWBM functions, use standard model end date (i.e. 2023-05-31)
 # and hand-stitch on the 2019 data for the remainder of 2023.
