@@ -84,11 +84,11 @@ create_sp_charts = FALSE  # Many SPs, very slow
 
 
 ### Plot 4: Flow difference maps for 2024 MAR applications
-s1 = "basecase_noMAR_thru_2024.03.31"
+s1 = "basecase_thru_2024.03.31"
 s1_dir <- file.path('../../Scenarios', s1)
 swbm1_dir = file.path(s1_dir, 'SWBM')
 mf1_dir <- file.path(s1_dir, 'MODFLOW')
-s2 = "basecase_thru_2024.03.31"
+s2 = "basecase_noMAR_thru_2024.03.31"
 s2_dir <- file.path('../../Scenarios',s2)
 swbm2_dir = file.path(s2_dir, 'SWBM')
 mf2_dir <- file.path(s2_dir, 'MODFLOW')
@@ -202,9 +202,13 @@ save_sfr_array = function(scen_dir){
   plots_dir <- file.path(scen_dir, 'Plots')
   mf_dir_i <- file.path(scen_dir, 'MODFLOW')
 
-
+  print(paste("Reading lines of Streamflow_Global.dat", Sys.time() ))
   sfr_glob_text = readLines(file.path(mf_dir_i, "Streamflow_Global.dat"))
+  print(paste("Done reading lines of Streamflow_Global.dat", Sys.time() ))
+
+  print(paste("Find line numbers of start rows", Sys.time() ))
   start_rows = grep("STREAM LISTING", sfr_glob_text) + 5 #one start for each stress period
+  print(paste("Done finding line numbers of start rows", Sys.time() ))
   n_reach = start_rows[2]-start_rows[1]-8  # 8 extra header rows at each timestep
 
   colname_list = c("LAYER", "ROW","COL", "STREAM_SEG_NO", "RCH_NO", "FLOW_INTO_STRM_RCH",
@@ -215,9 +219,13 @@ save_sfr_array = function(scen_dir){
   # Initialize array
   reach_array = array(data=NA, dim = c(length(start_rows), n_reach, 16))
   # Process SFR values into an array of row, column, and stress period
+  print("processing stress periods (days)")
   for(i in 1:length(start_rows)){
     start_row = start_rows[i];
     sfr_stress = sfr_glob_text[start_row:(start_row+n_reach-1)]
+    if(i>1){print(paste(i, "of", length(start_rows),"days", Sys.time(), "(",round(Sys.time()-sys_time_last),"sec since last)"))}
+    sys_time_last = Sys.time()
+
     for(j in 1:n_reach){
       sfr_reach = unlist(strsplit(trimws(sfr_stress[j]), " ")) #split on space character
       sfr_reach = sfr_reach[nchar(sfr_reach)>0] #this produces a lot of blank strings; get rid of those
@@ -225,8 +233,10 @@ save_sfr_array = function(scen_dir){
     }
     # Save giant reach file as .Rdata
     # saveRDS(object=reach_array,file=file.path(plot_data_dir,"sfr_reach_array.Rdata"))
-    saveRDS(object=reach_array,file=file.path(plots_dir,"sfr_reach_array.rds"))
   }
+
+  saveRDS(object=reach_array,file=file.path(plots_dir,"sfr_reach_array.rds"))
+
 }
 
 # if it's daily sfr data:
@@ -242,17 +252,17 @@ if(!file.exists(file.path(plots1_dir, "sfr_reach_array.RDS"))){
 if(!file.exists(file.path(plots2_dir, "sfr_reach_array.RDS"))){
   save_sfr_array(scen_dir = s2_dir)
 }
-if(!file.exists(file.path(plots3_dir, "sfr_reach_array.RDS"))){
-  save_sfr_array(scen_dir = s3_dir)
-}
-if(!file.exists(file.path(plots4_dir, "sfr_reach_array.RDS"))){
-  save_sfr_array(scen_dir = s4_dir)
-}
+# if(!file.exists(file.path(plots3_dir, "sfr_reach_array.RDS"))){
+#   save_sfr_array(scen_dir = s3_dir)
+# }
+# if(!file.exists(file.path(plots4_dir, "sfr_reach_array.RDS"))){
+#   save_sfr_array(scen_dir = s4_dir)
+# }
 
 reach_array1 = readRDS(file.path(s1_dir,"Plots","sfr_reach_array.RDS"))
 reach_array2 = readRDS(file.path(s2_dir,"Plots","sfr_reach_array.RDS"))
-reach_array3 = readRDS(file.path(s3_dir,"Plots","sfr_reach_array.RDS"))
-reach_array4 = readRDS(file.path(s4_dir,"Plots","sfr_reach_array.RDS"))
+# reach_array3 = readRDS(file.path(s3_dir,"Plots","sfr_reach_array.RDS"))
+# reach_array4 = readRDS(file.path(s4_dir,"Plots","sfr_reach_array.RDS"))
 
 
 
