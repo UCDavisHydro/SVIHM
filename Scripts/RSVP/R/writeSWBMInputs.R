@@ -693,6 +693,7 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
 #' @param scenario_name Name of  management scenario. Default is historical basecase or "basecase".
 #'
 #' @return none, saves MAR_volumes.txt
+#' @import sf
 #' @export
 #'
 #' @examples
@@ -742,7 +743,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
     # read in spatial file of recharge areas
     mar_fields24 = st_read(dsn = file.path(data_dir["ref_data_dir","loc"]),
                            layer = "MAR_Fields_2024")
-    mar_fields24=st_transform(mar_fields24, crs=st_crs(svihm_fields))
+    mar_fields24=st_transform(mar_fields24, crs=sf::st_crs(svihm_fields))
     # read in and process MAR diversion volumes
     mar_div = read.csv(file=file.path(data_dir["ref_data_dir","loc"],
                                       "MAR 2024 season_ditch flows m3day.csv") )
@@ -769,7 +770,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
     # recharge area for each field (rchA_i)
 
     # calculate area and total recharge area
-    mar_fields24$area_m3 = st_area(mar_fields24)
+    mar_fields24$area_m3 = sf::st_area(mar_fields24)
     rchA_all = sum(mar_fields24$area_m3)# total area of recharge fields
     # total recharge volume applied to each field i (rchMth_i)
     # 1) calculate:
@@ -795,9 +796,9 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
       # plot(mar_field$geometry, add=T, col=rgb(1,0,0,.5))
       for (j in 1:length(svihm_intercepts)){
         sv_field = svihm_intercepts[j,]
-        sfA_j = st_area(sv_field)
-        field_intersec = st_intersection(x=mar_field, y = sv_field)
-        intA_j = st_area(field_intersec)
+        sfA_j = sf::st_area(sv_field)
+        field_intersec = sf::st_intersection(x=mar_field, y = sv_field)
+        intA_j = sf::st_area(field_intersec)
         # plot(mar_field)
         for(k in 1:nrow(div_monthly)){
           divMnth = div_monthly$m3_diverted[k]
@@ -836,7 +837,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
 #' Write file specifying Managed Aquifer Recharge (applied irrigation) volumes for each field, for each stress period
 #'
 #' @param scenario_name Name of  management scenario. Default is historical basecase or "basecase".
-#'
+#' @import sf
 #' @return none, saves MAR_volumes.txt
 #' @export
 #'
@@ -850,8 +851,6 @@ write_SWBM_curtailment_file <- function(scenario_id = "basecase",
                                         exclude_terrible_and_major_overflow_polygons = F,
                                         curtail_100_pct_non_lcs_fields = T # for 2022 and 2023 curtail scenarios
                                         ) {
-  library(plyr) # for "count" function
-  library(sf)
   m2_to_acres = 1/4046.856
 
   recognized_scenarios = c("basecase",
@@ -902,7 +901,7 @@ write_SWBM_curtailment_file <- function(scenario_id = "basecase",
 
     ### Process spatial data associated with curtailment applications from 2022
     # Read LCS land cover files (fields from Landuse and APNs from Plans shapefile)
-    lcs_fields_all = read_sf(dsn = file.path(ref_dir,
+    lcs_fields_all = sf::read_sf(dsn = file.path(ref_dir,
                                              "Landuse_LCS2022 app matching_2023.05.16.shp"))
 
     # plot(lcs_fields$geometry, col = lcs_fields$LCS_APP)
@@ -951,9 +950,9 @@ write_SWBM_curtailment_file <- function(scenario_id = "basecase",
 
     # Process APNs
     # For apps with no visual maps, gotta use the APN data
-    lcs_apns_all = read_sf(dsn = file.path(data_dir["ref_data_dir","loc"],
+    lcs_apns_all = sf::read_sf(dsn = file.path(data_dir["ref_data_dir","loc"],
                                            "LCS 2022 Plans_App matching_2023.05.shp"))
-    lcs_apns_all = st_transform(x = lcs_apns_all, crs = st_crs(lcs_fields_all))
+    lcs_apns_all = sf::st_transform(x = lcs_apns_all, crs = sf::st_crs(lcs_fields_all))
     lcs_apns = lcs_apns_all[lcs_apns_all$NoMap!=0,]
     nomap_apps = lcs_apns$NoMap
     # remove "2045" and add "20" and "45"
@@ -970,7 +969,7 @@ write_SWBM_curtailment_file <- function(scenario_id = "basecase",
       if(i_app == 20 | i_app == 45){i_app=2045}
 
       apn_footprint = lcs_apns[lcs_apns$NoMap==i_app,]
-      apn_acres = as.numeric(st_area(apn_footprint))*m2_to_acres
+      apn_acres = as.numeric(sf::st_area(apn_footprint))*m2_to_acres
       # Find fields overlapping with apn footprint
       lu_poly_overlap = lcs_fields_all[apn_footprint,]
       lu_poly_overlap$fraction_overlap_apn = NA
@@ -978,8 +977,8 @@ write_SWBM_curtailment_file <- function(scenario_id = "basecase",
       # calculate % of area of each field that overlaps with APN footprint
       for(j in 1:nrow(lu_poly_overlap)){
         field_j = lu_poly_overlap[j,]
-        field_apn_intersect = st_intersection(x = field_j, y = apn_footprint)
-        field_area_overlap_fraction = as.numeric(st_area(field_apn_intersect) / st_area(field_j))
+        field_apn_intersect = sf::st_intersection(x = field_j, y = apn_footprint)
+        field_area_overlap_fraction = as.numeric(sf::st_area(field_apn_intersect) / sf::st_area(field_j))
         lu_poly_overlap$fraction_overlap_apn[j] = field_area_overlap_fraction
       }
 
@@ -1026,7 +1025,7 @@ write_SWBM_curtailment_file <- function(scenario_id = "basecase",
       acres_reported = lcs_info$Acres[i_app]
       if(i_app == 20 | i_app == 45){i_app_temp = 2045} else { i_app_temp = i_app}
       app_fields = lcs_fields[lcs_fields$LCS_APP==i_app_temp,]
-      acres_gis = sum(as.numeric(st_area(app_fields))*m2_to_acres)
+      acres_gis = sum(as.numeric(sf::st_area(app_fields))*m2_to_acres)
       # print(paste("App",i_app, ":", round(acres_reported), "rep. acres;",round(acres_gis), "GIS acres"))
       lcs_info$acres_reported_to_gis_ratio[i_app] = acres_reported/acres_gis
 
@@ -1064,7 +1063,7 @@ write_SWBM_curtailment_file <- function(scenario_id = "basecase",
     # to get a value to apply to each field within the Landuse fields footprint (minus unirrigated fields)
 
     # This should be the same spatial data as lcs_fields_all but why not bring in the fresh dataset
-    svihm_fields = read_sf(dsn = file.path(data_dir["ref_data_dir","loc"],"Landuse_20190219.shp"))
+    svihm_fields = sf::read_sf(dsn = file.path(data_dir["ref_data_dir","loc"],"Landuse_20190219.shp"))
 
     # Initialize tab to store area weighted info for each field
     summary_tab_22 = data.frame(swbm_id = sort(svihm_fields$Polynmbr))
