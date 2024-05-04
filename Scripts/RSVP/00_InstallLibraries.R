@@ -14,8 +14,8 @@ list.of.packages <- c('RColorBrewer',
                       'cimir',
                       'Matrix',
                       'dplyr',
-                      'rnoaa',
-                      'remotes')
+                      'remotes',
+                      'devtools')
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 
@@ -28,4 +28,6 @@ if(length(new.packages)) install.packages(new.packages)
 # GitHub Install ----------------------------------------------------------
 
 #-- May prompt asking to install various packages
-remotes::install_github("rogiersbart/RMODFLOW")
+#remotes::install_github("rogiersbart/RMODFLOW")
+devtools::install_github("ropensci/rnoaa")
+devtools::install_github("cneyens/RMODFLOW@develop")
