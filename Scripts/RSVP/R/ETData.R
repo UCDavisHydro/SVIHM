@@ -114,12 +114,14 @@ build_daily_et_df <- function(start_date,
     #LS et225$month1 = lubridate::floor_date(et225$Date, unit = "month")
     #LS et225_monthly = aggregate(et225$Value, by = list(et225$month1), FUN = sum, na.rm=T)
     #LS colnames(et225_monthly) = c("Date", "ETo_mm")
+
   }
   if(api_download == FALSE & local_file == TRUE){
     et225=read.csv(file.path(update_dir, local_et_filename))
     if(!is.element(el = "ETo_mm", set = colnames(et225))){
       colnames(et225)[grepl(pattern = "ETo", x = colnames(et225)) &
                         grepl(pattern = "mm", x = colnames(et225))] = "ETo_mm"
+
     }
     et225$Date = as.Date(et225$Date, format = "%m/%d/%Y")
   }

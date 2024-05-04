@@ -701,7 +701,7 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
 #'
 write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
                                       output_dir, start_date, end_date) {
-  recognized_scenarios = c("basecase")
+  recognized_scenarios = c("basecase", "basecase_noMAR")
   output_filename = "MAR_depth.txt"
 
   # pull reference land cover
@@ -722,8 +722,99 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
   field_column_selector = grepl(pattern = "ID", x = colnames(field_df))
   field_df[,field_column_selector] = 0
 
-  if(tolower(scenario_id) == "basecase"){
+  if(tolower(scenario_id) == "basecase_noMAR"){
     mar_depth_output = field_df
+  }
+
+  if(tolower(scenario_id) == "basecase"){
+    # Initialize output file
+    mar_depth_output = field_df
+    # 1) TO DO: add in observed MAR for winter 2023
+
+    # MAR 2024 ----------------------------------------------------------------
+
+    # 1) Read in data
+
+    # Read in fields spatial file for spatial relation
+    svihm_fields = st_read(dsn = file.path(data_dir["ref_data_dir","loc"]),
+                           layer = "Landuse_20190219_updated2023")
+    svihm_fields$MAR_distrib_mult = 0     # column for MAR distribution multiplier
+    # read in spatial file of recharge areas
+    mar_fields24 = st_read(dsn = file.path(data_dir["ref_data_dir","loc"]),
+                           layer = "MAR_Fields_2024")
+    mar_fields24=st_transform(mar_fields24, crs=st_crs(svihm_fields))
+    # read in and process MAR diversion volumes
+    mar_div = read.csv(file=file.path(data_dir["ref_data_dir","loc"],
+                                      "MAR 2024 season_ditch flows m3day.csv") )
+    mar_div$Date=as.Date(mar_div$Date)
+    # aggregate to monthly
+    div_monthly = aggregate(x = mar_div$POD_m3,
+                            by=list(floor_date(x=mar_div$Date, "month")),
+                            FUN=sum )
+    colnames(div_monthly) = c("Month","m3_diverted")
+    # make table of stress periods for assigning water volumes to MAR output tab
+    months = seq.Date(from = as.Date("1990-10-01"),
+                      to = floor_date(Sys.Date(), unit="month"),
+                      by="month")
+    sp_tab = data.frame(Month = months, stress_period = 1:length(months))
+    # Assign stress periods to table of MAR diversions
+    div_monthly$stress_period = sp_tab$stress_period[match(div_monthly$Month,sp_tab$Month)]
+
+    # 2) Relate MAR fields to SVIHM fields
+
+    # Spatial relations to distribute water diverted for recharge
+    # monthly diversion volume (divMth)
+    # total area of recharge fields (rchA_all)
+    # for each MAR field i, need a column for:
+    # recharge area for each field (rchA_i)
+
+    # calculate area and total recharge area
+    mar_fields24$area_m3 = st_area(mar_fields24)
+    rchA_all = sum(mar_fields24$area_m3)# total area of recharge fields
+    # total recharge volume applied to each field i (rchMth_i)
+    # 1) calculate:
+    # rchMth_i = divMnth * (rchA_i / rchA_all)
+    # NOTE that rchMth_i will change and eventually be a time series for each field
+    # Then, for each intercepted SVIHM field j, need a column for:
+    # SVIHM field area (sfA_j)
+    # intercept area (intA_j)
+    # Total monthly volume applied to each intercepted field (rchMth_j)
+    # 2) calculate:
+    # rchMth_j = rchMth_i * (intA_j / rchA_i)
+    # 3) Convert to MAR depth for full intercepted field
+    # rchMth_j_depth = rchMth_j / sfA_j
+    # 4)  Populate output table with rchMth_j_depth for each field by month
+
+    for(i in 1:length(mar_fields24)){
+      mar_field = mar_fields24[i,]
+      rchA_i = mar_field$area_m3
+      svihm_intercepts = svihm_fields[mar_field,]
+      # wigglies = c(714, 1015) # keep out some long snaking ones
+      # svihm_intercepts=svihm_intercepts[svihm_intercepts$Poly_nmbr %in% wigglies,]
+      # plot(svihm_intercepts$geometry, col = "lightblue")
+      # plot(mar_field$geometry, add=T, col=rgb(1,0,0,.5))
+      for (j in 1:length(svihm_intercepts)){
+        sv_field = svihm_intercepts[j,]
+        sfA_j = st_area(sv_field)
+        field_intersec = st_intersection(x=mar_field, y = sv_field)
+        intA_j = st_area(field_intersec)
+        # plot(mar_field)
+        for(k in 1:nrow(div_monthly)){
+          divMnth = div_monthly$m3_diverted[k]
+          rchMth_i = divMnth * rchA_i / rchA_all # later this calc may be read from a table instead
+          rchMth_j = rchMth_i * (intA_j / rchA_i)
+          rchMth_j_depth = rchMth_j / sfA_j
+          # assign output
+          row_picker = mar_depth_output$Stress_Period==div_monthly$Month[k]
+          out_fields = gsub(x = colnames(mar_depth_output[,-1]),
+                            pattern = "ID_", replacement = "")
+          col_picker = which(sv_field$Poly_nmbr == out_fields) + 1
+          mar_depth_output[row_picker,col_picker] = rchMth_j_depth
+        }
+      }
+
+    }
+
   }
   # if(tolower(scenario_id=="natveg")){} # Placeholder :
   # Replace default with new MAR vol file, and update recognized_scenarios
