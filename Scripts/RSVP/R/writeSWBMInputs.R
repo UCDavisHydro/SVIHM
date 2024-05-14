@@ -746,8 +746,12 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
     mar_fields24=st_transform(mar_fields24, crs=sf::st_crs(svihm_fields))
     # read in and process MAR diversion volumes
     mar_div = read.csv(file=file.path(data_dir["ref_data_dir","loc"],
-                                      "MAR 2024 season_ditch flows m3day.csv") )
-    mar_div$Date=as.Date(mar_div$Date)
+                                      "MAR 2024 season_ditch flows m3_5mins.csv"))
+                                       # "MAR 2024 season_ditch flows m3day.csv") )
+    mar_div$TIMESTAMP = strptime(mar_div$TIMESTAMP, format = "%m/%d/%Y %R")
+    mar_div$Date = as.Date(mar_div$TIMESTAMP)
+    mar_div = mar_div[mar_div$Date<as.Date("2024-04-01"),]
+    # clean and aggregate
     # aggregate to monthly
     div_monthly = aggregate(x = mar_div$POD_m3,
                             by=list(floor_date(x=mar_div$Date, "month")),

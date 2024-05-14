@@ -13,12 +13,15 @@ library(colorspace)
 #-------------------------------------------------------------------------------------------------#
 # Settings ----------------------------------------------------------------
 
+
 origin_date <- as.Date('1990-09-30')
 
 create_sp_charts = FALSE  # Many SPs, very slow
 
 # Directories
 run_dir <- file.path('../../Run/')
+# run_dir = file.path("../../Scenarios/basecase_thru_2024.03.31")
+# run_dir = file.path("../../Scenarios/basecase_noMAR_thru_2024.03.31")
 swbm_dir = file.path(run_dir, 'SWBM')
 mf_dir <- file.path(run_dir, 'MODFLOW')
 
@@ -36,7 +39,7 @@ if (!dir.exists(out_dir)) {
 gen_inputs = strsplit(readLines(file.path(swbm_dir, "general_inputs.txt")), "  ")
 wy_start = as.numeric(gen_inputs[[1]][2])
 start_date = as.Date(paste0(wy_start-1,"-10-01"))
-n_stress = as.numeric(gen_inputs[[2]][3])
+n_stress = as.numeric(gen_inputs[[2]][4])
 
 # Output controls
 WRITE_SW_BUDGET = T # saves soil water budget tables as .csvs
@@ -397,7 +400,7 @@ names(SWBM_Monthly_m3) = c('Month',SWBM_Terms)
 SWBM_Monthly_m3$Month = seq.Date(from = origin_date+1, by = "month", length.out = n_stress)
 
 if(WRITE_SW_BUDGET == TRUE){write.csv(x = SWBM_Monthly_m3, file = file.path(out_dir, "SWBM Monthly Budget.csv"), row.names=F, quote=F)}
-n_stress = nrow(SWBM_Monthly_m3)
+# n_stress = nrow(SWBM_Monthly_m3)
 
 # process dates for plotting - aggregate to annual
 SWBM_Monthly_m3$WY = year(SWBM_Monthly_m3$Month)
@@ -487,12 +490,12 @@ SWBM_Annual_TAF_Plot = ggplot(SWBM_Annual_m3_melt, aes(x = WY, y = value*0.00081
 # summary(new_wb$SW_Irr); summary(old_wb$SW_Irr)
 # summary(new_wb$Precip); summary(old_wb$Precip)
 
-swbm_dir_18 = "C:/Users/Claire/Documents/GitHub/SVIHM/Scenarios/basecase"
-SWBM_Monthly_m3_18 = read.table(file.path(swbm_dir_18,'monthly_water_budget.dat'), header = T)
-summary(SWBM_Monthly_m3$Precip[1:nrow(SWBM_Monthly_m3_18)] / SWBM_Monthly_m3_18$Precip)
-summary(SWBM_Monthly_m3$SW_Irr[1:nrow(SWBM_Monthly_m3_18)] / SWBM_Monthly_m3_18$SW_Irr)
-hist(SWBM_Monthly_m3$GW_Irr[1:nrow(SWBM_Monthly_m3_18)] / SWBM_Monthly_m3_18$GW_Irr)
-summary(SWBM_Monthly_m3$ET[1:nrow(SWBM_Monthly_m3_18)] / SWBM_Monthly_m3_18$ET)
+# swbm_dir_18 = "C:/Users/Claire/Documents/GitHub/SVIHM/Scenarios/basecase"
+# SWBM_Monthly_m3_18 = read.table(file.path(swbm_dir_18,'monthly_water_budget.dat'), header = T)
+# summary(SWBM_Monthly_m3$Precip[1:nrow(SWBM_Monthly_m3_18)] / SWBM_Monthly_m3_18$Precip)
+# summary(SWBM_Monthly_m3$SW_Irr[1:nrow(SWBM_Monthly_m3_18)] / SWBM_Monthly_m3_18$SW_Irr)
+# hist(SWBM_Monthly_m3$GW_Irr[1:nrow(SWBM_Monthly_m3_18)] / SWBM_Monthly_m3_18$GW_Irr)
+# summary(SWBM_Monthly_m3$ET[1:nrow(SWBM_Monthly_m3_18)] / SWBM_Monthly_m3_18$ET)
 
 
 #-------------------------------------------------------------------------------------------------#
