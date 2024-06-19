@@ -206,7 +206,7 @@ streams_sim2 <- list(import_sfr_gauge(file.path(mf2_dir, 'Streamflow_FJ_SVIHM.da
 
 
 #-------------------------------------------------------------------------------------------------#
-# Streamflow Comparison Maps ------------------------------------------------------
+# Maps: Streamflow Comparison ------------------------------------------------------
 
 streamflow_comparison_maps = function(){
   flow_units = "Flow Diff. (cfs)" # "Flow Diff. (1000 m3/day)", "Flow (cfs)", "Flow (1000 m3/day)"
@@ -318,36 +318,40 @@ streamflow_comparison_maps = function(){
   #   save_sfr_array(scen_dir = s4_dir)
   # }
 
-  # reach_array_daily1 = readRDS(file.path(s1_dir,"Plots","sfr_reach_array.RDS"))
-  reach_array_daily1_subset = readRDS(file.path(s1_dir,"Plots","sfr_reach_array_23-24.RDS"))
+  reach_array_daily1 = readRDS(file.path(s1_dir,"Plots","sfr_reach_array.RDS"))
+  # reach_array_daily1_subset = readRDS(file.path(s1_dir,"Plots","sfr_reach_array_23-24.RDS"))
   reach_array_daily2 = readRDS(file.path(s2_dir,"Plots","sfr_reach_array.RDS"))
   # reach_array3 = readRDS(file.path(s3_dir,"Plots","sfr_reach_array.RDS"))
   # reach_array4 = readRDS(file.path(s4_dir,"Plots","sfr_reach_array.RDS"))
 
-  sfr_mean_and_sd_sc1 = aggregate_daily_sfr_array_to_monthly(sfr_array = reach_array_daily1)
-  reach_array1 = sfr_mean_and_sd_sc1[[1]]
+  # sfr_mean_and_sd_sc1 = aggregate_daily_sfr_array_to_monthly(sfr_array = reach_array_daily1)
+  # reach_array1 = sfr_mean_and_sd_sc1[[1]]
+  #
+  # sfr_mean_and_sd_sc2 = aggregate_daily_sfr_array_to_monthly(sfr_array = reach_array_daily2, verbose=T)
+  # reach_array2=sfr_mean_and_sd_sc2[[1]]
 
-  sfr_mean_and_sd_sc2 = aggregate_daily_sfr_array_to_monthly(sfr_array = reach_array_daily2, verbose=2)
-  reach_array2=sfr_mean_and_sd_sc2[[1]]
+
   # Set up for SFR stream network maps
 
   dim(reach_array1)
 
   # Check flow max
-  max(as.numeric(as.character(sfr1[,,8]))) # max flow out
-  max(as.numeric(as.character(sfr2[,,8]))) # max flow out
-  # max(as.numeric(as.character(reach_array3[,,8]))) # max flow out
-  # summary(as.numeric(as.character(reach_array2[,,8]-reach_array1[,,8])))
+  # max(as.numeric(as.character(reach_array1[,,8]))) # max flow out
+  # max(as.numeric(as.character(reach_array2[,,8]))) # max flow out
+  max(as.numeric(as.character(reach_array_daily1[,,8]))) # max flow out
+  summary(as.numeric(as.character(reach_array_daily2[12000:12266,,8])) -
+            as.numeric(as.character(reach_array_daily1[12000:12266,,8])))
   # Breaks for flow
   if(flow_units == "Flow (1000 m3/day)"){flow_breaks_manual = c(0, 2.5, 20, 50, 100, 300, 700, 6500)*1000 }
   if(flow_units == "Flow (cfs)"){flow_breaks_manual = c(0, 2.5, 20, 50, 100, 300, 700, 6500)*1000 * m3day_to_cfs}
   if(flow_units == "Flow Diff. (1000 m3/day)"){flow_breaks_manual = c(0, 2.5, 20, 50, 100, 300, 700, 6500)*1000 }
   # if(flow_units == "Flow Diff. (cfs)"){flow_breaks_manual = c(0, 1, 5, 10, 15, 20, 100, 3000)}
-  if(flow_units == "Flow Diff. (cfs)"){flow_breaks_manual = c(-1000, -100, -10, 0, 10, 100, 1000, 3000)}
+  if(flow_units == "Flow Diff. (cfs)"){flow_breaks_manual = c(-1000, -100, -10, -1, 1, 10, 100, 3000)}
 
   #Set color palette
   n_classes = 7
-  pal = rev(sequential_hcl(n_classes, palette = "ag_GrnYl"))
+  # pal = rev(sequential_hcl(n_classes, palette = "ag_GrnYl"))
+  pal=rev(diverging_hcl(n_classes, palette = "Blue-Red"))
   # Read in GIS data
   seg = st_read(dsn = plot_data_dir, layer = "SFR_segments_sugar_pts")
   seg = st_transform(seg, crs = st_crs(3310))
@@ -389,17 +393,17 @@ streamflow_comparison_maps = function(){
     # sp_tab$month = month(sp_tab$date)
     # sp_tab$water_year = year(sp_tab$date); sp_tab$water_year[sp_tab$month>9] = year(sp_tab$date[sp_tab$month>9])+1
 
-    # # extended sp tab
-    # start_date = as.Date("1990-10-01"); end_date = as.Date("2024-04-30")
-    # n_stress_daily = as.numeric(end_date-start_date+1)
-    # sp_tab=data.frame(stress_period=1:n_stress_daily, date=seq.Date(from = start_date, by = "day", length.out=n_stress_daily))
-    # sp_tab$month = month(sp_tab$date)
-    # sp_tab$water_year = year(sp_tab$date); sp_tab$water_year[sp_tab$month>9] = year(sp_tab$date[sp_tab$month>9])+1
+    # extended sp tab
+    start_date = as.Date("1990-10-01"); end_date = as.Date("2024-04-30")
+    n_stress_daily = as.numeric(end_date-start_date+1)
+    sp_tab=data.frame(stress_period=1:n_stress_daily, date=seq.Date(from = start_date, by = "day", length.out=n_stress_daily))
+    sp_tab$month = month(sp_tab$date)
+    sp_tab$water_year = year(sp_tab$date); sp_tab$water_year[sp_tab$month>9] = year(sp_tab$date[sp_tab$month>9])+1
 
     #to make a pdf appendix with each stress period plotted:
-    pdf_name = paste0("sfr_diff", s2, "minus",s1, "_3.pdf")
+    pdf_name = paste0("sfr_diff", s2, "minus",s1, "_9.pdf")
     pdf(file.path(plots1_dir, pdf_name), width=8.5, height=11)
-    # for(i in 1:nrow(sp_tab)){ #i = 12120, Dec 6th
+    # for(i in 395:nrow(sp_tab)){ #i = 12120, Dec 6th
     for(i in 12000:12266){ #i = 12120, Dec 6th
 
       #to make a png figure with manually selected stress periods plotted
@@ -408,9 +412,9 @@ streamflow_comparison_maps = function(){
       # par(mfrow=c(4,1), mar = c(1,1,1,1))
       # for(i in c(287, 323, 239, 299)){ #Aug of 2014 (wet), 2017 (dry), 2010, and 2015 (avg, spread and conc)
 
-      stress_period_array1 = data.frame(reach_array1[i,,])
+      stress_period_array1 = data.frame(reach_array_daily1[i,,])
       spa1 = stress_period_array1
-      stress_period_array2 = data.frame(reach_array2[i,,])
+      stress_period_array2 = data.frame(reach_array_daily2[i,,])
       spa2 = stress_period_array2
 
 
@@ -501,7 +505,7 @@ fj_flow_comparison = function(){
 
 
   # png(filename = file.path(out_dir, "basecase 2018 vs updated 2023 basecase.png"),
-  png(filename = file.path(out_dir, "basecase vs basecase with no MAR_thru 2024.04.30.png"),
+  png(filename = file.path(out_dir, "basecase vs basecase with no MAR_thru 2024.04.30_updated legend.png"),
   # filename = "prelim fj comparison, 0 curtail, basecase and obs.png",
       height = 11/2, width = 18, units = "in", res = 300)
 
@@ -566,7 +570,7 @@ fj_flow_comparison = function(){
   date_lims = as.Date(c("2023-09-01","2024-05-01"))
   plot(x = fjsim1$Date, y = fjsim1$Flow_cfs - fjsim2$Flow_cfs, type = "l",# log = "y",
         xaxt = "n", lwd=2, col = NA, #yaxt = "n",
-       main = "Fort Jones Flow Comparison, Apr 2024: \n vs basecase minus basecase with no MAR",
+       main = "Fort Jones Flow Comparison, Apr 2024: \n basecase minus basecase with no MAR",
        xlab = "Date", ylab = flow_units,
        xlim = date_lims)
   lines(x = fjsim1$Date, y = fjsim1$Flow_cfs - fjsim2$Flow_cfs, lwd=2, col = 'brown')
