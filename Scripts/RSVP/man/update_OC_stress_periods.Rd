@@ -10,6 +10,9 @@ update_OC_stress_periods(
   output_dir,
   filename = "SVIHM.oc",
   monthly = T,
+  save_budget = T,
+  save_drawdown = T,
+  save_heads = T,
   verbose = TRUE
 )
 }
@@ -24,11 +27,17 @@ update_OC_stress_periods(
 
 \item{monthly}{T/F Write print/save statements only at month ends (as opposed to at every time step, F)}
 
+\item{save_budget}{T/F write out Cell-by-cell budget file (very large) (default: True)}
+
+\item{save_drawdown}{T/F write out drawdown file (default: True)}
+
+\item{save_heads}{T/F write out head file (default: True)}
+
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
 \description{
 Write SVIHM MODFLOW Output Control File (OC) with Updated Number of Stress Periods
 }
 \author{
-Claire Kouba
+Claire Kouba, Leland Scantlebury
 }

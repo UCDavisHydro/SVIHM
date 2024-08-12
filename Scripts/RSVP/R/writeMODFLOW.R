@@ -267,10 +267,13 @@ write_SVIHM_head_obs_file <- function(model_start_date,
 #' @param output_dir Directory to write OC file in
 #' @param filename character name of file to write (default: SVIHM.hob)
 #' @param monthly T/F Write print/save statements only at month ends (as opposed to at every time step, F)
+#' @param save_budget T/F write out Cell-by-cell budget file (very large) (default: True)
+#' @param save_drawdown T/F write out drawdown file (default: True)
+#' @param save_heads T/F write out head file (default: True)
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
 #' @return
-#' @author Claire Kouba
+#' @author Claire Kouba, Leland Scantlebury
 #' @export
 #'
 #' @examples
@@ -279,6 +282,9 @@ update_OC_stress_periods <- function(num_steps,
                                      output_dir,
                                      filename='SVIHM.oc',
                                      monthly=T,
+                                     save_budget=T,
+                                     save_drawdown=T,
+                                     save_heads=T,
                                      verbose=TRUE) {
 
   f <- file.path(output_dir, filename)
@@ -289,6 +295,11 @@ update_OC_stress_periods <- function(num_steps,
                "  HEAD PRINT FORMAT 0","  HEAD SAVE UNIT 30",
                "  DRAWDOWN PRINT FORMAT 0","  DRAWDOWN SAVE UNIT 31",
                "  COMPACT BUDGET AUX")
+  stress_end_block = c("     Print Budget")
+  if (save_budget)   {stress_end_block = c(stress_end_block, "     Save Budget") }
+  if (save_drawdown) {stress_end_block = c(stress_end_block, "     Save Drawdown")}
+  if (save_heads)    {stress_end_block = c(stress_end_block, "     Save Head")}
+
   write(preamble, file = f, append = F)
 
   for(i in 1:num_stress_periods){
@@ -298,7 +309,6 @@ update_OC_stress_periods <- function(num_steps,
       # Write out print statements if monthly output is NOT on (daily instead)
       # OR if monthly is on and it's the final day in the period (month)
       if ((!monthly) | (monthly & j == as.numeric(num_steps[i]))) {
-        stress_end_block = c("     Save Head", "     Save Drawdown", "     Save Budget", "     Print Budget")
         write(stress_end_block, file = f, append = T)
       }
     }

@@ -13,7 +13,7 @@ end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
 update_dir <- latest_dir(data_dir['update_dir','loc'])
 
 # Scenario selection
-current_scenario = "basecase_noMAR" # default is "basecase". Affects a variety of input files.
+current_scenario = "basecase" # default is "basecase". Affects a variety of input files.
 
 # Current coded-up scenario names:
 # "basecase"
@@ -143,7 +143,7 @@ update_DRNO_stress_periods(num_stress_periods, output_dir = update_dir)
 write_SVIHM_head_obs_file(model_start_date, model_end_date, output_dir = update_dir)
 
 # Output Control (OC)
-update_OC_stress_periods(num_days, num_stress_periods, output_dir = update_dir, monthly=F)
+update_OC_stress_periods(num_days, num_stress_periods, output_dir = update_dir, monthly=F, save_budget=F, save_drawdown=F)
 
 # ------------------------------------------------------------------------------------------------#
 
