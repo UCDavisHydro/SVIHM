@@ -19,7 +19,7 @@ origin_date <- as.Date('1990-09-30')
 create_sp_charts = FALSE  # Many SPs, very slow
 
 # Directories
-run_dir <- file.path('../../Run/')
+run_dir <- file.path('//BEHEMOTH/Users/lelan/Documents/ModelRuns/SVIHM/20240814_UpdateRun')
 # run_dir = file.path("../../Scenarios/basecase_thru_2024.03.31")
 # run_dir = file.path("../../Scenarios/basecase_noMAR_thru_2024.03.31")
 swbm_dir = file.path(run_dir, 'SWBM')
@@ -35,11 +35,11 @@ if (!dir.exists(out_dir)) {
   dir.create(out_dir, recursive = T)
 }
 
-# info from general_inputs.txt
-gen_inputs = strsplit(readLines(file.path(swbm_dir, "general_inputs.txt")), "  ")
-wy_start = as.numeric(gen_inputs[[1]][2])
+# info from model files
+discretization_settings <- read_swbm_block(file.path(swbm_dir,'svihm.swbm'), block_name = "DISCRETIZATION")
+wy_start = discretization_settings[['WYSTART']]
+n_stress = discretization_settings[['NMONTHS']]
 start_date = as.Date(paste0(wy_start-1,"-10-01"))
-n_stress = as.numeric(gen_inputs[[2]][4])
 
 # Output controls
 WRITE_SW_BUDGET = T # saves soil water budget tables as .csvs

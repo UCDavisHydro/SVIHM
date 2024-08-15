@@ -8,7 +8,7 @@ set start=%time%
 
 REM Run SWBM
 cd SWBM
-call %bindir%\SWBM.exe
+call %bindir%\SWBM.exe svihm.swbm
 
 REM Copy over new SWBM-generated MODFLOW files
 cd ..\

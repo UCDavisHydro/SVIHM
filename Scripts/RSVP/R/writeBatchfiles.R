@@ -24,7 +24,7 @@ write_scenario_prep_batchfile <- function(scenario_name='basecase',
   write('if not exist "Run\\MODFLOW" mkdir Run\\MODFLOW', file = f, append=T)
   write('', file = f, append=T)
   write(':: Copy scenario independant MODFLOW model files', file = f, append=T)
-  write('xcopy SVIHM_Input_Files\\time_independent_input_files\\system_commands.txt Run\\SWBM /Y /I', file = f, append=T)
+  #write('xcopy SVIHM_Input_Files\\time_independent_input_files\\system_commands.txt Run\\SWBM /Y /I', file = f, append=T)
   write('xcopy SVIHM_Input_Files\\time_independent_input_files\\ET_Zone_Cells.txt Run\\SWBM /Y /I', file = f, append=T)
   write('xcopy SVIHM_Input_Files\\time_independent_input_files\\ET_Cells_Extinction_Depth.txt Run\\SWBM /Y /I', file = f, append=T)
   write('xcopy SVIHM_Input_Files\\time_independent_input_files\\recharge_zones.txt Run\\SWBM /Y /I', file = f, append=T)
@@ -96,8 +96,9 @@ write_update_prep_batchfile <- function(update_dir,
 
   # New lines
   write(':: Copy Updated Files to run folders', file = f, append=T)
+  write(paste0('xcopy ',relpath,'\\svihm.swbm Run\\SWBM /Y /I'), file = f, append=T)
   write(paste0('xcopy ',relpath,'\\*.txt Run\\SWBM /Y /I'), file = f, append=T)
-  write(paste0('xcopy ',relpath,'\\SVIHM.* Run\\MODFLOW /Y /I'), file = f, append=T)
+  write(paste0('xcopy ',relpath,'\\SVIHM.* Run\\MODFLOW /Y /I && del Run\\MODFLOW\\svihm.swbm'), file = f, append=T)
 
   # Write end
   write('', file = f, append=T)

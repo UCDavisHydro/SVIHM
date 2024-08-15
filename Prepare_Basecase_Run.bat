@@ -10,7 +10,6 @@ if not exist "Run\SWBM" mkdir Run\SWBM
 if not exist "Run\MODFLOW" mkdir Run\MODFLOW
 
 :: Copy scenario independant MODFLOW model files
-xcopy SVIHM_Input_Files\time_independent_input_files\system_commands.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\ET_Zone_Cells.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\ET_Cells_Extinction_Depth.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\recharge_zones.txt Run\SWBM /Y /I
@@ -30,6 +29,7 @@ xcopy SVIHM_Input_Files\time_independent_input_files\Starting_Heads_L*.txt Run\M
 xcopy SVIHM_Input_Files\time_independent_input_files\SVIHM_*_template.txt Run\SWBM /Y /I
 
 :: Copy files from scenario folder to run folder (in some cases, overwrite)
+xcopy Scenarios\%scen%\svihm.swbm Run\SWBM /Y /I
 xcopy Scenarios\%scen%\*.txt Run\SWBM /Y /I
 xcopy Scenarios\%scen%\SVIHM.* Run\MODFLOW /Y /I
 

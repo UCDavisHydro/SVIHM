@@ -182,6 +182,182 @@ write_SWBM_gen_inputs_file <- function(output_dir,
 
 #-------------------------------------------------------------------------------------------------#
 
+#' Write SWBM Main Input File (svihm.swbm)
+#'
+#' This function writes the main input file for the Soil Water Budget Model (SWBM).
+#'
+#' @param output_dir Directory where the input file will be written.
+#' @param num_stress_periods Integer. Number of model stress periods (NMONTHS in the input file).
+#' @param filename Character. The name of the output file. Default is "svihm.swbm".
+#' @param modelName Character. The name of the MODFLOW model. Default is "SVIHM".
+#' @param WYstart Integer. The water year start (WYSTART in the input file). Default is 1991.
+#' @param npoly Integer. The number of polygons (NPOLY in the input file). Default is 2119.
+#' @param nlandcover Integer. The number of land cover types (NLANDCOVER in the input file). Default is 6.
+#' @param nAgWells Integer. The number of agricultural wells (NAGWELLS in the input file). Default is 167.
+#' @param nMuniWells Integer. The number of municipal wells (NMUNIWELLS in the input file). Default is 0.
+#' @param nSubws Integer. The number of sub-watersheds (NSUBWS in the input file). Default is 8.
+#' @param inflow_is_vol Logical. Whether the inflow is volume-based. Default is FALSE.
+#' @param daily_sw Logical. Whether to write daily soil water budget (DAILY_SW in the input file). Default is TRUE.
+#' @param nSFR_inflow_segs Integer. The number of streamflow routing inflow segments (NSFR_INFLOW_SEGS in the input file). Default is 12.
+#' @param nrows Integer. The number of rows in the model grid (NROWS in the input file). Default is 440.
+#' @param ncols Integer. The number of columns in the model grid (NCOLS in the input file). Default is 210.
+#' @param RD_Mult Numeric. The root depth multiplier (RD_MULT in the input file). Default is 1.4.
+#' @param neighborRuleYearDay Integer. The neighbor rule cutoff day of the year (NEIGHBOR_RULE in the input file). Default is 250.
+#' @param absoluteIrrDate Integer vector of length 2. The absolute irrigation cutoff date as month and day (ABSOLUTE_IRR_DATE in the input file). Default is c(5, 15).
+#' @param writeUCODE Logical. Whether to write UCODE files (WRITE_UCODE in the input file). Default is TRUE.
+#' @param writePEST Logical. Whether to write PEST files (WRITE_PEST in the input file). Default is FALSE.
+#' @param precip_file Character. The name of the precipitation input file (PRECIP in the input file). Default is "precip.txt".
+#' @param poly_landcover_file Character. The name of the polygon landcover IDs file (POLY_LANDCOVER in the input file). Default is "polygon_landcover_ids.txt".
+#' @param et_file Character. The name of the reference evapotranspiration file (ET in the input file). Default is "ref_et.txt".
+#' @param et_ext_depth_file Character. The name of the ET cells extinction depth file (ET_EXT_DEPTH in the input file). Default is "ET_Cells_Extinction_Depth.txt".
+#' @param ets_template_file Character. The name of the ETS template file (ETS_TEMPLATE in the input file). Default is "SVIHM_ETS_template.txt".
+#' @param kc_frac_file Character. The name of the crop coefficient fractions file (KC_FRAC in the input file). Default is "kc_values.txt".
+#' @param sfr_network_file Character. The name of the streamflow routing network file (SFR_NETWORK in the input file). Default is "SFR_network.txt".
+#' @param sfr_partition_file Character. The name of the streamflow routing partition file (SFR_PARTITION in the input file). Default is "SFR_subws_flow_partitioning.txt".
+#' @param wel_template_file Character. The name of the well template file (WEL_TEMPLATE in the input file). Default is "SVIHM_WEL_template.txt".
+#' @param recharge_zones_file Character. The name of the recharge zones file (RECHARGE_ZONES in the input file). Default is "recharge_zones.txt".
+#' @param irr_ditch_file Character. The name of the irrigation ditch file (IRR_DITCH in the input file). Default is "irr_ditch.txt".
+#' @param et_zone_cells_file Character. The name of the ET zone cells file (ET_ZONE_CELLS in the input file). Default is "ET_Zone_Cells.txt".
+#' @param mar_depth_file Character. The name of the managed aquifer recharge depth file (MAR_DEPTH in the input file). Default is "MAR_depth.txt".
+#' @param curtail_frac_file Character. The name of the curtailment fractions file (CURTAIL_FRAC in the input file). Default is "curtailment_fractions.txt".
+#' @param water_mover_file Character. The name of the water mover file (WATER_MOVER in the input file). Default is NULL.
+#' @param print_daily_fields List of named lists. Each element should contain `id` (Integer, Field ID) and `prefix` (Character, filename prefix) for fields to print daily in the PRINT_DAILY block.
+#' @param verbose Logical. Whether to print status information to the console. Default is TRUE.
+#'
+#' @return None. The function writes the input file to the specified directory.
+#' @export
+#'
+#' @examples
+#' # Set Directory (Created in SVIHM_Input_Files/Updates) - Grabs latest version
+#' update_dir <- latest_dir(data_dir['update_dir','loc'])
+#'
+#' # Set output fields
+#' print_daily_fields <- list(
+#'   list(id = 1, prefix = "Field_1"),
+#'   list(id = 91, prefix = "Field_91"),
+#'   list(id = 136, prefix = "AG_MIX_Flood")
+#' # Add more fields as needed
+#'
+#' # Write file
+#' write_SWBM_main_input_file(output_dir = update_dir, num_stress_periods = 395)
+write_SWBM_main_input_file <- function(output_dir,
+                                       num_stress_periods,
+                                       filename="svihm.swbm",
+                                       modelName = "SVIHM",
+                                       WYstart = 1991,
+                                       npoly = 2119,
+                                       nlandcover = 6,
+                                       nAgWells = 167,
+                                       nMuniWells = 0,
+                                       nSubws = 8,
+                                       inflow_is_vol = FALSE,
+                                       daily_sw = TRUE,
+                                       nSFR_inflow_segs = 12,
+                                       nrows = 440,
+                                       ncols = 210,
+                                       RD_Mult = 1.4,
+                                       neighborRuleYearDay = 250,
+                                       absoluteIrrDate = c(5,15),
+                                       writeUCODE=TRUE,
+                                       writePEST=FALSE,
+                                       precip_file = 'precip.txt',
+                                       poly_landcover_file = 'polygon_landcover_ids.txt',
+                                       et_file = 'ref_et.txt',
+                                       et_ext_depth_file = 'ET_Cells_Extinction_Depth.txt',
+                                       ets_template_file = 'SVIHM_ETS_template.txt',
+                                       kc_frac_file = 'kc_values.txt',
+                                       sfr_network_file = 'SFR_network.txt',
+                                       sfr_partition_file = 'SFR_subws_flow_partitioning.txt',
+                                       wel_template_file = 'SVIHM_WEL_template.txt',
+                                       recharge_zones_file = 'recharge_zones.txt',
+                                       sfr_jtf_file = 'SFR_network_jtf.txt',
+                                       irr_ditch_file = 'irr_ditch.txt',
+                                       et_zone_cells_file = 'ET_Zone_Cells.txt',
+                                       mar_depth_file = 'MAR_depth.txt',
+                                       curtail_frac_file = 'curtailment_fractions.txt',
+                                       water_mover_file = NULL,
+                                       print_daily_fields  = list(),
+                                       verbose=TRUE) {
+
+  if (verbose) {message(paste('Writing SWBM file: ', filename))}
+
+  # Open the connection to the file
+  file_conn <- file(file.path(output_dir, filename), "w")
+
+  # Write the header
+  writeLines("#===============================================================#", file_conn)
+  writeLines("#                Soil Water Budget Model (SWBM)                 #", file_conn)
+  writeLines("#===============================================================#", file_conn)
+
+  # DISCRETIZATION Block
+  writeLines("\nBEGIN DISCRETIZATION", file_conn)
+  writeLines(sprintf("  NMONTHS          %d", num_stress_periods), file_conn)
+  writeLines(sprintf("  WYSTART         %d", WYstart), file_conn)
+  writeLines(sprintf("  NPOLY           %d", npoly), file_conn)
+  writeLines(sprintf("  NSUBWS             %d", nSubws), file_conn)
+  writeLines(sprintf("  NLANDCOVER         %d", nlandcover), file_conn)
+  writeLines(sprintf("  NAGWELLS         %d", nAgWells), file_conn)
+  writeLines(sprintf("  NMUNIWELLS         %d", nMuniWells), file_conn)
+  writeLines("  # MODFLOW INFO", file_conn)
+  writeLines(sprintf("  MFNAME         %s", modelName), file_conn)
+  writeLines(sprintf("  NROWS            %d", nrows), file_conn)
+  writeLines(sprintf("  NCOLS            %d", ncols), file_conn)
+  writeLines(sprintf("  NSFR_INFLOW_SEGS  %d", nSFR_inflow_segs), file_conn)
+  writeLines("END DISCRETIZATION", file_conn)
+
+  # OPTIONS Block
+  writeLines("\nBEGIN OPTIONS", file_conn)
+  writeLines("  DAILY_SW", file_conn)
+  writeLines(sprintf("  NEIGHBOR_RULE      %d", neighborRuleYearDay), file_conn)
+  writeLines(sprintf("  ABSOLUTE_IRR_DATE %d %d", absoluteIrrDate[1], absoluteIrrDate[2]), file_conn)
+  writeLines("  WRITE_MODFLOW", file_conn)
+  if (writeUCODE) {writeLines("  WRITE_UCODE", file_conn)}
+  if (writePEST) {writeLines("  WRITE_PEST", file_conn)}
+  writeLines("END OPTIONS", file_conn)
+
+  # PARAMETERS Block
+  writeLines("\nBEGIN PARAMETERS", file_conn)
+  writeLines(sprintf("  RD_MULT    %.1f", RD_Mult), file_conn)
+  writeLines("END PARAMETERS", file_conn)
+
+  # INPUT_FILES Block
+  writeLines("\nBEGIN INPUT_FILES", file_conn)
+  # Required files
+  writeLines(sprintf("  PRECIP            %s", precip_file), file_conn)
+  writeLines(sprintf("  ET                %s", et_file), file_conn)
+  writeLines(sprintf("  ET_EXT_DEPTH      %s", et_ext_depth_file), file_conn)
+  writeLines(sprintf("  ETS_TEMPLATE      %s", ets_template_file), file_conn)
+  writeLines(sprintf("  KC_FRAC           %s", kc_frac_file), file_conn)
+  writeLines(sprintf("  SFR_NETWORK       %s", sfr_network_file), file_conn)
+  writeLines(sprintf("  SFR_PARTITION     %s", sfr_partition_file), file_conn)
+  writeLines(sprintf("  WEL_TEMPLATE      %s", wel_template_file), file_conn)
+  writeLines(sprintf("  RECHARGE_ZONES    %s", recharge_zones_file), file_conn)
+  writeLines(sprintf("  POLY_LANDCOVER    %s", poly_landcover_file), file_conn)
+  # Optional Files
+  if (!is.null(et_zone_cells_file)) { writeLines(sprintf("  ET_ZONE_CELLS     %s", et_zone_cells_file), file_conn)}
+  if (!is.null(sfr_jtf_file))       { writeLines(sprintf("  SFR_NETWORK_JTF   %s", sfr_jtf_file), file_conn)}
+  if (!is.null(irr_ditch_file))     { writeLines(sprintf("  IRR_DITCH         %s", irr_ditch_file), file_conn)}
+  if (!is.null(mar_depth_file))     { writeLines(sprintf("  MAR_DEPTH         %s", mar_depth_file), file_conn)}
+  if (!is.null(curtail_frac_file))  { writeLines(sprintf("  CURTAIL_FRAC      %s", curtail_frac_file), file_conn)}
+  if (!is.null(water_mover_file))   { writeLines(sprintf("  WATER_MOVER       %s", water_mover_file), file_conn)}
+  writeLines("END INPUT_FILES", file_conn)
+
+  # [Optional] PRINT_DAILY Block
+  if (length(print_daily_fields) > 0) {
+    writeLines("\nBEGIN PRINT_DAILY", file_conn)
+    writeLines("# Field ID, filename_prefix", file_conn)
+    for (field in print_daily_fields) {
+      writeLines(sprintf("  %4d  %s", field$id, field$prefix), file_conn)
+    }
+    writeLines("END PRINT_DAILY", file_conn)
+  }
+
+  # Close the connection to the file
+  close(file_conn)
+}
+
+#-------------------------------------------------------------------------------------------------#
+
 #' Write SWBM Instream Flow Available Ratio File
 #'
 #' @param avail_monthly Dataframe of ratio of instream flow available over the model period, as

@@ -2,6 +2,7 @@
 #
 #
 library(RSVP)
+library(sf)
 
 # ------------------------------------------------------------------------------------------------#
 # Settings ----------------------------------------------------------------------------------------
@@ -84,9 +85,7 @@ subws_irr_inflows <- set_inflows(subws_irr_inflows, date_start = '2022-07-01', d
 # Write SWBM Inputs -------------------------------------------------------
 
 # Main input file
-write_SWBM_gen_inputs_file(num_stress_periods = num_stress_periods,
-                           output_dir = update_dir,
-                           scenario_id = current_scenario)
+write_SWBM_main_input_file(output_dir = update_dir, num_stress_periods = num_stress_periods)
 
 # Stress Period Days file
 # Include stress period # and column names in input file

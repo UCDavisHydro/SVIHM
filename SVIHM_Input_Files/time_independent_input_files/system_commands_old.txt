@@ -1,5 +1,0 @@
-4
-mkdir recharge
-copy SFR_network.txt SVIHM.sfr
-copy WEL_network.txt SVIHM.wel
-copy SFR_network_jtf.txt SVIHM_sfr.jtf
