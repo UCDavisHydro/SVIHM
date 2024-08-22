@@ -54,12 +54,6 @@ fjd <- read.csv(file.path(update_dir, list.files(update_dir, pattern = 'FJ (USGS
                           stringsAsFactors = F)
 fjd$Date <- as.Date(fjd$Date)
 
-
-# avail_monthly <- build_cdfw_instream_flow_cal(model_start_date = model_start_date,
-#                                               model_end_date = model_end_date,
-#                                               fort_jones_flows = fjd)
-
-
 sfr_subws_flow_partitioning <- gen_sfr_flow_partition(model_start_date, model_end_date, update_dir, monthly=F,
                                                               streamflow_records_file="streamflow_records_regressed.txt")
 subws_inflow_filename = file.path(update_dir,"daily_streamflow_input.txt")
@@ -142,7 +136,9 @@ update_DRNO_stress_periods(num_stress_periods, output_dir = update_dir)
 write_SVIHM_head_obs_file(model_start_date, model_end_date, output_dir = update_dir)
 
 # Output Control (OC)
-update_OC_stress_periods(num_days, num_stress_periods, output_dir = update_dir, monthly=F, save_budget=F, save_drawdown=F)
+update_OC_stress_periods(num_days, num_stress_periods,
+                         output_dir = update_dir, monthly=F,
+                         save_budget=T, save_drawdown=F)
 
 # ------------------------------------------------------------------------------------------------#
 

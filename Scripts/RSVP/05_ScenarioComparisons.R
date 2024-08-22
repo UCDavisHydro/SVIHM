@@ -85,19 +85,18 @@ create_sp_charts = FALSE  # Many SPs, very slow
 
 
 ### Plot 4: Flow difference maps for 2024 MAR applications
-s1 = "basecase_thru_2024.04.30"  # then process for stream maps.
+s1 = "basecase_thru_2024.07.31"  # then process for stream maps.
 s1_dir <- file.path('../../Scenarios', s1)
 # s1_dir = file.path('../../Run')
 swbm1_dir = file.path(s1_dir, 'SWBM')
 mf1_dir <- file.path(s1_dir, 'MODFLOW')
-s2 = "basecase_noMAR_thru_2024.04.30" #, then process for stream maps.
+s2 = "basecase_noMAR_thru_2024.07.31" #, then process for stream maps.
 s2_dir <- file.path('../../Scenarios',s2)
 swbm2_dir = file.path(s2_dir, 'SWBM')
 mf2_dir <- file.path(s2_dir, 'MODFLOW')
 
 
 
-# TODO automate finding latest version
 update_dir <- latest_dir(data_dir['update_dir','loc'])  #file.path('../../SVIHM_Input_Files/Updates/2022-04-13/')
 plot_data_dir = file.path('../../SVIHM_Input_Files/reference_data_for_plots/')
 
@@ -114,13 +113,23 @@ out_dir = file.path('../../Scenarios', "_Comparison_Plots")
 # if (!dir.exists(plots3_dir)) {dir.create(plots3_dir, recursive = T)}
 # if (!dir.exists(plots4_dir)) {dir.create(plots4_dir, recursive = T)}
 
-# info from general_inputs.txt
-gen_inputs1 = strsplit(readLines(file.path(swbm1_dir, "general_inputs.txt")), "  ")
+# info from svihm.swbm
+gen_inputs1 = readLines(file.path(swbm1_dir, "svihm.swbm"))
+
+# gen_inputs1 = strsplit(readLines(file.path(swbm1_dir, "general_inputs.txt")), "  ")
 
 #assumes same number of stress periods in scenarios 1 and 2
-wy_start = as.numeric(gen_inputs1[[1]][2])
+extract_var = function(swbm_lines, var_id, var_is_numeric = T){
+  pieces = unlist(strsplit(trimws(swbm_lines[grep(pattern = var_id, x=swbm_lines)]),split=" "))
+  pieces = trimws(pieces[!(pieces=="")])
+  var = pieces[pieces!=var_id]
+  if(var_is_numeric){var = as.numeric(var)}
+  return(var)
+}
+
+wy_start = extract_var(swbm_lines = gen_inputs1, var_id="WYSTART")
 start_date = as.Date(paste0(wy_start-1,"-10-01"))
-n_stress = as.numeric(gen_inputs1[[2]][4])
+n_stress = extract_var(swbm_lines = gen_inputs1, var_id="NMONTHS")
 months_day1 = seq.Date(from=start_date, length.out=n_stress, by="month")
 # Find last day in final month
 months_day1_plus1 = seq.Date(from=start_date, length.out=n_stress+1, by="month")
@@ -505,12 +514,12 @@ fj_flow_comparison = function(){
 
 
   # png(filename = file.path(out_dir, "basecase 2018 vs updated 2023 basecase.png"),
-  png(filename = file.path(out_dir, "basecase vs basecase with no MAR_thru 2024.04.30_updated legend.png"),
+  png(filename = file.path(out_dir, "basecase vs basecase with no MAR_thru 2024.07.31_updated legend.png"),
   # filename = "prelim fj comparison, 0 curtail, basecase and obs.png",
       height = 11/2, width = 18, units = "in", res = 300)
 
   flow_units = "Flow (cfs)"
-  date_lims = as.Date(c("2023-09-01","2024-05-01"))
+  date_lims = as.Date(c("2023-09-01","2024-08-01"))
   plot(x = fjsim1$Date, y = fjsim1$Flow_cfs, type = "l", log = "y",
        yaxt = "n", xaxt = "n", lwd=2, col = NA,
        # main = "Fort Jones Flow Comparison: Observed vs \n 2018 calibrated basecase, and updated 2023 basecase",
@@ -562,15 +571,15 @@ fj_flow_comparison = function(){
 
 
 # flow differences
-  png(filename = file.path(out_dir, "Flow diff- basecase vs basecase with no MAR_thru 2024.04.30.png"),
+  png(filename = file.path(out_dir, "Flow diff- basecase vs basecase with no MAR_thru 2024.07.31.png"),
       # filename = "prelim fj comparison, 0 curtail, basecase and obs.png",
       height = 11/2, width = 18, units = "in", res = 300)
 
   flow_units = "Flow (cfs)"
-  date_lims = as.Date(c("2023-09-01","2024-05-01"))
+  date_lims = as.Date(c("2023-09-01","2024-08-01"))
   plot(x = fjsim1$Date, y = fjsim1$Flow_cfs - fjsim2$Flow_cfs, type = "l",# log = "y",
         xaxt = "n", lwd=2, col = NA, #yaxt = "n",
-       main = "Fort Jones Flow Comparison, Apr 2024: \n basecase minus basecase with no MAR",
+       main = "Fort Jones Flow Comparison, Jul 2024: \n basecase minus basecase with no MAR",
        xlab = "Date", ylab = flow_units,
        xlim = date_lims)
   lines(x = fjsim1$Date, y = fjsim1$Flow_cfs - fjsim2$Flow_cfs, lwd=2, col = 'brown')
@@ -1220,7 +1229,8 @@ plot_one_wy_monthly = function(SWBM_Monthly_m3_melt, plot_wy = 2022, save_as_pdf
   if(save_as_pdf==TRUE){dev.off()}
 }
 
-plot_one_wy_monthly(SWBM_Monthly_m3_melt = SWBM_Monthly_m3_s1_melt, plot_wy = 2022)
+plot_one_wy_monthly(SWBM_Monthly_m3_melt = SWBM_Monthly_m3_s1_melt, plot_wy = 2023)
+plot_one_wy_monthly(SWBM_Monthly_m3_melt = SWBM_Monthly_m3_s2_melt, plot_wy = 2023)
 
 
 # tab file workaround: extend tab files -----------------------------------

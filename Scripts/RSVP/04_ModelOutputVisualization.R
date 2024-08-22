@@ -20,8 +20,8 @@ create_sp_charts = FALSE  # Many SPs, very slow
 
 # Directories
 run_dir <- file.path('//BEHEMOTH/Users/lelan/Documents/ModelRuns/SVIHM/20240814_UpdateRun')
-# run_dir = file.path("../../Scenarios/basecase_thru_2024.03.31")
-# run_dir = file.path("../../Scenarios/basecase_noMAR_thru_2024.03.31")
+# run_dir = file.path("../../Scenarios/basecase_thru_2024.07.31")
+# run_dir = file.path("../../Scenarios/basecase_noMAR_thru_2024.07.31")
 swbm_dir = file.path(run_dir, 'SWBM')
 mf_dir <- file.path(run_dir, 'MODFLOW')
 
