@@ -243,7 +243,7 @@ streamflow_comparison_maps = function(){
     # Process SFR values into an array of row, column, and stress period
     print("processing stress periods (days)")
     sys_time_last = Sys.time()
-    for(i in 12000:length(start_rows)){
+    for(i in 12054:length(start_rows)){
       start_row = start_rows[i];
       sfr_stress = sfr_glob_text[start_row:(start_row+n_reach-1)]
       if(i>1){print(paste(i, "of", length(start_rows),"days", Sys.time(), "(",round(Sys.time()-sys_time_last,1),"sec since last)"))}
@@ -263,54 +263,54 @@ streamflow_comparison_maps = function(){
   }
 
   # if it's daily sfr data:
-  aggregate_daily_sfr_array_to_monthly = function(sfr_array, verbose=F, save_standard_dev = T,
-                                                  start_date = as.Date("1990-10-01")){
-    # for reference
-    colname_list = c("LAYER", "ROW","COL", "STREAM_SEG_NO", "RCH_NO", "FLOW_INTO_STRM_RCH",
-                     "FLOW_TO_AQUIFER", "FLOW_OUT_OF_STRM_RCH","OVRLND_RUNOFF","DIRECT PRECIP",
-                     "STREAM_ET","STREAM_HEAD", "STREAM_DEPTH", "STREAM_WIDTH",
-                     "STREAMBED_CONDCTNC","STREAMBED_GRADIENT")
-
-
-    # assumes SFR array consists of i number of daily flow values
-    # assumes daily values do not start or stop in the middle of a month
-    # Time series setup
-    n_days = dim(sfr_array)[1]
-    end_day = start_date + n_days - 1
-    days_vector = seq.Date(from=start_date, to = end_day, by = "day")
-    month_day1 = floor_date(days_vector, unit = "month")
-    month_vector = seq.Date(from=start_date, to = end_day, by = "month")
-    month_vector_plus1 = seq.Date(from=start_date, to = end_day+1, by = "month")
-    num_days = diff(month_vector_plus1)
-    # initialize sfr index
-    month_start_index = 1
-    # initialize sfr monthly array
-    sfr_monthly = array(data = NA, dim = c(length(month_vector),
-                                           dim(sfr_array)[2:3]))
-    sfr_monthly_sd = sfr_monthly # store the standard deviation as well
-    n_reaches = dim(sfr_array)[2]
-    for(i in 1:length(num_days)){
-      if(verbose){print(paste("processing month", i))}
-      n_days = as.numeric(num_days[i])
-      month_indices = month_start_index : (month_start_index + n_days - 1)
-      #extract values for each month
-      sfr_daily_vals = sfr_array[month_indices,,]
-      for(j in 1:n_reaches){
-        sfr_daily_vals_j = sfr_daily_vals[month_indices,j,]
-        sfr_monthly[i,j,] = apply(X = sfr_daily_vals_j, MARGIN = 2,
-                                  function(x){mean(as.numeric(x))})
-        if(save_standard_dev==T){
-          sfr_monthly_sd[i,j,] = apply(X = sfr_daily_vals_j, MARGIN = 2,
-                                       function(x){sd(as.numeric(x))/ mean(as.numeric(x))})
-        }
-
-      }
-
-    }
-
-    return(list(sfr_monthly, sfr_monthly_sd))
-
-  }
+  # aggregate_daily_sfr_array_to_monthly = function(sfr_array, verbose=F, save_standard_dev = T,
+  #                                                 start_date = as.Date("1990-10-01")){
+  #   # for reference
+  #   colname_list = c("LAYER", "ROW","COL", "STREAM_SEG_NO", "RCH_NO", "FLOW_INTO_STRM_RCH",
+  #                    "FLOW_TO_AQUIFER", "FLOW_OUT_OF_STRM_RCH","OVRLND_RUNOFF","DIRECT PRECIP",
+  #                    "STREAM_ET","STREAM_HEAD", "STREAM_DEPTH", "STREAM_WIDTH",
+  #                    "STREAMBED_CONDCTNC","STREAMBED_GRADIENT")
+  #
+  #
+  #   # assumes SFR array consists of i number of daily flow values
+  #   # assumes daily values do not start or stop in the middle of a month
+  #   # Time series setup
+  #   n_days = dim(sfr_array)[1]
+  #   end_day = start_date + n_days - 1
+  #   days_vector = seq.Date(from=start_date, to = end_day, by = "day")
+  #   month_day1 = floor_date(days_vector, unit = "month")
+  #   month_vector = seq.Date(from=start_date, to = end_day, by = "month")
+  #   month_vector_plus1 = seq.Date(from=start_date, to = end_day+1, by = "month")
+  #   num_days = diff(month_vector_plus1)
+  #   # initialize sfr index
+  #   month_start_index = 1
+  #   # initialize sfr monthly array
+  #   sfr_monthly = array(data = NA, dim = c(length(month_vector),
+  #                                          dim(sfr_array)[2:3]))
+  #   sfr_monthly_sd = sfr_monthly # store the standard deviation as well
+  #   n_reaches = dim(sfr_array)[2]
+  #   for(i in 1:length(num_days)){
+  #     if(verbose){print(paste("processing month", i))}
+  #     n_days = as.numeric(num_days[i])
+  #     month_indices = month_start_index : (month_start_index + n_days - 1)
+  #     #extract values for each month
+  #     sfr_daily_vals = sfr_array[month_indices,,]
+  #     for(j in 1:n_reaches){
+  #       sfr_daily_vals_j = sfr_daily_vals[month_indices,j,]
+  #       sfr_monthly[i,j,] = apply(X = sfr_daily_vals_j, MARGIN = 2,
+  #                                 function(x){mean(as.numeric(x))})
+  #       if(save_standard_dev==T){
+  #         sfr_monthly_sd[i,j,] = apply(X = sfr_daily_vals_j, MARGIN = 2,
+  #                                      function(x){sd(as.numeric(x))/ mean(as.numeric(x))})
+  #       }
+  #
+  #     }
+  #
+  #   }
+  #
+  #   return(list(sfr_monthly, sfr_monthly_sd))
+  #
+  # }
 
   # Read in reach arrays
   # Reading SFR data takes ~5 mins. Save to an .RDS file for convenience
@@ -342,20 +342,20 @@ streamflow_comparison_maps = function(){
 
   # Set up for SFR stream network maps
 
-  dim(reach_array1)
+  # dim(reach_array1)
 
   # Check flow max
   # max(as.numeric(as.character(reach_array1[,,8]))) # max flow out
   # max(as.numeric(as.character(reach_array2[,,8]))) # max flow out
   max(as.numeric(as.character(reach_array_daily1[,,8]))) # max flow out
-  summary(as.numeric(as.character(reach_array_daily2[12000:12266,,8])) -
-            as.numeric(as.character(reach_array_daily1[12000:12266,,8])))
+  summary(as.numeric(as.character(reach_array_daily2[12054:12266,,8])) -
+            as.numeric(as.character(reach_array_daily1[12054:12266,,8])))
   # Breaks for flow
   if(flow_units == "Flow (1000 m3/day)"){flow_breaks_manual = c(0, 2.5, 20, 50, 100, 300, 700, 6500)*1000 }
   if(flow_units == "Flow (cfs)"){flow_breaks_manual = c(0, 2.5, 20, 50, 100, 300, 700, 6500)*1000 * m3day_to_cfs}
   if(flow_units == "Flow Diff. (1000 m3/day)"){flow_breaks_manual = c(0, 2.5, 20, 50, 100, 300, 700, 6500)*1000 }
   # if(flow_units == "Flow Diff. (cfs)"){flow_breaks_manual = c(0, 1, 5, 10, 15, 20, 100, 3000)}
-  if(flow_units == "Flow Diff. (cfs)"){flow_breaks_manual = c(-1000, -100, -10, -1, 1, 10, 100, 3000)}
+  if(flow_units == "Flow Diff. (cfs)"){flow_breaks_manual = c(-100, -10, -2, -1, 1, 2, 10, 100)}
 
   #Set color palette
   n_classes = 7
@@ -379,7 +379,7 @@ streamflow_comparison_maps = function(){
 
   #make a pdf appendix of each timestep of dry or wet
 
-  process_stress_period_array_matrix = function(spa){
+  process_stress_period_array_matrix = function(spa, flow_units){
     colname_list = c("LAYER", "ROW","COL", "STREAM_SEG_NO", "RCH_NO", "FLOW_INTO_STRM_RCH",
                      "FLOW_TO_AQUIFER", "FLOW_OUT_OF_STRM_RCH","OVRLND_RUNOFF","DIRECT PRECIP",
                      "STREAM_ET","STREAM_HEAD", "STREAM_DEPTH", "STREAM_WIDTH",
@@ -389,6 +389,13 @@ streamflow_comparison_maps = function(){
     colnames(spa)=colname_list
     spa$row_col = paste(spa$ROW, spa$COL, sep="_")
     spa$FLOW_OUT_OF_STRM_RCH = as.numeric(as.character(spa$FLOW_OUT_OF_STRM_RCH))
+    if(flow_units %in% c("Flow (1000 m3/day)", "Flow Diff. (1000 m3/day)")){
+      spa$FLOW_OUT_OF_STRM_RCH = spa$FLOW_OUT_OF_STRM_RCH / 1000
+    }
+    if(flow_units %in% c("Flow (cfs)", "Flow Diff. (cfs)")){
+      spa$FLOW_OUT_OF_STRM_RCH = spa$FLOW_OUT_OF_STRM_RCH * m3day_to_cfs
+    }
+
     spa$STREAM_DEPTH = as.numeric(as.character(spa$STREAM_DEPTH))
     return(spa)
   }
@@ -403,17 +410,17 @@ streamflow_comparison_maps = function(){
     # sp_tab$water_year = year(sp_tab$date); sp_tab$water_year[sp_tab$month>9] = year(sp_tab$date[sp_tab$month>9])+1
 
     # extended sp tab
-    start_date = as.Date("1990-10-01"); end_date = as.Date("2024-04-30")
+    start_date = as.Date("1990-10-01"); end_date = as.Date("2024-07-31")
     n_stress_daily = as.numeric(end_date-start_date+1)
     sp_tab=data.frame(stress_period=1:n_stress_daily, date=seq.Date(from = start_date, by = "day", length.out=n_stress_daily))
     sp_tab$month = month(sp_tab$date)
     sp_tab$water_year = year(sp_tab$date); sp_tab$water_year[sp_tab$month>9] = year(sp_tab$date[sp_tab$month>9])+1
 
     #to make a pdf appendix with each stress period plotted:
-    pdf_name = paste0("sfr_diff", s2, "minus",s1, "_9.pdf")
+    pdf_name = paste0("sfr_diff", s2, "minus",s1, "_04.pdf")
     pdf(file.path(plots1_dir, pdf_name), width=8.5, height=11)
     # for(i in 395:nrow(sp_tab)){ #i = 12120, Dec 6th
-    for(i in 12000:12266){ #i = 12120, Dec 6th
+    for(i in 12054:12266){ #i = 12120, Dec 6th
 
       #to make a png figure with manually selected stress periods plotted
       # png(file.path(out_dir, "wet_dry_stream_4yrs.png"),
@@ -430,8 +437,8 @@ streamflow_comparison_maps = function(){
       # title_text = c(paste(month.abb[sp_tab$month[i]],"of water year",sp_tab$water_year[i]),
       title_text = c(paste(sp_tab$date[i]),
                      paste(s1, "minus", s2))
-      spa1 = process_stress_period_array_matrix(spa1)
-      spa2 = process_stress_period_array_matrix(spa2)
+      spa1 = process_stress_period_array_matrix(spa1, flow_units = flow_units)
+      spa2 = process_stress_period_array_matrix(spa2, flow_units = flow_units)
 
       keep_cols = c("LAYER", "ROW", "COL", "STREAM_SEG_NO", "RCH_NO","row_col")
       diff = spa1[,keep_cols]
