@@ -4,10 +4,10 @@
 \alias{predict_and_destandardize}
 \title{Title}
 \usage{
-predict_and_destandardize(gauge, lm_object, lm_nodata = NULL)
+predict_and_destandardize(gauge, lm_object, lm_nodata = NULL, use_obs = TRUE)
 }
 \arguments{
-\item{lm_nodata}{}
+\item{use_obs}{(T/F) overwrite predictions with recorded (observed) data}
 }
 \description{
 Title

@@ -7,6 +7,7 @@ get_tributary_flows <- function(start_date=as.Date('1990-10-01'),
                                 regression_cutoff_date = as.Date('2018-10-01'),
                                 monthly=TRUE,
                                 one_regression=TRUE,
+                                use_obs=TRUE,
                                 verbose = TRUE) {
 
   #-- Read in data
@@ -71,11 +72,11 @@ get_tributary_flows <- function(start_date=as.Date('1990-10-01'),
 
   #-- pRedict
   if (one_regression) {
-    preWY1973_pred <- lapply(preWY1973, predict_and_destandardize, lm_object=rm.preWY1973)
-    postWY1973_pred <- lapply(postWY1973, predict_and_destandardize, lm_object=rm.postWY1973, lm_nodata=rm.preWY1973)
+    preWY1973_pred <- lapply(preWY1973, predict_and_destandardize, lm_object=rm.preWY1973, use_obs=use_obs)
+    postWY1973_pred <- lapply(postWY1973, predict_and_destandardize, lm_object=rm.postWY1973, lm_nodata=rm.preWY1973, use_obs=use_obs)
   } else {
-    preWY1973_pred <- mapply(predict_and_destandardize, preWY1973, rm.preWY1973, rm.postWY1973, SIMPLIFY = F)
-    postWY1973_pred <- mapply(predict_and_destandardize, postWY1973, rm.postWY1973, rm.preWY1973, SIMPLIFY = F)
+    preWY1973_pred <- mapply(predict_and_destandardize, preWY1973, rm.preWY1973, rm.postWY1973, use_obs=use_obs, SIMPLIFY = F)
+    postWY1973_pred <- mapply(predict_and_destandardize, postWY1973, rm.postWY1973, rm.preWY1973, use_obs=use_obs, SIMPLIFY = F)
   }
 
   #-- Recombine
@@ -344,12 +345,13 @@ add_FJ_to_dflist <- function(gaugelist, FJ_id=1, ...) {
 #' @param gauge
 #' @param lm_object
 #' @param lm_nodata
+#' @param use_obs (T/F) overwrite predictions with recorded (observed) data
 #'
 #' @return
 #' @export
 #'
 #' @examples
-predict_and_destandardize <- function(gauge, lm_object, lm_nodata=NULL) {
+predict_and_destandardize <- function(gauge, lm_object, lm_nodata=NULL, use_obs=TRUE) {
   # By default, use the main lm_object
   lm_use <- lm_object
 
@@ -357,6 +359,9 @@ predict_and_destandardize <- function(gauge, lm_object, lm_nodata=NULL) {
   if (!is.null(lm_nodata) & nrow(gauge[!is.na(gauge$normLogAF_trib),]) == 0) {
     lm_use <- lm_nodata
   }
+
+  # If we've been directed to not use obs, NA them out
+  if (use_obs == F) {gauge$normLogAF_trib = NA}
 
   # Predict, adding "source" column for tracking
   gauge$pred <- predict(lm_use, newdata=gauge)
