@@ -72,6 +72,9 @@ x86/
 [Aa][Rr][Mm]64/
 BuildLog.htm
 
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+
 ### R ###
 # History files
 .Rhistory
