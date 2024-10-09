@@ -46,7 +46,7 @@ write_SWBM_drain_files <- function(num_stress_periods,
 
 #-------------------------------------------------------------------------------------------------#
 
-#' Write SWBM General Inputs File
+#' Write SWBM General Inputs File (DEPRECIATED)
 #'
 #' Writes all basecase values by default
 #'
@@ -255,7 +255,6 @@ write_SWBM_main_input_file <- function(output_dir,
                                        nSFR_inflow_segs = 12,
                                        nrows = 440,
                                        ncols = 210,
-                                       RD_Mult = 1.4,
                                        neighborRuleYearDay = 250,
                                        absoluteIrrDate = c(5,15),
                                        writeUCODE=TRUE,
@@ -316,9 +315,9 @@ write_SWBM_main_input_file <- function(output_dir,
   writeLines("END OPTIONS", file_conn)
 
   # PARAMETERS Block
-  writeLines("\nBEGIN PARAMETERS", file_conn)
-  writeLines(sprintf("  RD_MULT    %.1f", RD_Mult), file_conn)
-  writeLines("END PARAMETERS", file_conn)
+  #writeLines("\nBEGIN PARAMETERS", file_conn)
+  #writeLines(sprintf("  RD_MULT    %.1f", RD_Mult), file_conn)
+  #writeLines("END PARAMETERS", file_conn)
 
   # INPUT_FILES Block
   writeLines("\nBEGIN INPUT_FILES", file_conn)

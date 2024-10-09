@@ -20,7 +20,6 @@ write_SWBM_main_input_file(
   nSFR_inflow_segs = 12,
   nrows = 440,
   ncols = 210,
-  RD_Mult = 1.4,
   neighborRuleYearDay = 250,
   absoluteIrrDate = c(5, 15),
   writeUCODE = TRUE,
@@ -76,8 +75,6 @@ write_SWBM_main_input_file(
 
 \item{ncols}{Integer. The number of columns in the model grid (NCOLS in the input file). Default is 210.}
 
-\item{RD_Mult}{Numeric. The root depth multiplier (RD_MULT in the input file). Default is 1.4.}
-
 \item{neighborRuleYearDay}{Integer. The neighbor rule cutoff day of the year (NEIGHBOR_RULE in the input file). Default is 250.}
 
 \item{absoluteIrrDate}{Integer vector of length 2. The absolute irrigation cutoff date as month and day (ABSOLUTE_IRR_DATE in the input file). Default is c(5, 15).}
@@ -119,6 +116,8 @@ write_SWBM_main_input_file(
 \item{print_daily_fields}{List of named lists. Each element should contain \code{id} (Integer, Field ID) and \code{prefix} (Character, filename prefix) for fields to print daily in the PRINT_DAILY block.}
 
 \item{verbose}{Logical. Whether to print status information to the console. Default is TRUE.}
+
+\item{RD_Mult}{Numeric. The root depth multiplier (RD_MULT in the input file). Default is 1.4.}
 }
 \value{
 None. The function writes the input file to the specified directory.

@@ -25,10 +25,6 @@ BEGIN OPTIONS
   WRITE_UCODE
 END OPTIONS
 
-BEGIN PARAMETERS
-  RD_MULT    1.4
-END PARAMETERS
-
 BEGIN INPUT_FILES
   PRECIP            precip.txt
   ET                ref_et.txt

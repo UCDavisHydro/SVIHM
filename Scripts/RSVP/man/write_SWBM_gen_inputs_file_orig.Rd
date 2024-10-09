@@ -2,7 +2,7 @@
 % Please edit documentation in R/writeSWBMInputs.R
 \name{write_SWBM_gen_inputs_file_orig}
 \alias{write_SWBM_gen_inputs_file_orig}
-\title{Write SWBM General Inputs File}
+\title{Write SWBM General Inputs File (DEPRECIATED)}
 \usage{
 write_SWBM_gen_inputs_file_orig(
   num_stress_periods,
