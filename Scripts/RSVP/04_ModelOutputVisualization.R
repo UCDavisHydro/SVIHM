@@ -42,19 +42,19 @@ start_date = as.Date(paste0(wy_start-1,"-10-01"))
 
 #-- Observed
 
-#-- FJ
+#-- Fort Jones
 fj_obs <- read.csv(file.path(update_dir, list.files(update_dir, pattern = 'FJ (USGS 11519500)*')),
                    stringsAsFactors = F)
 fj_obs$Date <- as.Date(fj_obs$Date)
 
-#-- Serpa Lane (Not in GITHUB - stored locally #TODO permissions)
-sl_obs <- read.table('c:/Users/lelan/Box/Research/Scott Valley/Data/Streamflow/Scott River Above Serpa Lane.txt',
+#-- Serpa Lane
+sl_obs <- read.table(file.path(data_dir['ref_plot_dir','loc'],'Scott River Above Serpa Lane.txt'),
                      header=T)
 sl_obs$Date <- as.Date(sl_obs$Date, format = '%m/%d/%Y')
 sl_obs$Flow <- sl_obs$Streamflow_cfs
 
-#-- Below Youngs Dam (Not in GITHUB - stored locally #TODO permissions)
-by_obs <- read.table('c:/Users/lelan/Box/Research/Scott Valley/Data/Streamflow/Scott River Below Youngs Dam.txt',
+#-- Below Youngs Dam
+by_obs <- read.table(file.path(data_dir['ref_plot_dir','loc'],'Scott River Below Youngs Dam.txt'),
                      header=T)
 by_obs$Date <- as.Date(by_obs$Date, format = '%m/%d/%Y')
 by_obs$Flow <- by_obs$Streamflow_cfs
