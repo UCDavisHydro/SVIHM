@@ -14,6 +14,7 @@ data_dir <- read.table(text=
                     input_files_dir  SVIHM_Input_Files
                     time_indep_dir   SVIHM_Input_Files/time_independent_input_files
                     ref_data_dir     SVIHM_Input_Files/reference_data
+                    ref_plot_dir     SVIHM_Input_Files/reference_data_for_plots
                     scenario_dev_dir SVIHM_Input_Files/Scenario_Development
                     update_dir       SVIHM_Input_Files/Updates
                     sf_reg_dir       Streamflow_Regression_Model/

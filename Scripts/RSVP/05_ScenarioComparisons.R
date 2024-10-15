@@ -1260,3 +1260,131 @@ for(i in 1:length(tf_list)){
     num_days_to_add = num_days_needed - n_days_in_tab
   }
 }
+
+
+# Daily Out by Field Comparison -------------------------------------------
+
+basecase_2018_dir = "C:/Users/Claire/Documents/GitHub/SVIHM/Scenarios/basecase"
+basecase_dir = file.path(run_dir,"SWBM")
+
+daily_out_lines = readLines(file.path(basecase_dir, "print_daily.txt"))
+daily_out_lines = daily_out_lines[2:length(daily_out_lines)]# remove 1st info row
+daily_out_items = unlist(strsplit(daily_out_lines, "  "))
+daily_out_items = daily_out_items[!grepl(daily_out_items, pattern = "!")]# remove a comment with !
+daily_out_df = as.data.frame(matrix(data = daily_out_items, ncol = 2, byrow =T))
+colnames(daily_out_df) = c("poly_num", "descrip")
+file_names = daily_out_df$descrip
+
+poly_tab_basecase = read.table(file.path(basecase_dir, "polygons_table.txt"), header = T)
+
+comp_dir = file.path('../../Scenarios', "_Comparison_Plots")
+
+pdf(file = file.path(comp_dir, "swbm basecase comparison 16.pdf"), width = 8.5, height = 11)
+for(i in 1:nrow(daily_out_df)){
+  poly_num = daily_out_df$poly_num[i]
+  irr = poly_tab_basecase$SWBM_IRR[poly_tab_basecase$SWBM_id==poly_num]
+  wat_src = poly_tab_basecase$WATERSOURC[poly_tab_basecase$SWBM_id==poly_num]
+  crop = poly_tab_basecase$SWBM_LU[poly_tab_basecase$SWBM_id==poly_num]
+  file_name = daily_out_df$descrip[i]
+
+  daily_2018 = read.table(file = file.path(basecase_2018_dir, paste0(file_name, "_daily_out.dat")),
+                          header = T)
+  daily_2018$month = seq.Date(from = start_date, length.out = nrow(daily_2018), by = "day")
+  daily = read.table(file = file.path(basecase_dir, paste0(file_name, "_daily_out.dat")),
+                     header = T)
+  daily$month = seq.Date(from = start_date, length.out = nrow(daily), by = "day")
+  daily = daily[daily$month<= max(daily_2018$month),]# crop to 2018 data
+
+  # aet_diff = daily$aET - daily_2018$actualET
+  # hist(aet_diff)
+
+  par(mfrow = c(3,2))
+
+  # cumulative pET plot
+  plot(x = daily_2018$month, y = cumsum(daily_2018$ET), type = "l", lwd=3,
+       main = paste0(file_name," cumulative ET; crop ", crop, "; Wat. Src.",wat_src , "; Irr ",irr), #xaxt="n",
+       xlab = "Date",ylab="cumulative ET (m)")
+  lines(daily$month, cumsum(daily$pET), col = "red", lwd=3)
+  grid()
+  # legend(x = "topleft", col=c("black","red"), lwd=2,
+  #        legend = c("basecase 2018", "basecase dev"))
+
+  # cumulative aET lines
+  lines(x = daily_2018$month, y = cumsum(daily_2018$actualET), lwd=1,
+        lty = 2, col = "darkgray")
+  lines(daily$month, cumsum(daily$aET), col = "pink", lwd=1, lty = 2)
+  grid()
+  legend(x = "topleft", col=c("black","red", "darkgray", "pink"), lwd=c(3,3,1,1), lty = c(1,1,2,2),
+         legend = c("basecase 2018 pET", "basecase dev pET", "basecase 2018 aET", "basecase dev aET"))
+  # # cumulative aET plot
+  # plot(x = daily_2018$month, y = cumsum(daily_2018$actualET), type = "l", lwd=2,
+  #      main = paste0(file_name," cumulative aET"), #xaxt="n",
+  #      xlab = "Date",ylab="cumulative aET (m)")
+  # lines(daily$month, cumsum(daily$aET), col = "red", lwd=2)
+  # grid()
+  # legend(x = "topleft", col=c("black","red"), lwd=2,
+  #        legend = c("basecase 2018", "basecase dev"))
+
+  # cumulative precip plot
+  plot(x = daily_2018$month, y = cumsum(daily_2018$precip_adj), type = "l", lwd=2,
+       main = paste0(file_name," cumulative precip"), #xaxt="n",
+       xlab = "Date",ylab="cumulative precip (m)")
+  lines(daily$month, cumsum(daily$effective_precip), col = "red", lwd=2)
+  grid()
+  legend(x = "topleft", col=c("black","red"), lwd=2,
+         legend = c("basecase 2018", "basecase dev"))
+
+
+  # soil moisture tracker plot
+  # plot(x = daily_2018$month, y = daily_2018$moisture, type = "l", lwd=3,
+  #      main = paste0(file_name," soil moisture"), #xaxt="n",
+  #      xlab = "Date",ylab="soil moisture (m)")
+  plot(x = daily$month, y = daily$swc, type = "l", lwd=3, col = NA,
+       main = paste0(file_name," soil moisture"), #xaxt="n",
+       xlab = "Date",ylab="soil moisture (m)")
+  lines(daily_2018$month, daily_2018$moisture, col = "black", lwd=3)
+  lines(daily$month, daily$swc, col = "red", lwd=1)
+  grid()
+  legend(x = "bottomright", col=c("black","red"), lwd=c(3,1),
+         legend = c("basecase 2018", "basecase dev"))
+
+  # recharge plot
+  plot(x = daily_2018$month, y = cumsum(daily_2018$rch), type = "l", lwd=2,
+       main = paste0(file_name," recharge"), #xaxt="n",
+       xlab = "Date",ylab="soil moisture (m)")
+  lines(daily$month, cumsum(daily$rch), col = "red", lwd=2)
+  grid()
+  legend(x = "topleft", col=c("black","red"), lwd=2,
+         legend = c("basecase 2018", "basecase dev"))
+
+
+
+  # cumulative gw irr plot
+  plot(x = daily_2018$month, y = cumsum(daily_2018$well), type = "l", lwd=2,
+       main = paste0(file_name," cumulative GW Irr"), #xaxt="n",
+       xlab = "Date",ylab="cumulative GW irr (m)")
+  lines(daily$month, cumsum(daily$GW_irr), col = "red", lwd=2)
+  grid()
+  legend(x = "topleft", col=c("black","red"), lwd=2,
+         legend = c("basecase 2018", "basecase dev"))
+
+
+  # cumulative sw irr plot
+  plot(x = daily_2018$month, y = cumsum(daily_2018$irrig - daily_2018$well),
+       type = "l", lwd=2,
+       main = paste0(file_name," cumulative SW irr"), #xaxt="n",
+       xlab = "Date",ylab="cumulative SW irr (m)")
+  lines(daily$month, cumsum(daily$SW_irrig), col = "red", lwd=2)
+  grid()
+  legend(x = "topleft", col=c("black","red"), lwd=2,
+         legend = c("basecase 2018", "basecase dev"))
+
+
+  if(abs(sum(daily_2018$actualET) - sum(daily$aET)) > 2){
+    print(paste("more than 5 m diff in cum total for", file_name))
+  }
+}
+dev.off()
+
+
+

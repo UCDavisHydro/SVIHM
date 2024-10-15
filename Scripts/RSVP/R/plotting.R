@@ -696,3 +696,235 @@ plot.scatterbox <- function(obs, sim, groups=NA, xlab='Observed Values', ylab='S
   plot(c(0),c(1), type='n', axes=F, xlab='', ylab='')
 }
 
+
+# Model Results -----------------------------------------------------------
+#-------------------------------------------------------------------------------------------------#
+
+#' Generate Streamflow Maps
+#'
+#' This function generates streamflow maps for selected stress periods from MODFLOW output. The streamflow data is processed, and a series of maps are generated showing the flow and depth of water in stream reaches, with flexible output options for PDF or PNG files.
+#'
+#' @param mf_dir Character string. Directory path where the MODFLOW files are located.
+#' @param out_dir Character string. Directory path where the output maps should be saved.
+#' @param stress_periods Numeric vector. Optional. A vector of stress period indices to plot. If NULL, all stress periods will be plotted. Defaults to NULL.
+#' @param save_as_pdf Logical. If TRUE, saves the output maps as a single PDF file. If FALSE, saves each stress period as a separate PNG file. Defaults to TRUE.
+#' @param pdf_name Character string. The name of the output PDF file. Only used if `save_as_pdf` is TRUE. Defaults to "wet_dry_stream_flipbook.pdf".
+#' @param flow_breaks_manual Numeric vector. Manual breaks for flow rate classification (in m3/day). Defaults to c(0, 2.5, 20, 50, 100, 300, 700, 6350) * 1000.
+#' @param n_classes Integer. Number of flow classes to use for color breaks in the map. Defaults to 7.
+#'
+#' @details
+#' This function reads the streamflow data from the MODFLOW global output file ("Streamflow_Global.dat") and processes the data to create a series of maps. It also reads the corresponding GIS data for stream segments and groundwater basin boundaries. The streamflow and depth data are plotted on maps with color coding based on user-defined breaks for flow rates. The output can either be a single PDF file or individual PNG images for each stress period.
+#'
+#' The function also allows users to select which stress periods to plot, with the option to plot all stress periods if none are specified. The flow breaks for color classification can be manually specified, and the number of flow classes for the color palette can also be adjusted.
+#'
+#' The function uses the `data_dir` dataframe internally to retrieve the path to the plot data directory.
+#'
+#' @return No return value. The function generates and saves the map files.
+#'
+#' @examples
+#' \dontrun{
+#' # Example usage:
+#' streamflow_maps(mf_dir = 'path_to_modflow_dir', out_dir = 'path_to_output_dir')
+#' }
+#'
+#' @export
+streamflow_maps <- function(mf_dir, out_dir,
+                            stress_periods = NULL,
+                            save_as_pdf = TRUE,
+                            pdf_name = "wet_dry_stream_flipbook.pdf",
+                            flow_breaks_manual = c(0, 2.5, 20, 50, 100, 300, 700, 6350) * 1000,
+                            n_classes = 7) {
+
+  # Access plot_data_dir from data_dir
+  plot_data_dir <- data_dir['ref_plot_dir', 'loc']
+
+  # Read and process streamflow data
+  sfr_glob_text <- readLines(file.path(mf_dir, "Streamflow_Global.dat"))
+  start_rows <- grep("STREAM LISTING", sfr_glob_text) + 5
+  n_reach <- start_rows[2] - start_rows[1] - 8  # 8 extra header rows at each timestep
+  colname_list <- c("LAYER", "ROW", "COL", "STREAM_SEG_NO", "RCH_NO", "FLOW_INTO_STRM_RCH",
+                    "FLOW_TO_AQUIFER", "FLOW_OUT_OF_STRM_RCH", "OVRLND_RUNOFF", "DIRECT PRECIP",
+                    "STREAM_ET", "STREAM_HEAD", "STREAM_DEPTH", "STREAM_WIDTH",
+                    "STREAMBED_CONDCTNC", "STREAMBED_GRADIENT")
+
+  # Read or create reach array
+  reach_array_path <- file.path(out_dir, "sfr_reach_array.RDS")
+  if (!file.exists(reach_array_path)) {
+    reach_array <- array(data = NA, dim = c(length(start_rows), n_reach, 16))
+    for (i in seq_along(start_rows)) {
+      sfr_stress <- sfr_glob_text[start_rows[i]:(start_rows[i] + n_reach - 1)]
+      for (j in seq_len(n_reach)) {
+        sfr_reach <- unlist(strsplit(trimws(sfr_stress[j]), " "))
+        sfr_reach <- sfr_reach[nchar(sfr_reach) > 0]
+        reach_array[i, j, ] <- sfr_reach
+      }
+    }
+    saveRDS(object = reach_array, file = reach_array_path)
+  } else {
+    reach_array <- readRDS(reach_array_path)
+  }
+
+  # Set color palette
+  pal <- rev(sequential_hcl(n_classes, palette = "ag_GrnYl"))
+
+  # Read GIS data
+  seg <- st_read(dsn = plot_data_dir, layer = "SFR_segments_sugar_pts") %>%
+    st_transform(crs = st_crs(3310))
+  seg$row_col <- paste(seg$row, seg$column, sep = "_")
+  seg$flow_out <- NA
+  seg$depth <- NA
+  seg$color <- NA
+
+  basin <- st_read(dsn = plot_data_dir, layer = "SGMA_B118_SV") %>%
+    st_transform(crs = st_crs(3310))
+  bg_poly <- st_buffer(x = basin, dist = 1e5)
+
+  # Process months and years for stress periods
+  start_date <- as.Date('1990-09-30')
+  stress_period_table <- data.frame(stress_period = seq_len(dim(reach_array)[1]))
+  sp_tab <- stress_period_table
+  sp_tab$date <- seq.Date(from = start_date, by = "month", length.out = nrow(sp_tab))
+  sp_tab$month <- format(sp_tab$date, "%m")
+  sp_tab$water_year <- as.numeric(format(sp_tab$date, "%Y"))
+  sp_tab$water_year[as.numeric(sp_tab$month) > 9] <- sp_tab$water_year[as.numeric(sp_tab$month) > 9] + 1
+
+  # Define output
+  if (is.null(stress_periods)) {
+    stress_periods <- seq_len(nrow(sp_tab))
+  }
+
+  # Create PDF or PNGs
+  if (save_as_pdf) {
+    pdf(file.path(out_dir, pdf_name), width = 8.5, height = 11)
+  } else {
+    png(file.path(out_dir, "wet_dry_stream_4yrs.png"), width = 7.5, height = 16, units = "in", res = 300)
+    par(mfrow = c(4, 1), mar = c(1, 1, 1, 1))
+  }
+
+  # Loop over selected stress periods and plot
+  for (i in stress_periods) {
+    spa <- data.frame(reach_array[i, , ])
+    colnames(spa) <- colname_list
+    spa$row_col <- paste(spa$ROW, spa$COL, sep = "_")
+    spa$FLOW_OUT_OF_STRM_RCH <- as.numeric(as.character(spa$FLOW_OUT_OF_STRM_RCH))
+    spa$STREAM_DEPTH <- as.numeric(as.character(spa$STREAM_DEPTH))
+
+    seg$flow_out <- spa$FLOW_OUT_OF_STRM_RCH[match(seg$row_col, spa$row_col)]
+    seg$color[is.na(seg$row_col)] <- "black"
+
+    title_text <- paste(month.abb[as.numeric(sp_tab$month[i])], "of water year", sp_tab$water_year[i])
+
+    plot(basin$geometry, main = title_text, sub = paste("Stress Period", sp_tab$stress_period[i]))
+    plot(bg_poly$geometry, col = "burlywood1", add = TRUE)
+    plot(basin$geometry, border = "black", add = TRUE)
+    plot(seg$geometry, pch = 19, cex = 1, add = TRUE,
+         col = pal[cut(na.omit(seg$flow_out), include.lowest = TRUE, breaks = flow_breaks_manual)])
+
+    legend_labels <- paste(flow_breaks_manual[1:n_classes] / 1000, flow_breaks_manual[2:(n_classes + 1)] / 1000, sep = "-")
+    legend("bottomleft", fill = pal, title = "Flow (1000 m3/day)", legend = legend_labels)
+  }
+
+  if (save_as_pdf) {
+    dev.off()
+  }
+}
+
+#-------------------------------------------------------------------------------------------------#
+
+#' Plot Volumetric Budget for SWBM
+#'
+#' This function generates plots for the Soil Water Balance Model (SWBM) volumetric budget, either
+#' on a monthly (line plot) or yearly (bar plot) basis.
+#'
+#' @param swbm_dir Character string. Directory path where the SWBM files are located.
+#' @param out_dir Character string. Directory path where the output plots should be saved.
+#' @param plot_type Character string. Type of plot to generate, either "monthly" or "yearly". Defaults to "monthly".
+#' @param write_csv Logical. If TRUE, writes the SWBM data to a CSV file. Defaults to TRUE.
+#' @param swbm_terms Character vector. The terms (components) of the SWBM volumetric budget to plot. Defaults to c('Precipitation', 'SW Irrigation', 'GW Irrigation', 'ET', 'Recharge', 'Runoff', 'Storage', 'Error').
+#' @param swbm_colors Character vector. Colors for each term in the plot. Defaults to c('lightblue1', 'darkcyan', 'midnightblue', 'goldenrod', 'green4', 'mistyrose', 'black', 'gray').
+#' @param origin_date Date. The starting date for the SWBM model run. Defaults to as.Date('1990-09-30').
+#'
+#' @details
+#' The function reads the SWBM output file `monthly_water_budget.dat`, processes the data, and
+#' generates a bar plot for the annual volumetric budget or a line plot for the monthly budget.
+#' The user can switch between monthly and yearly plots using the `plot_type` argument.
+#'
+#' @return No return value. The function generates and saves the plot files.
+#'
+#' @examples
+#' \dontrun{
+#' # Generate yearly volumetric budget plot:
+#' plot_swbm_volumetric_budget(swbm_dir = 'path_to_swbm_dir', out_dir = 'path_to_output_dir', plot_type = "yearly")
+#'
+#' # Generate monthly volumetric budget plot:
+#' plot_swbm_volumetric_budget(swbm_dir = 'path_to_swbm_dir', out_dir = 'path_to_output_dir', plot_type = "monthly")
+#' }
+#'
+#' @export
+plot_swbm_volumetric_budget <- function(swbm_dir, out_dir,
+                                        plot_type = c("monthly", "yearly"),
+                                        write_csv = TRUE,
+
+                                        swbm_terms = c('Precipitation', 'SW Irrigation', 'GW Irrigation', 'ET',
+                                                       'Recharge', 'Runoff', 'Storage', 'Error'),
+                                        swbm_colors = c('lightblue1', 'blueviolet', 'midnightblue', 'goldenrod',
+                                                        'chartreuse4', 'mistyrose', 'orangered3', 'gray'),
+                                        origin_date = as.Date('1990-09-30')) {
+
+  plot_type <- match.arg(plot_type)
+
+  # Read and clean data frame
+  swbm_columns = c('Stress_Period',swbm_terms)
+  swbm_data <- read.table(file.path(swbm_dir, 'monthly_water_budget.dat'), header = TRUE)
+  names(swbm_data) <- swbm_columns
+
+  if (write_csv) {
+    write.csv(swbm_data, file = file.path(out_dir, paste0("SWBM_", plot_type, "_Budget.csv")), row.names = FALSE, quote = FALSE)
+  }
+
+  # Process dates for plotting
+  swbm_data$Date <- mftime2date(swbm_data$Stress_Period, ts = 1, origin_date = origin_date)
+  swbm_data$WY <- get_water_year(swbm_data$Date)
+
+  if (plot_type == "yearly") {
+    swbm_annual <- aggregate(. ~ WY, swbm_data[, !names(swbm_data) %in% c('Date', 'Stress_Period')], FUN = sum)
+
+    # Melt data for plotting
+    swbm_annual_melt <- reshape2::melt(swbm_annual, id.vars = 'WY')
+    swbm_annual_melt$variable <- factor(swbm_annual_melt$variable, levels = swbm_terms)
+
+    # Create the yearly plot
+    swbm_plot <- ggplot(swbm_annual_melt, aes(x = WY, y = value / 1E6, fill = variable)) +
+      geom_bar(stat = 'identity', color = 'black', width = 0.95, size = 0.1) +
+      scale_y_continuous(limits = c(-300, 300), breaks = seq(-300, 300, by = 100), expand = c(0, 0)) +
+      labs(x = '', y = bquote('Volume (' * Mm^3 * ')')) +
+      ggtitle('Soil Zone Annual Budget') +
+      scale_fill_manual(values = swbm_colors, name="Budget Term") +
+      theme_minimal()
+
+    ggsave(filename = file.path(out_dir, "SWBM_Budget_Annual_Barplot.pdf"), plot = swbm_plot, width = 11, height = 8.5)
+  } else if (plot_type == "monthly") {
+    # Data is already monthly...
+
+    # Melt data for plotting
+    swbm_monthly_melt <- reshape2::melt(swbm_data[,!names(swbm_data) %in% c('Stress_Period')], id.vars = c('Date', 'WY'))
+    swbm_monthly_melt$variable <- factor(swbm_monthly_melt$variable, levels = swbm_terms)
+
+    # Create the monthly plot
+    pdf(file = file.path(out_dir, "SWBM_Budget_Monthly_Lineplots.pdf"), width = 8.5, height = 11 / 2)
+    for (wy in unique(swbm_data$WY)) {
+      datelims <- range(swbm_data$Date[swbm_data$WY == wy])
+      swbm_plot <- ggplot(swbm_monthly_melt[swbm_monthly_melt$WY == wy, ], aes(x = Date, y = value / 1E6, color = variable)) +
+        geom_line(size = 2) +
+        scale_color_manual(values = swbm_colors, name="Budget Term") +
+        scale_x_date(limits = datelims) +
+        labs(x = '', y = bquote('Volume (' * Mm^3 * ')')) +
+        ggtitle(paste('Soil Zone Monthly Budget - WY', wy)) +
+        theme_minimal()
+      print(swbm_plot)
+    }
+    dev.off()
+  }
+}
+
+#-------------------------------------------------------------------------------------------------#
