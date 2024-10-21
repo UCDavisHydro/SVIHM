@@ -19,6 +19,7 @@ current_scenario = "basecase" # default is "basecase". Affects a variety of inpu
 # Current coded-up scenario names:
 # "basecase"
 # "basecase_noMAR"
+# "maxMAR2024"
 # "curtail_00_pct_all_years"
 # "curtail_10_pct_2022"
 # "curtail_30_pct_2022"

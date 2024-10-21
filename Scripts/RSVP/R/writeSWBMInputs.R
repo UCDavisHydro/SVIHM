@@ -877,7 +877,7 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
 #'
 write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
                                       output_dir, start_date, end_date) {
-  recognized_scenarios = c("basecase", "basecase_noMAR")
+  recognized_scenarios = c("basecase", "basecase_noMAR", "maxMAR2024")
   output_filename = "MAR_depth.txt"
 
   # pull reference land cover
@@ -920,18 +920,24 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
                            layer = "MAR_Fields_2024")
     mar_fields24=st_transform(mar_fields24, crs=sf::st_crs(svihm_fields))
     # read in and process MAR diversion volumes
-    mar_div = read.csv(file=file.path(data_dir["ref_data_dir","loc"],
-                                      "MAR 2024 season_ditch flows m3_5mins.csv"))
+    mar_app = read.csv(file=file.path(data_dir["ref_data_dir","loc"],
+                                      "Scott MAR wy 2024_cfs daily record.csv"),
+                       colClasses = c("character",rep("numeric",10)))
                                        # "MAR 2024 season_ditch flows m3day.csv") )
-    mar_div$TIMESTAMP = strptime(mar_div$TIMESTAMP, format = "%m/%d/%Y %R")
-    mar_div$Date = as.Date(mar_div$TIMESTAMP)
-    mar_div = mar_div[mar_div$Date<as.Date("2024-04-01"),]
-    # clean and aggregate
-    # aggregate to monthly
-    div_monthly = aggregate(x = mar_div$POD_m3,
-                            by=list(floor_date(x=mar_div$Date, "month")),
-                            FUN=sum )
-    colnames(div_monthly) = c("Month","m3_diverted")
+    mar_app$Date= as.Date(mar_app$Date, format = "%m/%d/%Y") # convert to dates
+    # convert NAs to 0s and rename columns to field letter ID
+    cfs_data = 2:ncol(mar_app) #identify columns with cfs data
+    mar_app[,cfs_data][is.na(mar_app[,cfs_data])]= 0
+    colnames(mar_app)[colnames(mar_app)!="Date"] = substr(colnames(mar_app)[colnames(mar_app)!="Date"], start=1, stop=1)
+    # convert from daily avg cfs to cubic meters per day
+    mar_app_m3day = mar_app
+    cfs_to_m3day = 1 * 60*60*24 / 35.3147
+    mar_app_m3day[,cfs_data] = round(mar_app[,cfs_data] * cfs_to_m3day)
+    # aggregate to monthly for MAR input file
+    mar_app_m3month = aggregate(x = mar_app_m3day[,cfs_data], by = list(month(mar_app_m3day$Date)),
+                                FUN = sum)
+
+    # CURRENTLY HERE 2024.10.21
     # make table of stress periods for assigning water volumes to MAR output tab
     months = seq.Date(from = as.Date("1990-10-01"),
                       to = floor_date(Sys.Date(), unit="month"),
