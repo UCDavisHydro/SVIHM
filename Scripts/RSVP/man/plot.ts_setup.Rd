@@ -16,7 +16,8 @@
   gridcolor2 = "grey93",
   las = 2,
   xlim_override = NULL,
-  ylim_min_diff = 10
+  ylim_min_diff = 10,
+  water_year_ticks = FALSE
 )
 }
 \arguments{
@@ -42,6 +43,9 @@
 \item{las}{numeric in {0,1,2,3}; the style of axis labels. See \code{\link[base]{par}} (default 2)}
 
 \item{ylim_min_diff}{overrides y axis limits with provided values (optional)}
+
+\item{water_year_ticks}{Logical, if TRUE, major x-axis ticks and labels will correspond to water years
+starting on October 1st. Otherwise, the x-axis is labeled with calendar years (default FALSE).}
 }
 \value{
 Plot Setup

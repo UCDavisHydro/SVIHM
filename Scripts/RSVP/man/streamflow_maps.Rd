@@ -49,3 +49,6 @@ streamflow_maps(mf_dir = 'path_to_modflow_dir', out_dir = 'path_to_output_dir')
 }
 
 }
+\author{
+{Claire Kouba}
+}

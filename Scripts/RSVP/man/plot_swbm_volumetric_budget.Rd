@@ -53,3 +53,6 @@ plot_swbm_volumetric_budget(swbm_dir = 'path_to_swbm_dir', out_dir = 'path_to_ou
 }
 
 }
+\author{
+{Claire Kouba, Leland Scantlebury}
+}

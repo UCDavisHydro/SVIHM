@@ -179,6 +179,8 @@ plot.precip.cumulative <- function(dates, ..., title=NULL, unit='mm', col=NULL){
 #' @param gridcolor2 color of minor gridlines (only used for log plots) (optional, default 'grey93')
 #' @param las numeric in {0,1,2,3}; the style of axis labels. See \code{\link[base]{par}} (default 2)
 #' @param ylim_min_diff overrides y axis limits with provided values (optional)
+#' @param water_year_ticks Logical, if TRUE, major x-axis ticks and labels will correspond to water years
+#'   starting on October 1st. Otherwise, the x-axis is labeled with calendar years (default FALSE).
 #'
 #' @return Plot Setup
 #' @author Leland Scantlebury
@@ -192,7 +194,8 @@ plot.precip.cumulative <- function(dates, ..., title=NULL, unit='mm', col=NULL){
 #' # Plot
 #' plot.ts_setup(dates, ys, xlabel='X', ylabel='Y')
 plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', bgcolor='grey90',
-                          gridcolor='white', gridcolor2='grey93', las=2, xlim_override=NULL, ylim_min_diff=10) {
+                          gridcolor='white', gridcolor2='grey93', las=2, xlim_override=NULL, ylim_min_diff=10,
+                          water_year_ticks=FALSE) {
 
   pdat <- list(...)
 
@@ -203,8 +206,21 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
   #-- Unlist dates if needed
   if (typeof(dates) == 'list') { dates <- do.call("c", dates) }
 
-  #-- xAxis breaks
-  xlim <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates),'year'), interval)
+  #-- Set x-axis breaks based on calendar or water year
+  if (water_year_ticks) {
+    # Start ticks on October 1st (water year)
+    xlim <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates), 'year'), 'year')
+    water_year_labels <- get_water_year(xlim)  # Get water year labels
+  } else {
+    if (interval == 'year') {
+      # Start ticks on January 1st (calendar year)
+      xlim <- seq(as.Date(paste0(format(min(dates), "%Y"), "-01-01")),
+                  ceiling_date(max(dates), 'year'), interval)
+    } else {
+      # For monthly or other intervals, start at the minimum date
+      xlim <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates), 'month'), interval)
+    }
+  }
 
   #-- Handle log10 y
   if (log=='y') {
@@ -239,14 +255,21 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
   }
 
   #-- x-axis
-  axis(1,at=xlim, labels=NA, tck=1, col=gridcolor, las=2)
+  if (water_year_ticks) {
+    axis(1, at = xlim, labels = water_year_labels, tck = 1, col = gridcolor, las = las, cex.axis = 1)
+  } else {
+    axis(1, at = xlim, labels = format(xlim, "%Y"), tck = 1, col = gridcolor, las = las, cex.axis = 1)
+  }
 
-  if(tolower(interval) == 'year'){
-    xlim_mon <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates),'year'), 'month')
-    axis(1,at=xlim_mon, labels=FALSE, tck=1, col=gridcolor2, las=las, cex.axis=1)
-    axis(1,at=xlim, labels=format(xlim, "%Y"), tck=1, col=gridcolor, las=las, cex.axis=1)
-  } else if (tolower(interval) == 'month'){
-    axis(1,at=xlim, labels=format(xlim, "%b-%Y"), tck=1, col=gridcolor, las=las, cex.axis=1)
+  #-- Optional monthly minor gridlines
+  if (tolower(interval) == 'year') {
+    xlim_mon <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates), 'year'), 'month')
+    axis(1, at = xlim_mon, labels = FALSE, tck = 1, col = gridcolor2, las = las, cex.axis = 1)
+    if (!water_year_ticks) {
+      axis(1, at = xlim, labels = format(xlim, "%Y"), tck = 1, col = gridcolor, las = las, cex.axis = 1)
+    }
+  } else if (tolower(interval) == 'month') {
+    axis(1, at = xlim, labels = format(xlim, "%b-%Y"), tck = 1, col = gridcolor, las = las, cex.axis = 1)
   }
 
   #-- y-axis
@@ -503,14 +526,14 @@ plot.pre_post_compare <- function(dates, obs, sim, split_date, ylabel, log='',
 
   #-- Pre Plot TS
   par(mar=c(4,3,2,1))  #bottom, left, top, right
-  plot.ts_setup(pre_dates, pre_obs, pre_sim, xlabel='Water Year Date', ylabel=ylabel, log=log, ...)
+  plot.ts_setup(pre_dates, pre_obs, pre_sim, xlabel='Calendar Year Date', ylabel=ylabel, log=log, ...)
   lines(pre_dates, pre_obs, col='dodgerblue2')
   lines(pre_dates, pre_sim, col='black')
   title(main=pre_title)
 
   #-- Post Plot TS
   par(mar=c(4,3,2,1))  #bottom, left, top, right
-  plot.ts_setup(pst_dates, pst_obs, pst_sim, xlabel='Water Year Date', ylabel=ylabel, log=log, ...)
+  plot.ts_setup(pst_dates, pst_obs, pst_sim, xlabel='Calendar Year Date', ylabel=ylabel, log=log, ...)
   lines(pst_dates, pst_obs, col='dodgerblue2')
   lines(pst_dates, pst_sim, col='black')
   title(main=post_title)
@@ -720,6 +743,7 @@ plot.scatterbox <- function(obs, sim, groups=NA, xlab='Observed Values', ylab='S
 #' The function uses the `data_dir` dataframe internally to retrieve the path to the plot data directory.
 #'
 #' @return No return value. The function generates and saves the map files.
+#' @author {Claire Kouba}
 #'
 #' @examples
 #' \dontrun{
@@ -850,6 +874,7 @@ streamflow_maps <- function(mf_dir, out_dir,
 #' The user can switch between monthly and yearly plots using the `plot_type` argument.
 #'
 #' @return No return value. The function generates and saves the plot files.
+#' @author {Claire Kouba, Leland Scantlebury}
 #'
 #' @examples
 #' \dontrun{
