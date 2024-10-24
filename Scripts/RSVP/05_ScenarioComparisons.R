@@ -85,15 +85,19 @@ create_sp_charts = FALSE  # Many SPs, very slow
 
 
 ### Plot 4: Flow difference maps for 2024 MAR applications
-s1 = "basecase_thru_2024.07.31"  # then process for stream maps.
+s1 = "basecase_thru_2024.09.30"  # then process for stream maps.
 s1_dir <- file.path('../../Scenarios', s1)
 # s1_dir = file.path('../../Run')
 swbm1_dir = file.path(s1_dir, 'SWBM')
 mf1_dir <- file.path(s1_dir, 'MODFLOW')
-s2 = "basecase_noMAR_thru_2024.07.31" #, then process for stream maps.
+s2 = "basecase_noMAR_thru_2024.09.30" #, then process for stream maps.
 s2_dir <- file.path('../../Scenarios',s2)
 swbm2_dir = file.path(s2_dir, 'SWBM')
 mf2_dir <- file.path(s2_dir, 'MODFLOW')
+s3 = "maxMAR2024_thru_2024.09.30" #, then process for stream maps.
+s3_dir <- file.path('../../Scenarios',s3)
+swbm3_dir = file.path(s3_dir, 'SWBM')
+mf3_dir <- file.path(s3_dir, 'MODFLOW')
 
 
 
@@ -103,7 +107,7 @@ plot_data_dir = file.path('../../SVIHM_Input_Files/reference_data_for_plots/')
 
 plots1_dir <- file.path(s1_dir, 'Plots')
 plots2_dir <- file.path(s2_dir, 'Plots')
-#plots3_dir <- file.path(s3_dir, "Plots")
+plots3_dir <- file.path(s3_dir, "Plots")
 #plots4_dir <- file.path(s4_dir, "Plots")
 out_dir = file.path('../../Scenarios', "_Comparison_Plots")
 
@@ -198,9 +202,9 @@ streams_sim1 <- list(import_sfr_gauge(file.path(mf1_dir, 'Streamflow_FJ_SVIHM.da
 streams_sim2 <- list(import_sfr_gauge(file.path(mf2_dir, 'Streamflow_FJ_SVIHM.dat'), origin_date = origin_date),
                      import_sfr_gauge(file.path(mf2_dir, 'Streamflow_AS_SVIHM.dat'), origin_date = origin_date),
                      import_sfr_gauge(file.path(mf2_dir, 'Streamflow_BY_SVIHM.dat'), origin_date = origin_date))
-# streams_sim3 <- list(import_sfr_gauge(file.path(mf3_dir, 'Streamflow_FJ_SVIHM.dat'), origin_date = origin_date),
-#                      import_sfr_gauge(file.path(mf3_dir, 'Streamflow_AS_SVIHM.dat'), origin_date = origin_date),
-#                      import_sfr_gauge(file.path(mf3_dir, 'Streamflow_BY_SVIHM.dat'), origin_date = origin_date))
+streams_sim3 <- list(import_sfr_gauge(file.path(mf3_dir, 'Streamflow_FJ_SVIHM.dat'), origin_date = origin_date),
+                     import_sfr_gauge(file.path(mf3_dir, 'Streamflow_AS_SVIHM.dat'), origin_date = origin_date),
+                     import_sfr_gauge(file.path(mf3_dir, 'Streamflow_BY_SVIHM.dat'), origin_date = origin_date))
 # streams_sim4 <- list(import_sfr_gauge(file.path(mf4_dir, 'Streamflow_FJ_SVIHM.dat'), origin_date = origin_date),
 #                      import_sfr_gauge(file.path(mf4_dir, 'Streamflow_AS_SVIHM.dat'), origin_date = origin_date),
 #                      import_sfr_gauge(file.path(mf4_dir, 'Streamflow_BY_SVIHM.dat'), origin_date = origin_date))
@@ -320,9 +324,9 @@ streamflow_comparison_maps = function(){
   if(!file.exists(file.path(plots2_dir, "sfr_reach_array.RDS"))){
     save_sfr_array(scen_dir = s2_dir)
   }
-  # if(!file.exists(file.path(plots3_dir, "sfr_reach_array.RDS"))){
-  #   save_sfr_array(scen_dir = s3_dir)
-  # }
+  if(!file.exists(file.path(plots3_dir, "sfr_reach_array.RDS"))){
+    save_sfr_array(scen_dir = s3_dir)
+  }
   # if(!file.exists(file.path(plots4_dir, "sfr_reach_array.RDS"))){
   #   save_sfr_array(scen_dir = s4_dir)
   # }
@@ -330,7 +334,7 @@ streamflow_comparison_maps = function(){
   reach_array_daily1 = readRDS(file.path(s1_dir,"Plots","sfr_reach_array.RDS"))
   # reach_array_daily1_subset = readRDS(file.path(s1_dir,"Plots","sfr_reach_array_23-24.RDS"))
   reach_array_daily2 = readRDS(file.path(s2_dir,"Plots","sfr_reach_array.RDS"))
-  # reach_array3 = readRDS(file.path(s3_dir,"Plots","sfr_reach_array.RDS"))
+  reach_array_daily3 = readRDS(file.path(s3_dir,"Plots","sfr_reach_array.RDS"))
   # reach_array4 = readRDS(file.path(s4_dir,"Plots","sfr_reach_array.RDS"))
 
   # sfr_mean_and_sd_sc1 = aggregate_daily_sfr_array_to_monthly(sfr_array = reach_array_daily1)
@@ -521,12 +525,13 @@ fj_flow_comparison = function(){
 
 
   # png(filename = file.path(out_dir, "basecase 2018 vs updated 2023 basecase.png"),
-  png(filename = file.path(out_dir, "basecase vs basecase with no MAR_thru 2024.07.31_updated legend.png"),
+  png(filename = file.path(out_dir, "basecase vs basecase with no MAR_thru 2024.09.30.png"),
+      # png(filename = file.path(out_dir, "basecase vs maxMAR2024_thru 2024.09.30.png"),
   # filename = "prelim fj comparison, 0 curtail, basecase and obs.png",
       height = 11/2, width = 18, units = "in", res = 300)
 
   flow_units = "Flow (cfs)"
-  date_lims = as.Date(c("2023-09-01","2024-08-01"))
+  date_lims = as.Date(c("2023-09-01","2024-10-01"))
   plot(x = fjsim1$Date, y = fjsim1$Flow_cfs, type = "l", log = "y",
        yaxt = "n", xaxt = "n", lwd=2, col = NA,
        # main = "Fort Jones Flow Comparison: Observed vs \n 2018 calibrated basecase, and updated 2023 basecase",
