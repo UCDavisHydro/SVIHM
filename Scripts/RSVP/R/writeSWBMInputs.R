@@ -902,7 +902,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
     mar_depth_output = field_df
   }
 
-  if(tolower(scenario_id) %in% c("basecase", "maxMAR2024")){
+  if(tolower(scenario_id) %in% tolower(c("basecase", "maxMAR2024"))){
     # Initialize output file
     mar_depth_output = field_df
     # 1) TO DO: add in observed MAR for winter 2023
@@ -929,7 +929,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
                                         "Scott MAR wy 2024_cfs daily record.csv"),
                          colClasses = c("character",rep("numeric",10)))
     }
-    if(tolower(scenario_id)=="maxMAR2024"){
+    if(tolower(scenario_id)==tolower("maxMAR2024")){
       mar_app = read.csv(file=file.path(data_dir["ref_data_dir","loc"],
                                         "Scott MAR wy 2024_cfs daily record_Max Div.csv"),
                          colClasses = c("character",rep("numeric",10)))
@@ -1013,7 +1013,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
             out_fields = gsub(x = colnames(mar_depth_output[,-1]),
                               pattern = "ID_", replacement = "")
             col_picker = which(sv_field$Poly_nmbr == out_fields) + 1
-            mar_depth_output[row_picker,col_picker] = rchMth_j_depth
+            mar_depth_output[row_picker,col_picker] = round(rchMth_j_depth,3)
 
           }
         }
@@ -1027,7 +1027,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
   # possible steps: read in fields and potentially adjudicated zone
   # potentially read in schedule of land use updates
 
-  if(!(tolower(scenario_id) %in% recognized_scenarios)){
+  if(!(tolower(scenario_id) %in% tolower(recognized_scenarios))){
     print("Warning: specified MAR scenario not recognized in current codebase. Using basecase MAR file (no irrigation applied for MAR)")
     mar_depth_output = field_df
   }
