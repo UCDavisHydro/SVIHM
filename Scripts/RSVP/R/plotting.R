@@ -181,6 +181,8 @@ plot.precip.cumulative <- function(dates, ..., title=NULL, unit='mm', col=NULL){
 #' @param ylim_min_diff overrides y axis limits with provided values (optional)
 #' @param water_year_ticks Logical, if TRUE, major x-axis ticks and labels will correspond to water years
 #'   starting on October 1st. Otherwise, the x-axis is labeled with calendar years (default FALSE).
+#' @param x.cex.axis Numeric value for adjusting the size of the x-axis labels (default 0.8).
+#' @param y.cex.axis Numeric value for adjusting the size of the y-axis labels (default 0.8).
 #'
 #' @return Plot Setup
 #' @author Leland Scantlebury
@@ -195,7 +197,7 @@ plot.precip.cumulative <- function(dates, ..., title=NULL, unit='mm', col=NULL){
 #' plot.ts_setup(dates, ys, xlabel='X', ylabel='Y')
 plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', bgcolor='grey90',
                           gridcolor='white', gridcolor2='grey93', las=2, xlim_override=NULL, ylim_min_diff=10,
-                          water_year_ticks=FALSE) {
+                          water_year_ticks=FALSE, x.cex.axis=0.8, y.cex.axis=0.8) {
 
   pdat <- list(...)
 
@@ -215,7 +217,7 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
     if (interval == 'year') {
       # Start ticks on January 1st (calendar year)
       xlim <- seq(as.Date(paste0(format(min(dates), "%Y"), "-01-01")),
-                  ceiling_date(max(dates), 'year'), interval)
+                  as.Date(ceiling_date(max(dates), 'year')), interval)
     } else {
       # For monthly or other intervals, start at the minimum date
       xlim <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates), 'month'), interval)
@@ -255,21 +257,19 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
   }
 
   #-- x-axis
-  if (water_year_ticks) {
-    axis(1, at = xlim, labels = water_year_labels, tck = 1, col = gridcolor, las = las, cex.axis = 1)
-  } else {
-    axis(1, at = xlim, labels = format(xlim, "%Y"), tck = 1, col = gridcolor, las = las, cex.axis = 1)
-  }
-
-  #-- Optional monthly minor gridlines
   if (tolower(interval) == 'year') {
-    xlim_mon <- seq(floor_date(min(dates), 'month'), ceiling_date(max(dates), 'year'), 'month')
+    xlim_mon <- seq(floor_date(min(xlim), 'month'), ceiling_date(max(xlim), 'year'), 'month')
     axis(1, at = xlim_mon, labels = FALSE, tck = 1, col = gridcolor2, las = las, cex.axis = 1)
-    if (!water_year_ticks) {
-      axis(1, at = xlim, labels = format(xlim, "%Y"), tck = 1, col = gridcolor, las = las, cex.axis = 1)
+    axis(1, at = xlim_mon, labels = FALSE, tck = -0.015, col = 'black', las = las, cex.axis = 1)
+    if (water_year_ticks) {
+      axis(1, at = xlim, labels = water_year_labels, tck = 1, col = gridcolor, las = las, cex.axis = x.cex.axis)
+      axis(1, at = xlim, labels = NA, tck = -0.03, col = 'black', las = las, cex.axis = x.cex.axis)
+    } else {
+      axis(1, at = xlim, labels = format(xlim, "%Y"), tck = 1, col = gridcolor, las = las, cex.axis = x.cex.axis)
+      axis(1, at = xlim, labels = NA, tck = -0.03, col = 'black', las = las, cex.axis = x.cex.axis)
     }
   } else if (tolower(interval) == 'month') {
-    axis(1, at = xlim, labels = format(xlim, "%b-%Y"), tck = 1, col = gridcolor, las = las, cex.axis = 1)
+    axis(1, at = xlim, labels = format(xlim, "%b-%Y"), tck = 1, col = gridcolor, las = las, cex.axis = x.cex.axis)
   }
 
   #-- y-axis
@@ -277,10 +277,13 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
     major_grid <- 10^(log10(ylim[1]):log10(ylim[2])) %o% 1
     minor_grid <- 10^(log10(ylim[1]):log10(ylim[2])) %o% 1:9
     axis(2,minor_grid,tck=1,col=gridcolor2,labels=FALSE,las=1)
-    axis(2,major_grid,tck=1,col=gridcolor,labels=TRUE,las=1)
+    axis(2,major_grid,tck=1,col=gridcolor,labels=TRUE,las=1, cex.axis = y.cex.axis)
+    axis(2,major_grid,tck=-0.03,col='black',labels=FALSE,las=1)
+    axis(2,minor_grid,tck=-0.015,col='black',labels=FALSE,las=1)
   } else {
     # In automatic spacing we trust
     axis(2,tck=1,col=gridcolor,labels=TRUE,las=1)
+    axis(2,tck=-0.03,col='black',labels=FALSE,las=1)
   }
 
   #-- Clean up
@@ -525,14 +528,14 @@ plot.pre_post_compare <- function(dates, obs, sim, split_date, ylabel, log='',
          heights = c(1,1))
 
   #-- Pre Plot TS
-  par(mar=c(4,3,2,1))  #bottom, left, top, right
+  par(mar=c(4,4,2,1))  #bottom, left, top, right
   plot.ts_setup(pre_dates, pre_obs, pre_sim, xlabel='Calendar Year Date', ylabel=ylabel, log=log, ...)
   lines(pre_dates, pre_obs, col='dodgerblue2')
   lines(pre_dates, pre_sim, col='black')
   title(main=pre_title)
 
   #-- Post Plot TS
-  par(mar=c(4,3,2,1))  #bottom, left, top, right
+  par(mar=c(4,4,2,1))  #bottom, left, top, right
   plot.ts_setup(pst_dates, pst_obs, pst_sim, xlabel='Calendar Year Date', ylabel=ylabel, log=log, ...)
   lines(pst_dates, pst_obs, col='dodgerblue2')
   lines(pst_dates, pst_sim, col='black')

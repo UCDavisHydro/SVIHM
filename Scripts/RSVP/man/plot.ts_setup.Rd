@@ -17,7 +17,9 @@
   las = 2,
   xlim_override = NULL,
   ylim_min_diff = 10,
-  water_year_ticks = FALSE
+  water_year_ticks = FALSE,
+  x.cex.axis = 0.8,
+  y.cex.axis = 0.8
 )
 }
 \arguments{
@@ -46,6 +48,10 @@
 
 \item{water_year_ticks}{Logical, if TRUE, major x-axis ticks and labels will correspond to water years
 starting on October 1st. Otherwise, the x-axis is labeled with calendar years (default FALSE).}
+
+\item{x.cex.axis}{Numeric value for adjusting the size of the x-axis labels (default 0.8).}
+
+\item{y.cex.axis}{Numeric value for adjusting the size of the y-axis labels (default 0.8).}
 }
 \value{
 Plot Setup
