@@ -352,8 +352,8 @@ streamflow_comparison_maps = function(){
   # max(as.numeric(as.character(reach_array1[,,8]))) # max flow out
   # max(as.numeric(as.character(reach_array2[,,8]))) # max flow out
   max(as.numeric(as.character(reach_array_daily1[,,8]))) # max flow out
-  summary(as.numeric(as.character(reach_array_daily2[12054:12266,,8])) -
-            as.numeric(as.character(reach_array_daily1[12054:12266,,8])))
+  summary(as.numeric(as.character(reach_array_daily2[12054:12419,,8])) - # flow diff, oct 2023 to oct 2024
+            as.numeric(as.character(reach_array_daily1[12054:12419,,8])))
   # Breaks for flow
   if(flow_units == "Flow (1000 m3/day)"){flow_breaks_manual = c(0, 2.5, 20, 50, 100, 300, 700, 6500)*1000 }
   if(flow_units == "Flow (cfs)"){flow_breaks_manual = c(0, 2.5, 20, 50, 100, 300, 700, 6500)*1000 * m3day_to_cfs}
@@ -414,7 +414,7 @@ streamflow_comparison_maps = function(){
     # sp_tab$water_year = year(sp_tab$date); sp_tab$water_year[sp_tab$month>9] = year(sp_tab$date[sp_tab$month>9])+1
 
     # extended sp tab
-    start_date = as.Date("1990-10-01"); end_date = as.Date("2024-07-31")
+    start_date = as.Date("1990-10-01"); end_date = as.Date("2024-09-30")
     n_stress_daily = as.numeric(end_date-start_date+1)
     sp_tab=data.frame(stress_period=1:n_stress_daily, date=seq.Date(from = start_date, by = "day", length.out=n_stress_daily))
     sp_tab$month = month(sp_tab$date)
@@ -424,7 +424,7 @@ streamflow_comparison_maps = function(){
     pdf_name = paste0("sfr_diff", s2, "minus",s1, "_04.pdf")
     pdf(file.path(plots1_dir, pdf_name), width=8.5, height=11)
     # for(i in 395:nrow(sp_tab)){ #i = 12120, Dec 6th
-    for(i in 12054:12266){ #i = 12120, Dec 6th
+    for(i in 12054:dim(reach_array_daily1)[1]){ #i = 12054 = Oct 2024
 
       #to make a png figure with manually selected stress periods plotted
       # png(file.path(out_dir, "wet_dry_stream_4yrs.png"),
@@ -519,7 +519,7 @@ streamflow_comparison_maps = function(){
 fj_flow_comparison = function(){
   fjsim1 = streams_sim1[[1]]
   fjsim2 = streams_sim2[[1]]
-  # fjsim3 = streams_sim3[[1]]
+  fjsim3 = streams_sim3[[1]]
   # fjsim4 = streams_sim4[[1]]
   # fjsim5 = streams_sim5[[1]]
 
@@ -535,15 +535,15 @@ fj_flow_comparison = function(){
   plot(x = fjsim1$Date, y = fjsim1$Flow_cfs, type = "l", log = "y",
        yaxt = "n", xaxt = "n", lwd=2, col = NA,
        # main = "Fort Jones Flow Comparison: Observed vs \n 2018 calibrated basecase, and updated 2023 basecase",
-       main = "Fort Jones Flow Comparison, Apr 2024: Observed \n vs basecase, and basecase with no MAR",
+       main = "Fort Jones Flow Comparison, Oct 2024: Observed \n vs basecase, and basecase with no MAR",
        xlab = "Date", ylab = flow_units,
        xlim = date_lims)
   # lines(x = fjsim2$Date, y = fjsim2$Flow_cfs, col = 'dodgerblue', lwd = 2)
   lines(x = fj_obs$Date, y = fj_obs$Flow, col = "black", lwd = 2)
   lines(x = fjsim1$Date, y = fjsim1$Flow_cfs, col = "green3", lwd = 2)
   lines(x = fjsim2$Date, y = fjsim2$Flow_cfs, col = "darkblue", lwd = 2, lty = 2)
+  lines(x = fjsim3$Date, y = fjsim3$Flow_cfs, col = "goldenrod", lwd = 2, lty =3)
 
-  # lines(x = fjsim3$Date, y = fjsim3$Flow_cfs, col = "green4", lwd = 2)
   # lines(x = fjsim4$Date, y = fjsim4$Flow_cfs, col = "goldenrod", lwd = 2)
   # lines(x = curtail_flows_line$dates, y = curtail_flows_line$flow_cfs, lwd = 2, lty = 2, col = "blue")
   # lines(x = fjsim5$Date, y = fjsim5$Flow_cfs, col = "red", lwd = 2)
@@ -558,14 +558,14 @@ fj_flow_comparison = function(){
   axis(side = 2, at = 1:9 * sort(rep(10^c(0,1,2,3,4),9)), labels = NA)
 
 
-  legend_tab = data.frame(descrip=c("FJ Obs.", "Basecase", "Basecase, no MAR"),
+  legend_tab = data.frame(descrip=c("FJ Obs.", "Basecase", "Basecase, no MAR", "Max MAR 2024"),
   # legend_tab = data.frame(descrip = c("FJ Obs.", #"Sim. 0% curtail, 2022",
   #                                     "Basecase 2018 (through WY 2018)",
   #                                     "Updated Basecase (June 5, 2023)"#, "Sim. 50% curtail", "Sim. 30% curtail",
   # ),
-  color = c("black","green3","darkblue"##"green4", "goldenrod",
+  color = c("black","green3","darkblue", "goldenrod" ##"green4", "goldenrod",
   #           # "gray30"
-  ), lty = c(1,1,2))
+  ), lty = c(1,1,2,3))
 
   legend(x = "bottomleft", legend = legend_tab$descrip, lty = legend_tab$lty,
          col = legend_tab$color, lwd = 2,  cex = .7, horiz=T)
@@ -583,19 +583,20 @@ fj_flow_comparison = function(){
 
 
 # flow differences
-  png(filename = file.path(out_dir, "Flow diff- basecase vs basecase with no MAR_thru 2024.07.31.png"),
+  png(filename = file.path(out_dir, "Flow diff- basecase vs basecase with no MAR_thru 2024.09.30.png"),
       # filename = "prelim fj comparison, 0 curtail, basecase and obs.png",
       height = 11/2, width = 18, units = "in", res = 300)
 
   flow_units = "Flow (cfs)"
-  date_lims = as.Date(c("2023-09-01","2024-08-01"))
+  date_lims = as.Date(c("2023-11-01","2024-10-01"))
   plot(x = fjsim1$Date, y = fjsim1$Flow_cfs - fjsim2$Flow_cfs, type = "l",# log = "y",
         xaxt = "n", lwd=2, col = NA, #yaxt = "n",
-       main = "Fort Jones Flow Comparison, Jul 2024: \n basecase minus basecase with no MAR",
+       main = "Fort Jones Flow Comparison, Oct 2024: \n basecase or max MAR minus basecase with no MAR",
        xlab = "Date", ylab = flow_units,
-       xlim = date_lims)
+       xlim = date_lims, ylim = c(-28,10))
+  abline(h=0, lwd=1.5)
   lines(x = fjsim1$Date, y = fjsim1$Flow_cfs - fjsim2$Flow_cfs, lwd=2, col = 'brown')
-  # # lines(x = fjsim2$Date, y = fjsim2$Flow_cfs, col = 'dodgerblue', lwd = 2)
+  lines(x = fjsim1$Date, y = fjsim3$Flow_cfs - fjsim2$Flow_cfs, col = 'goldenrod', lwd = 2)
   # lines(x = fj_obs$Date, y = fj_obs$Flow, col = "black", lwd = 2)
   # lines(x = fjsim1$Date, y = fjsim1$Flow_cfs, col = "green3", lwd = 2)
   # lines(x = fjsim2$Date, y = fjsim2$Flow_cfs, col = "darkblue", lwd = 2, lty = 2)
@@ -616,17 +617,13 @@ fj_flow_comparison = function(){
   # axis(side = 2, at = 1:9 * sort(rep(10^c(0,1,2,3,4),9)), labels = NA)
 
 #
-#   legend_tab = data.frame(descrip=c("FJ Obs.", "Basecase", "Basecase, no MAR"),
-#                           # legend_tab = data.frame(descrip = c("FJ Obs.", #"Sim. 0% curtail, 2022",
-#                           #                                     "Basecase 2018 (through WY 2018)",
-#                           #                                     "Updated Basecase (June 5, 2023)"#, "Sim. 50% curtail", "Sim. 30% curtail",
-#                           # ),
-#                           color = c("black","green3","darkblue"##"green4", "goldenrod",
-#                                     #           # "gray30"
-#                           ), lty = c(1,1,2))
-#
-#   legend(x = "bottomleft", legend = legend_tab$descrip, lty = legend_tab$lty,
-#          col = legend_tab$color, lwd = 2,  cex = .7, horiz=T)
+  legend_tab = data.frame(descrip=c("Basecase - no MAR", "Max MAR 2024 - no MAR"),
+                          color = c("brown","goldenrod"), lty = c(1,1), lwd = c(2,2))
+  legend(title = "Flow Differences", x = "bottomleft", legend = legend_tab$descrip, lty = legend_tab$lty,
+         col = legend_tab$color, lwd = 2,  cex = .7, horiz=T)
+
+  text(x = as.Date("2024-04-01"), y = 8, label = "(+) Applied MAR increases \n GW discharge", pos = 4)
+  text(x = as.Date("2024-04-01"), y = -10, label = "(-) MAR diversions decrease flow", pos = 4)
 
   dev.off()
 
