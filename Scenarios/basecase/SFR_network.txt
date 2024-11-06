@@ -1,5 +1,5 @@
-# SFR Package written by RSVP - tabfile version - 2023-09-26
-TABFILES 30 12023
+# SFR Package written by RSVP - tabfile version - 2024-10-17
+TABFILES 30 12419
   -1837  32  0  0  8.64E+04  1.00E-04  50  101  1  0  0  0  #sugar  creek  version
   1  428  183  1  1  100.78  967.427  0.02119  1  10
   1  428  182  1  2  100.56  966.467  0.02119  1  10

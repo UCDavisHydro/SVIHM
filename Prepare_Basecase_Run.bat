@@ -31,7 +31,7 @@ xcopy SVIHM_Input_Files\time_independent_input_files\SVIHM_*_template.txt Run\SW
 :: Copy files from scenario folder to run folder (in some cases, overwrite)
 xcopy Scenarios\%scen%\svihm.swbm Run\SWBM /Y /I
 xcopy Scenarios\%scen%\*.txt Run\SWBM /Y /I
-xcopy Scenarios\%scen%\SVIHM.* Run\MODFLOW /Y /I
+xcopy Scenarios\%scen%\SVIHM.* Run\MODFLOW /Y /I && del Run\MODFLOW\svihm.swbm
 
 :: Copy in generic run batch file
 xcopy Scripts\Batch_Scripts\Run_SVIHM.bat Run /Y /I

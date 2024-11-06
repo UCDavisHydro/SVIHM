@@ -3,7 +3,7 @@
 #===============================================================#
 
 BEGIN DISCRETIZATION
-  NMONTHS          395
+  NMONTHS          408
   WYSTART         1991
   NPOLY           2119
   NSUBWS             8
