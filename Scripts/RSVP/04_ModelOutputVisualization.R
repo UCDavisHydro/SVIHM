@@ -70,12 +70,17 @@ stream_short <- c('FJ', 'AS', 'BY')
 #-- Modeled
 
 #-- HOB data
-hob_locs <- read.csv(file.path(data_dir['ref_data_dir','loc'], 'hob_wells.csv'),
-                     row.names=1, stringsAsFactors = F)
 hob <- import_HOB(hob_input = file.path(mf_dir, 'SVIHM.hob'),
                   hob_output = file.path(mf_dir, 'HobData_SVIHM.dat'),
                   origin_date = origin_date)
-hob <- hob[order(hob$row, hob$column),]
+
+hob_key <- read.csv(file.path(data_dir['ref_plot_dir','loc'], 'hob_key.csv'), stringsAsFactors = F)
+hob_key <- unique(hob_key[,c("well_id","x_proj","y_proj")])
+
+# Deal with well_ids with different coordinates in hob_key
+#TODO Fix Data
+hob_key <- hob_key[!duplicated(hob_key$well_id), ]
+rownames(hob_key) <- hob_key$well_id
 
 #-- SFR Data (Turn into function?)
 sfr_locs <- read.csv(file.path(data_dir['ref_data_dir','loc'], 'sfr_gages.csv'),
@@ -117,29 +122,28 @@ write.csv(sfrcompare, file.path(out_dir, 'sfr_compare.csv'))
 
 #-- Loop over wells & Plot
 pdf(file.path(out_dir,'hobs_plots.pdf'), width=11, height=8.5)
-for (well in unique(hob$wellnam)) {
+for (well in unique(hob$well_id)) {
   # Report
   message('Plotting ', well)
   # Set up
-  w <- gsub('_','',well)
-  wsub <- hob[hob$wellnam == well,]
-  well_title <- paste('Well: ', w,
+  wsub <- hob[hob$well_id == well,]
+  well_title <- paste('Well: ', well,
                       '\nRow: ', wsub$row[1],
                       '  |  Col: ', wsub$column[1],
-                      '  |  Lay: ', wsub$layer[1])
+                      '  |  Lay: ', wsub$layer[[1]])
   # Plot
   plot.gw.hydrograph_wMap(wsub$date,
-                       wsub$hobs,
+                       wsub$obs,
                        wsub$sim,
-                       xloc = hob_locs[w,'x'],
-                       yloc = hob_locs[w,'y'],
-                       map_xs = hob_locs[,'x'],
-                       map_ys = hob_locs[,'x'],
+                       xloc = hob_key[well,'x_proj'],
+                       yloc = hob_key[well,'y_proj'],
+                       map_xs = hob_key[,'x_proj'],
+                       map_ys = hob_key[,'y_proj'],
                        ylabel = 'Groundwater Elevation (m)',
                        title = well_title, map_x_offset = 0, map_y_offset = 0)
 }
 # Scatterplots
-plot.scatterbox(obs = hob$hobs, sim = hob$sim, groups = rep('Wells', nrow(hob)),
+plot.scatterbox(obs = hob$obs, sim = hob$sim, groups = rep('Wells', nrow(hob)),
                 xlab = 'Observed GW Elevation (m)', ylab = 'Simulated GW Elevation (m)', log = F)
 
 dev.off()

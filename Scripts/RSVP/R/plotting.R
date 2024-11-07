@@ -244,7 +244,7 @@ plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', b
        yaxt = 'n',
        xlab = NA,
        ylab = NA,
-       xlim = c(floor_date(min(dates), 'month'),ceiling_date(max(dates),'month')),
+       xlim = as.Date(c(floor_date(min(dates), 'month'),ceiling_date(max(dates),'month'))),
        ylim = ylim,
        log = log,
        pch  = NA)
@@ -340,7 +340,7 @@ plot.gw.hydrograph_wMap <- function(dates, obs, sim, xloc, yloc, map_xs, map_ys,
                                  title=NULL, colors=NULL, map_x_offset=0, map_y_offset=0,
                                  mapbmar=30, ...) {
 
-  #-- Coerce dates to list if not list (Hacky)
+  #-- Coerce dates to list if not list
   if (typeof(dates) != 'list') {
     dates <- list(dates, dates)
   }
@@ -375,8 +375,8 @@ plot.gw.hydrograph_wMap <- function(dates, obs, sim, xloc, yloc, map_xs, map_ys,
   #-- Time Series
   par(mar=c(6,6,0.5,0.5))  #bottom, left, top, right
   plot.ts_setup(dates, obs, sim, xlabel='Date', ylabel=ylabel, log=log, ...)
-  points(dates[[1]], obs, pch=16, col='dodgerblue2')
-  lines(dates[[2]], sim, col='black')
+  points(as.Date(dates[[1]]), obs, pch=16, col='dodgerblue2')
+  lines(as.Date(dates[[2]]), sim, col='black')
 }
 
 #-------------------------------------------------------------------------------------------------#
@@ -429,7 +429,7 @@ plot.stream.hydrograph_wMap <- function(dates, obs, sim, xloc, yloc, map_xs, map
                                  title=NULL, colors=NULL, map_x_offset=0, map_y_offset=0,
                                  mapbmar=30, zero_rep=1e-1, ...) {
 
-  #-- Coerce dates to list if not list (Hacky)
+  #-- Coerce dates to list if not list
   if (typeof(dates) != 'list') {
     dates <- list(dates, dates)
   }
@@ -470,8 +470,8 @@ plot.stream.hydrograph_wMap <- function(dates, obs, sim, xloc, yloc, map_xs, map
   #-- Time Series
   par(mar=c(6,6,0.5,0.5))  #bottom, left, top, right
   plot.ts_setup(dates, obs, sim, xlabel='Date', ylabel=ylabel, log=log, ...)
-  lines(dates[[1]], obs, col='dodgerblue2')
-  lines(dates[[2]], sim, col='black')
+  lines(as.Date(dates[[1]]), obs, col='dodgerblue2')
+  lines(as.Date(dates[[2]]), sim, col='black')
 }
 
 #-------------------------------------------------------------------------------------------------#

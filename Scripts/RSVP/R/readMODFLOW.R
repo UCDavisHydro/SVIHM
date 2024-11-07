@@ -32,24 +32,24 @@ import_HOB <- function(hob_input, hob_output, origin_date) {
     stop('MODFLOW HOB Input/Ouput data length mismatch.')
   }
 
-  # Merge
-  hobs <- merge(hobs$data, hsim[,c('obsnam','sim')], by = 'obsnam', sort=F)
+  # Combine (assumes exact same order, should always be true)
+  combined <- cbind(hobs$data[c("obsnam","layer","row","column","irefsp","toffset","roff","coff")],
+                    hsim[,c('sim','obs')])
+  combined$well_id <- sub("_[^_]+$", "", combined$obsnam)
+
+  # Handle dry values
+  combined$sim[combined$sim==hobs$hobdry] = NA
 
   # Calculate
-  hobs$residual <- hobs$hob-hobs$sim
+  combined$residual <- combined$obs-combined$sim
 
   # Find in time
-  hobs$date <- origin_date %m+% (months(hobs$irefsp)-1) %m+% days(hobs$toffset)  #TODO verify
-
-  # Group by row/col to get well name #TODO ensure no duplicates
-  # And yes, the regex took me a lot of googling
-  hobs <- split(hobs, paste(hobs$row, hobs$column, sep = '_'))
-  hobs <- lapply(hobs, function(x) { x$wellnam <- sub("1([^1]*)$", "", x$obsnam[1]); return(x) })
-  hobs <- do.call(rbind, hobs)
-  row.names(hobs) <- 1:nrow(hobs)
+  combined$date <- as.Date(mftime2date(sp = combined$irefsp, ts = combined$toffset, origin_date = origin_date))
 
   # Done, return with rearranged columns
-  return(hobs[,c('wellnam',names(hobs)[1:11], 'date', 'hobs', 'sim', 'residual')])
+
+  return(combined[c("well_id","date","obsnam","layer","row","column","irefsp","toffset","roff",
+                    "coff","sim","obs","residual")])
 }
 
 #-------------------------------------------------------------------------------------------------#

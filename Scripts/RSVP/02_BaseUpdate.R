@@ -134,7 +134,8 @@ update_DIS_stress_periods(num_days, num_stress_periods, output_dir = update_dir)
 update_DRNO_stress_periods(num_stress_periods, output_dir = update_dir)
 
 # Head Observations (HOB)
-write_SVIHM_head_obs_file(model_start_date, model_end_date, output_dir = update_dir)
+#write_SVIHM_head_obs_file(model_start_date, model_end_date, output_dir = update_dir)
+# No longer written each time. Superseded by HOB file in basecase.
 
 # Output Control (OC)
 update_OC_stress_periods(num_days, num_stress_periods,
