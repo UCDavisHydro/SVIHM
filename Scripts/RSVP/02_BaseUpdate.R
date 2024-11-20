@@ -140,7 +140,7 @@ update_DRNO_stress_periods(num_stress_periods, output_dir = update_dir)
 # Output Control (OC)
 update_OC_stress_periods(num_days, num_stress_periods,
                          output_dir = update_dir, monthly=F,
-                         save_budget=T, save_drawdown=F)
+                         save_budget=F, save_drawdown=F)
 
 # ------------------------------------------------------------------------------------------------#
 
