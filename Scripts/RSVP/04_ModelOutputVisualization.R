@@ -103,7 +103,7 @@ stream_combined <- ts_obs_sim_combine(streams, streams_sim, stream_names, val_co
 #-------------------------------------------------------------------------------------------------#
 #-- Evaluation
 cal_split <- as.Date('2012-10-01')
-hob_compare <- calc_split_sample_stats(hob$date, hob$sim, hob$hobs,
+hob_compare <- calc_split_sample_stats(hob$date, hob$sim, hob$obs,
                                        cal_split,
                                        FUNs = list(NSE, rmse, KGE),
                                        FUN_names = c('NSE', 'RMSE', 'KGE'))
