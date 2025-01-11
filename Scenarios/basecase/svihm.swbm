@@ -9,7 +9,7 @@ BEGIN DISCRETIZATION
   NSUBWS             8
   NLANDCOVER         6
   NAGWELLS         167
-  NMUNIWELLS         0
+  NSPECWELLS         0
   # MODFLOW INFO
   MFNAME         SVIHM
   NROWS            440
@@ -34,8 +34,10 @@ BEGIN INPUT_FILES
   SFR_NETWORK       SFR_network.txt
   SFR_PARTITION     SFR_subws_flow_partitioning.txt
   WEL_TEMPLATE      SVIHM_WEL_template.txt
+  AGWELL_LOCS       ag_well_summary.txt
   RECHARGE_ZONES    recharge_zones.txt
   POLY_LANDCOVER    polygon_landcover_ids.txt
+  POLY_AGWELL       ag_well_list_by_polygon.txt
   ET_ZONE_CELLS     ET_Zone_Cells.txt
   SFR_NETWORK_JTF   SFR_network_jtf.txt
   IRR_DITCH         irr_ditch.txt

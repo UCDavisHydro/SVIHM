@@ -248,7 +248,7 @@ write_SWBM_main_input_file <- function(output_dir,
                                        npoly = 2119,
                                        nlandcover = 6,
                                        nAgWells = 167,
-                                       nMuniWells = 0,
+                                       nSpecWells = 0,
                                        nSubws = 8,
                                        inflow_is_vol = FALSE,
                                        daily_sw = TRUE,
@@ -261,6 +261,7 @@ write_SWBM_main_input_file <- function(output_dir,
                                        writePEST=FALSE,
                                        precip_file = 'precip.txt',
                                        poly_landcover_file = 'polygon_landcover_ids.txt',
+                                       poly_agwell_file = 'ag_well_list_by_polygon.txt',
                                        et_file = 'ref_et.txt',
                                        et_ext_depth_file = 'ET_Cells_Extinction_Depth.txt',
                                        ets_template_file = 'SVIHM_ETS_template.txt',
@@ -268,6 +269,7 @@ write_SWBM_main_input_file <- function(output_dir,
                                        sfr_network_file = 'SFR_network.txt',
                                        sfr_partition_file = 'SFR_subws_flow_partitioning.txt',
                                        wel_template_file = 'SVIHM_WEL_template.txt',
+                                       agwell_locs_file = 'ag_well_summary.txt',
                                        recharge_zones_file = 'recharge_zones.txt',
                                        sfr_jtf_file = 'SFR_network_jtf.txt',
                                        irr_ditch_file = 'irr_ditch.txt',
@@ -275,6 +277,8 @@ write_SWBM_main_input_file <- function(output_dir,
                                        mar_depth_file = 'MAR_depth.txt',
                                        curtail_frac_file = 'curtailment_fractions.txt',
                                        water_mover_file = NULL,
+                                       specwell_locs_file = NULL,
+                                       specwell_vol_file = NULL,
                                        print_daily_fields  = list(),
                                        verbose=TRUE) {
 
@@ -296,7 +300,7 @@ write_SWBM_main_input_file <- function(output_dir,
   writeLines(sprintf("  NSUBWS             %d", nSubws), file_conn)
   writeLines(sprintf("  NLANDCOVER         %d", nlandcover), file_conn)
   writeLines(sprintf("  NAGWELLS         %d", nAgWells), file_conn)
-  writeLines(sprintf("  NMUNIWELLS         %d", nMuniWells), file_conn)
+  writeLines(sprintf("  NSPECWELLS         %d", nSpecWells), file_conn)
   writeLines("  # MODFLOW INFO", file_conn)
   writeLines(sprintf("  MFNAME         %s", modelName), file_conn)
   writeLines(sprintf("  NROWS            %d", nrows), file_conn)
@@ -332,6 +336,8 @@ write_SWBM_main_input_file <- function(output_dir,
   writeLines(sprintf("  WEL_TEMPLATE      %s", wel_template_file), file_conn)
   writeLines(sprintf("  RECHARGE_ZONES    %s", recharge_zones_file), file_conn)
   writeLines(sprintf("  POLY_LANDCOVER    %s", poly_landcover_file), file_conn)
+  writeLines(sprintf("  POLY_AGWELL       %s", poly_agwell_file), file_conn)
+  writeLines(sprintf("  AGWELL_LOCS       %s", agwell_locs_file), file_conn)
   # Optional Files
   if (!is.null(et_zone_cells_file)) { writeLines(sprintf("  ET_ZONE_CELLS     %s", et_zone_cells_file), file_conn)}
   if (!is.null(sfr_jtf_file))       { writeLines(sprintf("  SFR_NETWORK_JTF   %s", sfr_jtf_file), file_conn)}
@@ -339,6 +345,8 @@ write_SWBM_main_input_file <- function(output_dir,
   if (!is.null(mar_depth_file))     { writeLines(sprintf("  MAR_DEPTH         %s", mar_depth_file), file_conn)}
   if (!is.null(curtail_frac_file))  { writeLines(sprintf("  CURTAIL_FRAC      %s", curtail_frac_file), file_conn)}
   if (!is.null(water_mover_file))   { writeLines(sprintf("  WATER_MOVER       %s", water_mover_file), file_conn)}
+  if (nSpecWells>0)                 { writeLines(sprintf("  SPECWELL_LOCS     %s", specwell_locs_file), file_conn)}
+  if (nSpecWells>0)                 { writeLines(sprintf("  SPECWELL_VOL      %s", specwell_vol_file), file_conn)}
   writeLines("END INPUT_FILES", file_conn)
 
   # [Optional] PRINT_DAILY Block

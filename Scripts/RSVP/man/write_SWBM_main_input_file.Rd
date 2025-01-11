@@ -13,7 +13,7 @@ write_SWBM_main_input_file(
   npoly = 2119,
   nlandcover = 6,
   nAgWells = 167,
-  nMuniWells = 0,
+  nSpecWells = 0,
   nSubws = 8,
   inflow_is_vol = FALSE,
   daily_sw = TRUE,
@@ -26,6 +26,7 @@ write_SWBM_main_input_file(
   writePEST = FALSE,
   precip_file = "precip.txt",
   poly_landcover_file = "polygon_landcover_ids.txt",
+  poly_agwell_file = "ag_well_list_by_polygon.txt",
   et_file = "ref_et.txt",
   et_ext_depth_file = "ET_Cells_Extinction_Depth.txt",
   ets_template_file = "SVIHM_ETS_template.txt",
@@ -33,6 +34,7 @@ write_SWBM_main_input_file(
   sfr_network_file = "SFR_network.txt",
   sfr_partition_file = "SFR_subws_flow_partitioning.txt",
   wel_template_file = "SVIHM_WEL_template.txt",
+  agwell_locs_file = "ag_well_summary.txt",
   recharge_zones_file = "recharge_zones.txt",
   sfr_jtf_file = "SFR_network_jtf.txt",
   irr_ditch_file = "irr_ditch.txt",
@@ -40,6 +42,8 @@ write_SWBM_main_input_file(
   mar_depth_file = "MAR_depth.txt",
   curtail_frac_file = "curtailment_fractions.txt",
   water_mover_file = NULL,
+  specwell_locs_file = NULL,
+  specwell_vol_file = NULL,
   print_daily_fields = list(),
   verbose = TRUE
 )
@@ -60,8 +64,6 @@ write_SWBM_main_input_file(
 \item{nlandcover}{Integer. The number of land cover types (NLANDCOVER in the input file). Default is 6.}
 
 \item{nAgWells}{Integer. The number of agricultural wells (NAGWELLS in the input file). Default is 167.}
-
-\item{nMuniWells}{Integer. The number of municipal wells (NMUNIWELLS in the input file). Default is 0.}
 
 \item{nSubws}{Integer. The number of sub-watersheds (NSUBWS in the input file). Default is 8.}
 
@@ -116,6 +118,8 @@ write_SWBM_main_input_file(
 \item{print_daily_fields}{List of named lists. Each element should contain \code{id} (Integer, Field ID) and \code{prefix} (Character, filename prefix) for fields to print daily in the PRINT_DAILY block.}
 
 \item{verbose}{Logical. Whether to print status information to the console. Default is TRUE.}
+
+\item{nMuniWells}{Integer. The number of municipal wells (NMUNIWELLS in the input file). Default is 0.}
 
 \item{RD_Mult}{Numeric. The root depth multiplier (RD_MULT in the input file). Default is 1.4.}
 }
