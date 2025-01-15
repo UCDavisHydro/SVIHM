@@ -18,7 +18,7 @@ swbm_build_field_value_df(
 
 \item{model_end_date}{End date of simulation}
 
-\item{default_values}{Default values, given by field (optional, defaults to NA)}
+\item{default_values}{Default value(s), given by field (optional, defaults to NA)}
 }
 \value{
 Dataframe of stress periods (rows) for each field (columns)
