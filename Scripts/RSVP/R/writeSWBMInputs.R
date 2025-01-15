@@ -1069,8 +1069,13 @@ write_SWBM_curtailment_file <- function(output_dir, start_date, end_date) {
   curt21_22 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_21_22.csv'))
   curt21_22$Stress_Period <- as.Date(curt21_22$Stress_Period)
 
-  # Combine - Remove rows in curtail_output that match the Stress_Periods in curt21_22
-  curtail_output <- rbind(curtail_output[!curtail_output$Stress_Period %in% curt21_22$Stress_Period, ], curt21_22)
+  # Read in 2024 curtailment
+  curt24 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_24.csv'))
+  curt24$Stress_Period <- as.Date(curt24$Stress_Period)
+
+  # Remove rows in curtail_output that match the Stress_Periods, then combine
+  curtail_output <- curtail_output[!curtail_output$Stress_Period %in% c(curt21_22$Stress_Period, curt24$Stress_Period), ]
+  curtail_output <- rbind(curtail_output, curt21_22, curt24)
 
   # Ensure the result is sorted by Stress_Period (optional but often needed)
   curtail_output <- curtail_output[order(curtail_output$Stress_Period), ]
