@@ -114,7 +114,7 @@ for (i in 1:length(lcs_abbr)) {
 }
 
 # Cap curtailment amounts at 30%
-curtailment_df[ , -1] <- pmin(curtailment_df[ , -1], 0.3)
+curtailment_df[, -1][curtailment_df[, -1] > 0.3] <- 0.3
 
 #-------------------------------------------------------------------------------------------------#
 #-- Write modified swbm_fields file to shapefile (for validation purposes)
