@@ -7,10 +7,14 @@
 write_SWBM_curtailment_file(output_dir, start_date, end_date)
 }
 \arguments{
-\item{scenario_name}{Name of  management scenario. Default is historical basecase or "basecase".}
+\item{output_dir}{directory to write the files in}
+
+\item{start_date}{Start date of simulation}
+
+\item{end_date}{End date of simulation}
 }
 \value{
-none, saves MAR_volumes.txt
+none, saves curtailment_fractions.txt
 }
 \description{
 Write file specifying curtailment for each field, for each stress period

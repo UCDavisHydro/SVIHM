@@ -1049,15 +1049,15 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
 
 #' Write file specifying curtailment for each field, for each stress period
 #'
-#' @param scenario_name Name of  management scenario. Default is historical basecase or "basecase".
-#' @import sf
-#' @return none, saves MAR_volumes.txt
+#' @param output_dir directory to write the files in
+#' @param start_date Start date of simulation
+#' @param end_date End date of simulation
+#' @return none, saves curtailment_fractions.txt
 #' @export
 #'
 #' @examples
 #'
-#'
-#'
+
 write_SWBM_curtailment_file <- function(output_dir, start_date, end_date) {
   m2_to_acres = 1/4046.856
 
@@ -1069,13 +1069,17 @@ write_SWBM_curtailment_file <- function(output_dir, start_date, end_date) {
   curt21_22 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_21_22.csv'))
   curt21_22$Stress_Period <- as.Date(curt21_22$Stress_Period)
 
+  # Read in 2023 curtailment
+  curt23 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_23.csv'))
+  curt23$Stress_Period <- as.Date(curt23$Stress_Period)
+
   # Read in 2024 curtailment
   curt24 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_24.csv'))
   curt24$Stress_Period <- as.Date(curt24$Stress_Period)
 
   # Remove rows in curtail_output that match the Stress_Periods, then combine
-  curtail_output <- curtail_output[!curtail_output$Stress_Period %in% c(curt21_22$Stress_Period, curt24$Stress_Period), ]
-  curtail_output <- rbind(curtail_output, curt21_22, curt24)
+  curtail_output <- curtail_output[!curtail_output$Stress_Period %in% c(curt21_22$Stress_Period, curt23$Stress_Period, curt24$Stress_Period), ]
+  curtail_output <- rbind(curtail_output, curt21_22, curt23, curt24)
 
   # Ensure the result is sorted by Stress_Period (optional but often needed)
   curtail_output <- curtail_output[order(curtail_output$Stress_Period), ]

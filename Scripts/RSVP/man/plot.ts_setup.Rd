@@ -15,7 +15,6 @@
   gridcolor = "white",
   gridcolor2 = "grey93",
   las = 2,
-  xlim_override = NULL,
   ylim_min_diff = 10,
   water_year_ticks = FALSE,
   x.cex.axis = 0.8,

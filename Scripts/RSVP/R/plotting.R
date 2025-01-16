@@ -196,7 +196,7 @@ plot.precip.cumulative <- function(dates, ..., title=NULL, unit='mm', col=NULL){
 #' # Plot
 #' plot.ts_setup(dates, ys, xlabel='X', ylabel='Y')
 plot.ts_setup <- function(dates, ..., xlabel, ylabel, log='', interval='year', bgcolor='grey90',
-                          gridcolor='white', gridcolor2='grey93', las=2, xlim_override=NULL, ylim_min_diff=10,
+                          gridcolor='white', gridcolor2='grey93', las=2, ylim_min_diff=10,
                           water_year_ticks=FALSE, x.cex.axis=0.8, y.cex.axis=0.8) {
 
   pdat <- list(...)
