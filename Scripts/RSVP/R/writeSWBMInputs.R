@@ -276,6 +276,7 @@ write_SWBM_main_input_file <- function(output_dir,
                                        et_zone_cells_file = 'ET_Zone_Cells.txt',
                                        mar_depth_file = 'MAR_depth.txt',
                                        curtail_frac_file = 'curtailment_fractions.txt',
+                                       et_correction_file='field_et_corrections.txt',
                                        water_mover_file = NULL,
                                        specwell_locs_file = NULL,
                                        specwell_vol_file = NULL,
@@ -344,6 +345,7 @@ write_SWBM_main_input_file <- function(output_dir,
   if (!is.null(irr_ditch_file))     { writeLines(sprintf("  IRR_DITCH         %s", irr_ditch_file), file_conn)}
   if (!is.null(mar_depth_file))     { writeLines(sprintf("  MAR_DEPTH         %s", mar_depth_file), file_conn)}
   if (!is.null(curtail_frac_file))  { writeLines(sprintf("  CURTAIL_FRAC      %s", curtail_frac_file), file_conn)}
+  if (!is.null(et_correction_file)) { writeLines(sprintf("  ET_CORRECTION     %s", et_correction_file), file_conn)}
   if (!is.null(water_mover_file))   { writeLines(sprintf("  WATER_MOVER       %s", water_mover_file), file_conn)}
   if (nSpecWells>0)                 { writeLines(sprintf("  SPECWELL_LOCS     %s", specwell_locs_file), file_conn)}
   if (nSpecWells>0)                 { writeLines(sprintf("  SPECWELL_VOL      %s", specwell_vol_file), file_conn)}
@@ -1046,18 +1048,32 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
 
 
 # ------------------------------------------------------------------------------------------------#
-
-#' Write file specifying curtailment for each field, for each stress period
+#' Write Curtailment Fractions File for SWBM
 #'
-#' @param output_dir directory to write the files in
-#' @param start_date Start date of simulation
-#' @param end_date End date of simulation
-#' @return none, saves curtailment_fractions.txt
+#' Generates and saves a file specifying water curtailment fractions for each agricultural
+#' field for each stress period in the simulation. Fields without curtailments are assigned a default value of 0.0.
+#'
+#' @param output_dir Directory where the curtailment file will be saved.
+#' @param start_date Start date of the simulation (as a Date object).
+#' @param end_date End date of the simulation (as a Date object).
+#'
+#' @return None. Saves the curtailment fraction data as `curtailment_fractions.txt` in `output_dir`.
+#'
+#' @details
+#' The curtailment fraction file is used in the SWBM model to specify reductions in applied irrigation water
+#' due to local cooperative solutions (LCS) and regulatory curtailments. The fraction represents the proportion
+#' of normal applied water that is reduced, with values typically ranging from 0.0 (no curtailment) to 1.0
+#' (full curtailment).
+#'
+#` The function reads in the stored curtailment data for different years (2021, 2022, 2023, and 2024),
+#` replaces overlapping dates, and ensures the final dataset is sorted before saving to file.
+#'
 #' @export
 #'
 #' @examples
-#'
-
+#' write_SWBM_curtailment_file(output_dir = "model_outputs",
+#'                             start_date = as.Date("2024-01-01"),
+#'                             end_date = as.Date("2024-12-31"))
 write_SWBM_curtailment_file <- function(output_dir, start_date, end_date) {
   m2_to_acres = 1/4046.856
 
@@ -1065,15 +1081,15 @@ write_SWBM_curtailment_file <- function(output_dir, start_date, end_date) {
   curtail_output <- swbm_build_field_value_df(model_start_date = start_date,
                                        model_end_date = end_date, default_values = 0.0)
 
-  # Read in 2021/2022 curtailments (see SVIHM/Scripts/Stored_Analyses/2021_2022_LCS_Curtailments.R)
+  # Read in 2021/2022 LCS/curtailments (see SVIHM/Scripts/Stored_Analyses/2021_2022_LCS_Curtailments.R)
   curt21_22 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_21_22.csv'))
   curt21_22$Stress_Period <- as.Date(curt21_22$Stress_Period)
 
-  # Read in 2023 curtailment
+  # Read in 2023 LCS/curtailment
   curt23 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_23.csv'))
   curt23$Stress_Period <- as.Date(curt23$Stress_Period)
 
-  # Read in 2024 curtailment
+  # Read in 2024 LCS/curtailment
   curt24 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_24.csv'))
   curt24$Stress_Period <- as.Date(curt24$Stress_Period)
 
@@ -1081,7 +1097,7 @@ write_SWBM_curtailment_file <- function(output_dir, start_date, end_date) {
   curtail_output <- curtail_output[!curtail_output$Stress_Period %in% c(curt21_22$Stress_Period, curt23$Stress_Period, curt24$Stress_Period), ]
   curtail_output <- rbind(curtail_output, curt21_22, curt23, curt24)
 
-  # Ensure the result is sorted by Stress_Period (optional but often needed)
+  # Ensure the result is sorted by Stress_Period
   curtail_output <- curtail_output[order(curtail_output$Stress_Period), ]
 
   output_filename = paste0("curtailment_fractions.txt")
@@ -1089,6 +1105,53 @@ write_SWBM_curtailment_file <- function(output_dir, start_date, end_date) {
               sep = "  ", quote = FALSE, col.names = TRUE, row.names = FALSE)
 }
 
+# ------------------------------------------------------------------------------------------------#
+
+# ------------------------------------------------------------------------------------------------#
+#' Write ET Correction File for SWBM
+#'
+#' Generates and saves a file specifying evapotranspiration (ET) correction factors
+#' for each agricultural field for each stress period in the simulation.
+#' Fields without specific corrections default to a value of 1.0 (no change to ET).
+#'
+#' @param output_dir Directory where the ET correction file will be saved.
+#' @param start_date Start date of the simulation (as Date object).
+#' @param end_date End date of the simulation (as Date object).
+#'
+#' @return None. Saves the ET correction data as `field_et_corrections.txt` in `output_dir`.
+#'
+#' @details
+#' The correction file is used in the SWBM model to adjust evapotranspiration
+#' based on the implementation of best management practices (BMPs) in 2024.
+#'
+#' @export
+#'
+#' @examples
+#' write_SWBM_ET_correction_file(output_dir = "model_outputs",
+#'                               start_date = as.Date("1990-10-01"),
+#'                               end_date = as.Date("2024-12-31"))
+write_SWBM_ET_correction_file <- function(output_dir, start_date, end_date) {
+  m2_to_acres = 1/4046.856
+
+  # generate a stress-period-by-field table (wide format)  for saving to output
+  et_cor_output <- swbm_build_field_value_df(model_start_date = start_date,
+                                              model_end_date = end_date, default_values = 1.0)
+
+  # Read in 2024 LCS
+  et_cor24 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'ETcor_24.csv'))
+  et_cor24$Stress_Period <- as.Date(et_cor24$Stress_Period)
+
+  # Remove rows in et_cor_output that match the Stress_Periods, then combine
+  et_cor_output <- et_cor_output[!et_cor_output$Stress_Period %in% c(et_cor24$Stress_Period), ]
+  et_cor_output <- rbind(et_cor_output, et_cor24)
+
+  # Ensure the result is sorted by Stress_Period
+  et_cor_output <- et_cor_output[order(et_cor_output$Stress_Period), ]
+
+  output_filename = paste0("field_et_corrections.txt")
+  write.table(et_cor_output, file = file.path(output_dir, output_filename),
+              sep = "  ", quote = FALSE, col.names = TRUE, row.names = FALSE)
+}
 
 # ------------------------------------------------------------------------------------------------#
 

@@ -2,20 +2,32 @@
 % Please edit documentation in R/writeSWBMInputs.R
 \name{write_SWBM_curtailment_file}
 \alias{write_SWBM_curtailment_file}
-\title{Write file specifying curtailment for each field, for each stress period}
+\title{Write Curtailment Fractions File for SWBM}
 \usage{
 write_SWBM_curtailment_file(output_dir, start_date, end_date)
 }
 \arguments{
-\item{output_dir}{directory to write the files in}
+\item{output_dir}{Directory where the curtailment file will be saved.}
 
-\item{start_date}{Start date of simulation}
+\item{start_date}{Start date of the simulation (as a Date object).}
 
-\item{end_date}{End date of simulation}
+\item{end_date}{End date of the simulation (as a Date object).}
 }
 \value{
-none, saves curtailment_fractions.txt
+None. Saves the curtailment fraction data as \code{curtailment_fractions.txt} in \code{output_dir}.
 }
 \description{
-Write file specifying curtailment for each field, for each stress period
+Generates and saves a file specifying water curtailment fractions for each agricultural
+field for each stress period in the simulation. Fields without curtailments are assigned a default value of 0.0.
+}
+\details{
+The curtailment fraction file is used in the SWBM model to specify reductions in applied irrigation water
+due to local cooperative solutions (LCS) and regulatory curtailments. The fraction represents the proportion
+of normal applied water that is reduced, with values typically ranging from 0.0 (no curtailment) to 1.0
+(full curtailment).
+}
+\examples{
+write_SWBM_curtailment_file(output_dir = "model_outputs",
+                            start_date = as.Date("2024-01-01"),
+                            end_date = as.Date("2024-12-31"))
 }

@@ -41,6 +41,7 @@ write_SWBM_main_input_file(
   et_zone_cells_file = "ET_Zone_Cells.txt",
   mar_depth_file = "MAR_depth.txt",
   curtail_frac_file = "curtailment_fractions.txt",
+  et_correction_file = "field_et_corrections.txt",
   water_mover_file = NULL,
   specwell_locs_file = NULL,
   specwell_vol_file = NULL,

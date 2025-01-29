@@ -15,9 +15,11 @@ lcs_abbr <- c('bmps','gred', 'pctr')
 
 # LCS reductions
 months <- c("Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct")
-bmps <- c(0.0, 0.0, 0.05, 0.1 , 0.1  , 0.1  , 0.1  )
+bmps <- c(0.0, 0.0, 0.0,  0.0 , 0.0  , 0.0  , 0.0  )  # To be handled by ET Correction
 gred <- c(0.0, 0.0, 0.0 , 0.08, 0.335, 0.895, 0.925)
 pctr <- c(0.3, 0.3, 0.3 , 0.3 , 0.3  , 0.3  , 0.3  )
+
+et_bmps <- c(0.0, 0.0, 0.09, 0.18, 0.18, 0.18, 0.0)
 
 # Combine
 reductions <- list(
@@ -129,10 +131,42 @@ for (i in 1:length(lcs_abbr)) {
 curtailment_df[ , -1] <- pmin(curtailment_df[ , -1], 1.0)
 
 #-------------------------------------------------------------------------------------------------#
+
+#-------------------------------------------------------------------------------------------------#
+#-- BMPs to be handled by ET correction file
+
+etcor_df = swbm_build_field_value_df(model_start_date = start_date,
+                                           model_end_date = end_date, default_values = 1.0)
+
+for (j in seq_along(months)) {
+  month_col <- paste0('bmps_et_', months[j])
+
+  # add into swbm_fields for record keeping
+  swbm_fields[[month_col]] <- swbm_fields[['bmps']] * et_bmps[j]
+
+  # Match `Polynmbr` in `swbm_fields` to column names in `etcor_df`
+  matching_cols <- paste0("ID_", swbm_fields$Polynmbr)
+
+  # Assign the reductions to the appropriate stress period in `curtailment_df`
+  # Multiplied, since we're starting at 1.0, and there's only one LCS type
+  etcor_df[etcor_df$Stress_Period == as.Date(paste0("2024-", j+3, "-01")), matching_cols] <-
+    etcor_df[etcor_df$Stress_Period == as.Date(paste0("2024-", j+3, "-01")), matching_cols] - swbm_fields[[month_col]]
+
+}
+
+# Just in case
+etcor_df[etcor_df < 0] <- 0.0
+
+#-------------------------------------------------------------------------------------------------#
+
+#-------------------------------------------------------------------------------------------------#
 #-- Write modified swbm_fields file to shapefile (for validation purposes)
 #write_sf(swbm_fields, file.path('C:/Users/lelan/Box/Research/Scott Valley/Analyses/LCS 2024 Plan','swbm_fields_curtail2024.shp'))
 
 #-- Write curtailment as a csv file
 write.csv(curtailment_df, file=file.path(data_dir["ref_data_dir","loc"], 'Curtail_24.csv'), row.names = F)
+
+#-- Write ET correction as a csv file
+write.csv(etcor_df, file=file.path(data_dir["ref_data_dir","loc"], 'ETcor_24.csv'), row.names = F)
 
 #-------------------------------------------------------------------------------------------------#

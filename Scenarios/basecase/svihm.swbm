@@ -43,4 +43,5 @@ BEGIN INPUT_FILES
   IRR_DITCH         irr_ditch.txt
   MAR_DEPTH         MAR_depth.txt
   CURTAIL_FRAC      curtailment_fractions.txt
+  ET_CORRECTION     field_et_corrections.txt
 END INPUT_FILES
