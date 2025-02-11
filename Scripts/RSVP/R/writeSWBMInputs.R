@@ -1003,7 +1003,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
       # svihm_intercepts=svihm_intercepts[svihm_intercepts$Poly_nmbr %in% wigglies,]
       # plot(svihm_intercepts$geometry, col = "lightblue")
       # plot(mar_field$geometry, add=T, col=rgb(1,0,0,.5))
-      for (j in 1:length(svihm_intercepts)){
+      for (j in 1:nrow(svihm_intercepts)){
         sv_field = svihm_intercepts[j,]
         sfA_j = sv_field$area_m2
         # plot(mar_field)
@@ -1016,14 +1016,17 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
             field_intersec = sf::st_intersection(x=mar_field, y = sv_field)
             intA_j = sf::st_area(field_intersec)
 
+            # SV field recharge volume = MAR field monthly recharge * SV-MAR intercept area / total SV field area
             rchMth_j_m3 = rchMth_i_m3 * (intA_j / rchA_i)
-            rchMth_j_depth = rchMth_j_m3 / sfA_j
+            # Convert to depth in meters
+            rchMth_j_depth = round(units::drop_units(rchMth_j_m3 / sfA_j), 3)
             # assign output
             row_picker = mar_depth_output$Stress_Period==mar_app_m3month$Date[k]
             out_fields = gsub(x = colnames(mar_depth_output[,-1]),
                               pattern = "ID_", replacement = "")
             col_picker = which(sv_field$Poly_nmbr == out_fields) + 1
-            mar_depth_output[row_picker,col_picker] = round(rchMth_j_depth,3)
+            # add MAR depth to output table
+            mar_depth_output[row_picker,col_picker] = rchMth_j_depth + mar_depth_output[row_picker,col_picker]
 
           }
         }
