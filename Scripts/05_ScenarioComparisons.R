@@ -85,7 +85,7 @@ create_sp_charts = FALSE  # Many SPs, very slow
 
 
 ### Plot 4: Flow difference maps for 2024 MAR applications
-s1 = "basecase_thru_2024.09.30"  # then process for stream maps.
+s1 = "basecase_thru_2025.01.31"  # then process for stream maps.
 s1_dir <- file.path('../../Scenarios', s1)
 # s1_dir = file.path('../../Run')
 swbm1_dir = file.path(s1_dir, 'SWBM')
@@ -1135,7 +1135,7 @@ water_budget_monthly = function(MODFLOW_Monthly_m3, output_format = "vector"){
 
 # png(filename = "water_budget_monthly_tester.png", width = 7, height = 9, units = "in", res = 300)
 # scenario_directory = file.path("C:/Users/Claire/Documents/GitHub/SVIHM/Scenarios", "basecase")
-# data_tables = import_water_budget_files(scenario_dir = scenario_directory)
+# data_tables = import_water_budget_files(scenario_dir = s1)
 # water_budget_monthly(MODFLOW_Monthly_m3 = data_tables$monthly$mf)
 # dev.off()
 

@@ -908,7 +908,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
   field_column_selector = grepl(pattern = "ID", x = colnames(field_df))
   field_df[,field_column_selector] = 0
 
-  if(tolower(scenario_id) == "basecase_noMAR"){
+  if(tolower(scenario_id) == "basecase_nomar"){
     mar_depth_output = field_df
   }
 
