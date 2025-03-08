@@ -3,6 +3,15 @@ The Scott Valley Integrated Hydrologic Model (SVIHM) simulates hydrologic condit
 
 The version in this repository contains additional capability through R scripts to update SVIHM through the last month. Input data for precipitation, stream gauges, and evapotranspiration data are all downloaded automatically and incorporated into the model input files.
 
+## Spatial Reference
+For the MODFLOW grid,
+```
+xoff = 499977
+yoff = 4571330
+rot = 0.0
+EPSG:26910
+```
+
 ## A Note on the Instructions Below
 The model is setup to be easily run on computers running Microsoft Windows. Other operating systems will be require additional compilation and assembly. If this becomes a persistent request, additional files could be added.
 
