@@ -14,12 +14,15 @@ end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
 update_dir <- latest_dir(data_dir['update_dir','loc'])
 
 # Scenario selection
-current_scenario = "basecase" # default is "basecase". Affects a variety of input files.
+current_scenario = "natveg_all_lowET" # default is "basecase". Affects a variety of input files.
 
 # Current coded-up scenario names:
 # "basecase"
 # "basecase_noMAR"
 # "maxMAR2024"
+# "natveg_all"
+
+# Old scenarios
 # "curtail_00_pct_all_years"
 # "curtail_10_pct_2022"
 # "curtail_30_pct_2022"
@@ -29,6 +32,7 @@ current_scenario = "basecase" # default is "basecase". Affects a variety of inpu
 #                           "basecase_2023.06.05_curtail_30_pct_2023",
 #                           "basecase_2023.06.05_curtail_50_pct_2023")
 
+kc_change_scenarios = c("natveg_all_lowET", "natveg_all_highET") # any new scenarios with crop kc changes or new land cover types
 # ------------------------------------------------------------------------------------------------#
 
 # Temporal discretization -------------------------------------------------------------------------
@@ -95,7 +99,8 @@ write_SWBM_drain_files(num_stress_periods = num_stress_periods, output_dir = upd
 # write_SWBM_instream_available_file(avail_monthly, output_dir = update_dir)
 
 # Crop coefficients
-write_daily_crop_coeff_values_file(model_start_date, model_end_date, update_dir)
+write_daily_crop_coeff_values_file(model_start_date, model_end_date, update_dir,
+                                   scenario_id = current_scenario)
 
 # Surface flow / SFR files
 write_SWBM_SFR_inflow_files(sfr_subws_flow_partitioning, update_dir, "SFR_subws_flow_partitioning.txt")
@@ -112,14 +117,17 @@ write_muni_pumping_file(start_date = model_start_date, n_stress = num_stress_per
 # Land use by field by month
 write_SWBM_landcover_file(scenario_id = current_scenario, output_dir = update_dir,
                           start_date = model_start_date, end_date = model_end_date)
+if(current_scenario %in% kc_change_scenarios){
+  write_updated_rooting_depth(scenario_id = current_scenario, output_dir = update_dir,
+                        start_date = model_start_date, end_date = model_end_date)
+}
 # MAR applications by field by month
 write_SWBM_MAR_depth_file(scenario_id = current_scenario, output_dir = update_dir,
                         start_date = model_start_date, end_date = model_end_date)
 # Irrigation curtailment fractions (as fraction of calculated demand) by field by month
 # Also includes Local Cooperative Solutions (LCSs) that reduce water use (implemented as curtailment)
-write_SWBM_curtailment_file(output_dir = update_dir,
-                            start_date = model_start_date,
-                            end_date = model_end_date)
+write_SWBM_curtailment_file(scenario_id = current_scenario, output_dir = update_dir,
+                            start_date = model_start_date, end_date = model_end_date)
 # ET Correction file
 # Includes LCSs that essentially reduce evaporated water losses
 write_SWBM_ET_correction_file(output_dir = update_dir,

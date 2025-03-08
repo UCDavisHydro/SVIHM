@@ -788,11 +788,12 @@ write_muni_pumping_file <- function(start_date, n_stress, output_dir,
 #'
 write_SWBM_landcover_file <- function(scenario_id = "basecase",
                                       output_dir, start_date, end_date) {
-  recognized_basecase_landuse_scenarios = c("basecase", "curtail_00_pct_all_years",
+  recognized_basecase_landuse_scenarios = c("basecase",
+                                            "curtail_00_pct_all_years",
                                             "curtail_30_pct_2022","curtail_50_pct_2022",
                                             "curtail_10_pct_2022")
   recognized_scenarios = c(recognized_basecase_landuse_scenarios,
-                           "natveg_all") # placeholder for more landuse scenarios
+                           "natveg_all_lowET", "natveg_all_highET")
   output_filename = "polygon_landcover_ids.txt"
 
   # pull reference land cover
@@ -803,10 +804,16 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
   if(nrow(poly_tab) != num_unique_fields){
     print("Caution: polygons (fields) info table contains replicated or missing ID numbers")
   }
+
+
   # generate a stress-period-by-field table (wide format)
   field_df = swbm_build_field_value_df(nfields = num_unique_fields,
                                        model_start_date = start_date,
                                        model_end_date = end_date)
+  if(!(tolower(scenario_id) %in% tolower(recognized_scenarios))){
+    print("Warning: specified landuse scenario not recognized in current codebase. Using basecase land cover file")
+    landcover_output = field_df
+  }
 
   # Build default (time-invarying) land use table
   for(i in 1:num_unique_fields){
@@ -855,21 +862,69 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
     }
   }
 
-  # if(tolower(scenario_id=="natveg")){} # Placeholder :
+  if(tolower(scenario_id) %in% tolower(c("natveg_all_lowET","natveg_all_highET"))){
+    codes_to_replace = landcover_descriptions$id[grep(pattern = "Irrigated", landcover_descriptions$Landcover_Name)]
+    natveg_code = landcover_descriptions$id[grep(pattern = "Native", landcover_descriptions$Landcover_Name)]
+
+    for(i in 1:(ncol(field_df)-1)){
+      field_vals = field_df[,i+1]
+      field_vals[field_vals %in% codes_to_replace] = natveg_code
+      field_df[,i+1] = field_vals
+    }
+
+    landcover_output = field_df
+  } # Placeholder :
   # Replace default with new landcover file, and update recognized_scenarios
   # possible steps: read in fields and potentially adjudicated zone
   # potentially read in schedule of land use updates
 
-  if(!(tolower(scenario_id) %in% recognized_scenarios)){
-    print("Warning: specified landuse scenario not recognized in current codebase. Using basecase land cover file")
-    landcover_output = field_df
-  }
 
   write.table(landcover_output, file = file.path(output_dir, output_filename),
               sep = "  ", quote = FALSE, col.names = TRUE, row.names = FALSE)
 
 }
 
+
+# ------------------------------------------------------------------------------------------------#
+#' Overwrite Land Cover Description File for SWBM
+#'
+#' Updates and saves a file specifying the crop coefficients of the land cover
+#' types in the current scenario.
+#'
+#' @param output_dir Directory where the curtailment file will be saved.
+#' @param scenario_id The hydrologic scenario for which this function writes an input file.
+#' @param start_date Start date of the simulation (as a Date object).
+#' @param end_date End date of the simulation (as a Date object).
+#'
+#' @return None. Saves the curtailment fraction data as `landcover_table.txt` in `output_dir`.
+#'
+#' @details
+#' The landcover table file is used in the SWBM model to specify crop coefficients
+#' used to calculate agricultural water demand on a daily, field-by-field basis.
+#' This function runs only if the current scenario demands different crop
+#' coefficients than the default land cover types.
+#'
+#' @export
+#'
+#' @examples
+#' write_updated_rooting_depth(output_dir = "model_outputs",
+#'                             scenario = "natveg_all_lowET",
+#'                             start_date = as.Date("2024-01-01"),
+#'                             end_date = as.Date("2024-12-31"))
+
+write_updated_rooting_depth = function(scenario_id, output_dir, start_date, end_date){
+  # table indicating which numeric code corresponds to which crop
+  landcover_descriptions = read.table(comment = "!", header = T,
+                                      file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
+
+  if(scenario_id %in% c("natveg_all_lowET", "natveg_all_highET")){
+    natveg_i = grep(x = landcover_descriptions$Landcover_Name, pattern = "Native")
+    landcover_descriptions$RootDepth[natveg_i] = round(3,4)
+    landcover_descriptions$RD_Mult[natveg_i] = round(1,1)
+  }
+  write.table(landcover_descriptions, row.names = F, col.names = T, quote=F, sep = "\t",
+              file = file.path(output_dir, "landcover_table.txt"))
+}
 
 # ------------------------------------------------------------------------------------------------#
 
@@ -887,7 +942,8 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
 #'
 write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
                                       output_dir, start_date, end_date) {
-  recognized_scenarios = c("basecase", "basecase_noMAR", "maxMAR2024")
+  no_mar_scenarios = c("basecase_noMAR", "natveg_all_lowET", "natveg_all_highET")
+  recognized_scenarios = c("basecase", "maxMAR2024", no_mar_scenarios)
   output_filename = "MAR_depth.txt"
 
   # pull reference land cover
@@ -908,7 +964,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
   field_column_selector = grepl(pattern = "ID", x = colnames(field_df))
   field_df[,field_column_selector] = 0
 
-  if(tolower(scenario_id) == "basecase_nomar"){
+  if(tolower(scenario_id) %in% tolower(no_mar_scenarios)){
     mar_depth_output = field_df
   }
 
@@ -1057,6 +1113,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
 #' field for each stress period in the simulation. Fields without curtailments are assigned a default value of 0.0.
 #'
 #' @param output_dir Directory where the curtailment file will be saved.
+#' @param scenario_id The hydrologic scenario for which this function writes an input file.
 #' @param start_date Start date of the simulation (as a Date object).
 #' @param end_date End date of the simulation (as a Date object).
 #'
@@ -1075,34 +1132,45 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
 #'
 #' @examples
 #' write_SWBM_curtailment_file(output_dir = "model_outputs",
+#'                             scenario_id = "basecase",
 #'                             start_date = as.Date("2024-01-01"),
 #'                             end_date = as.Date("2024-12-31"))
-write_SWBM_curtailment_file <- function(output_dir, start_date, end_date) {
+write_SWBM_curtailment_file <- function(output_dir, scenario_id,
+                                        start_date, end_date) {
   m2_to_acres = 1/4046.856
 
   # generate a stress-period-by-field table (wide format)  for saving to output
   curtail_output <- swbm_build_field_value_df(model_start_date = start_date,
                                        model_end_date = end_date, default_values = 0.0)
 
-  # Read in 2021/2022 LCS/curtailments (see SVIHM/Scripts/Stored_Analyses/2021_2022_LCS_Curtailments.R)
-  curt21_22 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_21_22.csv'))
-  curt21_22$Stress_Period <- as.Date(curt21_22$Stress_Period)
+  no_curtail_scenarios = c("natveg_all_lowET", "natveg_all_highET", "curtail_00_pct_all_years")
+  basecase_curtail_scenarios = c("basecase", "basecase_noMAR", "maxMAR2024")
 
-  # Read in 2023 LCS/curtailment
-  curt23 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_23.csv'))
-  curt23$Stress_Period <- as.Date(curt23$Stress_Period)
+  if(scenario_id %in% basecase_curtail_scenarios){
+    # Read in 2021/2022 LCS/curtailments (see SVIHM/Scripts/Stored_Analyses/2021_2022_LCS_Curtailments.R)
+    curt21_22 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_21_22.csv'))
+    curt21_22$Stress_Period <- as.Date(curt21_22$Stress_Period)
 
-  # Read in 2024 LCS/curtailment
-  curt24 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_24.csv'))
-  curt24$Stress_Period <- as.Date(curt24$Stress_Period)
+    # Read in 2023 LCS/curtailment
+    curt23 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_23.csv'))
+    curt23$Stress_Period <- as.Date(curt23$Stress_Period)
 
-  # Remove rows in curtail_output that match the Stress_Periods, then combine
-  curtail_output <- curtail_output[!curtail_output$Stress_Period %in% c(curt21_22$Stress_Period, curt23$Stress_Period, curt24$Stress_Period), ]
-  curtail_output <- rbind(curtail_output, curt21_22, curt23, curt24)
+    # Read in 2024 LCS/curtailment
+    curt24 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_24.csv'))
+    curt24$Stress_Period <- as.Date(curt24$Stress_Period)
+
+    # Remove rows in curtail_output that match the Stress_Periods, then combine
+    curtail_output <- curtail_output[!curtail_output$Stress_Period %in% c(curt21_22$Stress_Period, curt23$Stress_Period, curt24$Stress_Period), ]
+    curtail_output <- rbind(curtail_output, curt21_22, curt23, curt24)
+  }
+
+  if(scenario_id %in% no_curtail_scenarios){
+    #do nothing - keep default all-0% curtailments
+  }
 
   # Ensure the result is sorted by Stress_Period
   curtail_output <- curtail_output[order(curtail_output$Stress_Period), ]
-
+  # Write file
   output_filename = paste0("curtailment_fractions.txt")
   write.table(curtail_output, file = file.path(output_dir, output_filename),
               sep = "  ", quote = FALSE, col.names = TRUE, row.names = FALSE)
@@ -1171,16 +1239,24 @@ write_SWBM_ET_correction_file <- function(output_dir, start_date, end_date) {
 #'
 #'
 #'
-write_daily_crop_coeff_values_file = function(model_start_date, model_end_date, output_dir){
+write_daily_crop_coeff_values_file = function(model_start_date, model_end_date, output_dir,
+                                              scenario_id = current_scenario){
 
   #TO DO: Read max kc values from the landcover_table. Use to update scenarios
+  recognized_basecase_landuse_scenarios = c("basecase",
+                                            "curtail_00_pct_all_years",
+                                            "curtail_30_pct_2022","curtail_50_pct_2022",
+                                            "curtail_10_pct_2022")
+  if(scenario_id %in% recognized_basecase_landuse_scenarios){natveg_kc = 0.6}
+  if(scenario_id == "natveg_all_lowET"){natveg_kc = 0.6}
+  if(scenario_id == "natveg_all_highET"){natveg_kc = 1.0}
 
   # Generate new kc records based on model period
   kc_alfalfa <- gen_daily_binary_crop_coefficients(model_start_date, model_end_date)
   kc_pasture <- gen_daily_binary_crop_coefficients(model_start_date, model_end_date)
   kc_grain   <- gen_daily_curve_crop_coefficients(model_start_date, model_end_date)
   kc_natveg <- gen_daily_binary_crop_coefficients(model_start_date, model_end_date,
-                                                  kc_growing = 0.6,
+                                                  kc_growing = natveg_kc,
                                                   growing_season_start_day = 1, growing_season_start_month = 1,
                                                   growing_season_end_day = 31, growing_season_end_month = 12)
   kc_water <- gen_daily_binary_crop_coefficients(model_start_date, model_end_date,
