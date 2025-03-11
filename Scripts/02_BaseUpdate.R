@@ -14,7 +14,7 @@ end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
 update_dir <- latest_dir(data_dir['update_dir','loc'])
 
 # Scenario selection
-current_scenario = "natveg_all_lowET" # default is "basecase". Affects a variety of input files.
+current_scenario = "natveg_all_highET" # default is "basecase". Affects a variety of input files.
 
 # Current coded-up scenario names:
 # "basecase"
@@ -32,7 +32,10 @@ current_scenario = "natveg_all_lowET" # default is "basecase". Affects a variety
 #                           "basecase_2023.06.05_curtail_30_pct_2023",
 #                           "basecase_2023.06.05_curtail_50_pct_2023")
 
-kc_change_scenarios = c("natveg_all_lowET", "natveg_all_highET") # any new scenarios with crop kc changes or new land cover types
+# any new scenarios with crop kc changes or new land cover types/new kc values
+kc_change_scenarios = c("natveg_all_lowET", "natveg_all_highET")
+# any new scenarios changing the ET-from-gw extinction depth or the extent of ET-from-GW
+ET_zone_or_depth_change_scenarios = c("natveg_all_lowET", "natveg_all_highET")
 # ------------------------------------------------------------------------------------------------#
 
 # Temporal discretization -------------------------------------------------------------------------
@@ -114,13 +117,18 @@ write_ag_pumping_file(start_date = model_start_date, n_stress = num_stress_perio
 write_muni_pumping_file(start_date = model_start_date, n_stress = num_stress_periods,
                       output_dir = update_dir, muni_pumping_data = NA)
 
-# Land use by field by month
+# Land use by field by month. Potentially also edit the kc and ET-from-GW inputs.
 write_SWBM_landcover_file(scenario_id = current_scenario, output_dir = update_dir,
                           start_date = model_start_date, end_date = model_end_date)
 if(current_scenario %in% kc_change_scenarios){
-  write_updated_rooting_depth(scenario_id = current_scenario, output_dir = update_dir,
+  write_updated_crop_info(scenario_id = current_scenario, output_dir = update_dir,
                         start_date = model_start_date, end_date = model_end_date)
 }
+if(current_scenario %in% ET_zone_or_depth_change_scenarios){
+  write_updated_ET_inputs(scenario_id = current_scenario, output_dir = update_dir,
+                          start_date = model_start_date, end_date = model_end_date)
+}
+
 # MAR applications by field by month
 write_SWBM_MAR_depth_file(scenario_id = current_scenario, output_dir = update_dir,
                         start_date = model_start_date, end_date = model_end_date)

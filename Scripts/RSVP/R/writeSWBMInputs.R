@@ -863,6 +863,10 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
   }
 
   if(tolower(scenario_id) %in% tolower(c("natveg_all_lowET","natveg_all_highET"))){
+    # table indicating which numeric code corresponds to which crop
+    landcover_descriptions = read.table(comment = "!", header = T,
+                                        file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
+
     codes_to_replace = landcover_descriptions$id[grep(pattern = "Irrigated", landcover_descriptions$Landcover_Name)]
     natveg_code = landcover_descriptions$id[grep(pattern = "Native", landcover_descriptions$Landcover_Name)]
 
@@ -888,15 +892,15 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
 # ------------------------------------------------------------------------------------------------#
 #' Overwrite Land Cover Description File for SWBM
 #'
-#' Updates and saves a file specifying the crop coefficients of the land cover
-#' types in the current scenario.
+#' Updates and saves a file specifying the (max) crop coefficients and rooting
+#' depth of the land cover types in the current scenario.
 #'
 #' @param output_dir Directory where the curtailment file will be saved.
 #' @param scenario_id The hydrologic scenario for which this function writes an input file.
 #' @param start_date Start date of the simulation (as a Date object).
 #' @param end_date End date of the simulation (as a Date object).
 #'
-#' @return None. Saves the curtailment fraction data as `landcover_table.txt` in `output_dir`.
+#' @return None. Overwrites the file `landcover_table.txt` in `output_dir`.
 #'
 #' @details
 #' The landcover table file is used in the SWBM model to specify crop coefficients
@@ -907,12 +911,12 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
 #' @export
 #'
 #' @examples
-#' write_updated_rooting_depth(output_dir = "model_outputs",
+#' write_updated_crop_info(output_dir = "model_outputs",
 #'                             scenario = "natveg_all_lowET",
 #'                             start_date = as.Date("2024-01-01"),
 #'                             end_date = as.Date("2024-12-31"))
 
-write_updated_rooting_depth = function(scenario_id, output_dir, start_date, end_date){
+write_updated_crop_info = function(scenario_id, output_dir, start_date, end_date){
   # table indicating which numeric code corresponds to which crop
   landcover_descriptions = read.table(comment = "!", header = T,
                                       file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
@@ -924,6 +928,81 @@ write_updated_rooting_depth = function(scenario_id, output_dir, start_date, end_
   }
   write.table(landcover_descriptions, row.names = F, col.names = T, quote=F, sep = "\t",
               file = file.path(output_dir, "landcover_table.txt"))
+}
+
+# ------------------------------------------------------------------------------------------------#
+#' Overwrite Spatial Extent and Depth of ET from GW
+#'
+#' Updates and saves two files, one specifying whether ET from GW is active in
+#' each model cell, and one specifying the extinction depth for the ET-from-GW
+#' calculation in each model cell.
+#'
+#' @param output_dir Directory where the curtailment file will be saved.
+#' @param scenario_id The hydrologic scenario for which this function writes an input file.
+#' @param start_date Start date of the simulation (as a Date object).
+#' @param end_date End date of the simulation (as a Date object).
+#'
+#' @return None. Overwrites the files `ET_Zone_Cells.txt` and
+#' `ET_Cells_Extinction_Depth` in `output_dir`.
+#'
+#' @details
+#' This function overwrites two files related to the ET from GW calculation in
+#' MODFLOW. In the basecase, it is assumed all or nearly all ET occurs in the
+#' soil zone, and therefore ET from groundwater is neglected - EXCEPT in a zone
+#' of known shallow groundwater, the Discharge Zone, in the western central
+#' portion of the valley. Here, ET from Gw is active, and the extinction depth
+#' is 0.5 m. In scenarios where native vegetation takes the place of all irrigated
+#' agriculture, this assumption may no longer be true, so ET from GW is activated
+#' in all model cells, and ET extinction depth is set to a rooting depth value
+#' specified in the `landcover_table.txt` file (except in the Discharge Zone,
+#' where it is kept at its default value of 0.5 m).
+#'
+#' This function runs only if the current scenario demands different extent
+#' or depth of ET from groundwater.
+#'
+#' @export
+#'
+#' @examples
+#' write_updated_ET_inputs(output_dir = "model_outputs",
+#'                             scenario_id = "natveg_all_lowET",
+#'                             start_date = as.Date("2024-01-01"),
+#'                             end_date = as.Date("2024-12-31"))
+
+write_updated_ET_inputs = function(scenario_id, output_dir, start_date, end_date){
+  # table indicating which numeric code corresponds to which crop
+  if(tolower(scenario_id) %in% tolower(c("natveg_all_lowET", "natveg_all_highET"))){
+    if(tolower(scenario_id) == tolower("natveg_all_lowET")){nv_ext_depth_m = 3}
+    if(tolower(scenario_id) == tolower("natveg_all_highET")){nv_ext_depth_m = 3} # currently the 2 bookends use the same extinction depth
+
+    # to do: optional: read rooting depth from the landcover_table file, if it has already been updated for the scenario
+    # landcover_descriptions = read.table(comment = "!", header = T,
+    #                                     file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
+    # to do: optional: turn on et from gw only under native vegetation (in spatially heterogeneous landcover scenarios)
+    ET_cells = as.matrix(read.table(comment = "!", header = F,
+                                    file.path(data_dir["time_indep_dir","loc"], "ET_Zone_Cells.txt")))
+    ET_ext_depth = as.matrix(read.table(comment = "!", header = F,
+                                        file.path(data_dir["time_indep_dir","loc"],
+                                                  "ET_Cells_Extinction_Depth.txt")))
+
+    poly_cells = as.matrix(read.table(header = F,
+                                      file = file.path(file.path(data_dir["time_indep_dir","loc"], "recharge_zones.txt"))))
+    # Assign cells in natural vegetation fields a 4.5 m extinction depth
+    ET_ext_depth[poly_cells != 0] = nv_ext_depth_m
+    # Assign Discharge Zone cells an extinction depth of 0.5 m
+    ET_ext_depth[ET_cells == 1] = 0.5
+    # Turn on ET from GW in all active cells
+    ET_cells[poly_cells != 0] = 1
+
+    # Save extinction depth matrix
+    write.table(x =ET_ext_depth,
+                file = file.path(output_dir, "ET_Cells_Extinction_Depth.txt"),
+                row.names = F, col.names = F, sep = "\t")
+    # Save extinction depth matrix
+    write.table(x =ET_cells,
+                file = file.path(output_dir, "ET_Zone_Cells.txt"),
+                row.names = F, col.names = F, sep = "\t")
+
+  }
 }
 
 # ------------------------------------------------------------------------------------------------#
