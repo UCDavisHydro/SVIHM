@@ -58,6 +58,19 @@ The second script produces a new Windows batch file in the main SVIHM folder, `P
 
 Running the new model works exactly the same as above - it uses the same `Run_SVIHM.bat` batch file.
 
+### Running a Scenario
+For comparative analysis, it is possible to simulate the effects of alternative management actions or climate forcing (referred to as "scenarios" distinct from the "historical basecase"). 
+
+To generate the input files for a scenario and run it:
+1. Make sure that [Scripts/01_InputDataUpdate.R](./Scripts/01_InputDataUpdate.R) has been run recently, and/or that weather inputs have been retrieved through the desired simulation end date and are available in a `SVIHM_Input_Files/Updates/` folder.
+2. Replace the variable `current_scenario` near the top of [Scripts/02_BaseUpdate.R](./Scripts/02_BaseUpdate.R) with the desired scenario name (default is "basecase"). A list of recognized scenario names is included in comments.
+3. Source the script  [Scripts/02_BaseUpdate.R](./Scripts/02_BaseUpdate.R). This will overwrite files inside the `SVIHM_Input_Files/Updates/` folder with those belonging to the desired scenario.
+4. Run `Prepare_Update_%Y-%m-%d_Run.bat` from a command window. This will generate a new Run folder containing the scenario input files.
+5. Optionally, rename the Run folder (e.g., `Run_scenario_name`) to avoid the folder being overwritten if the batch script `Prepare_Update_%Y-%m-%d_Run.bat` is run again.
+6. In a command window, change directories to the newly renamed Run folder an run the `Run_SVIHM.bat` batch file.
+7. Optionally, transfer the model results from the outer Run folder to a subfolder in `Scenarios\`.
+8. Remember that the input files in `SVIHM_Input_Files/Updates/` reflect the last time that the script [Scripts/02_BaseUpdate.R](./Scripts/02_BaseUpdate.R) was run. As a good practice, consider rerunning [Scripts/02_BaseUpdate.R](./Scripts/02_BaseUpdate.R) with "basecase" as the `current_scenario` to leave a clean slate for your next analysis session.
+
 ## Visualizing
 The visualization R Script is [Scripts/04_ModelOutputVisualization.R](./Scripts/04_ModelOutputVisualization.R). It currently contains some sections that plot water levels and depth to water table that take very long to run, so it may be wise to run the script [in sections or line by line](https://support.rstudio.com/hc/en-us/articles/200484448-Editing-and-Executing-Code-in-the-RStudio-IDE#executing).
 

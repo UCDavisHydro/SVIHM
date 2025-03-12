@@ -1329,6 +1329,7 @@ write_daily_crop_coeff_values_file = function(model_start_date, model_end_date, 
 
   #TO DO: Read max kc values from the landcover_table. Use to update scenarios
   recognized_basecase_landuse_scenarios = c("basecase",
+                                            "basecase_noMAR", "maxMAR2024",
                                             "curtail_00_pct_all_years",
                                             "curtail_30_pct_2022","curtail_50_pct_2022",
                                             "curtail_10_pct_2022")
