@@ -1082,18 +1082,24 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
 
     mar_app$Date= as.Date(mar_app$Date, format = "%m/%d/%Y") # convert to dates
     # convert NAs to 0s and rename columns to field letter ID
-    cfs_data = 2:ncol(mar_app) #identify columns with cfs data
-    mar_app[,cfs_data][is.na(mar_app[,cfs_data])]= 0
+    flow_cols = 2:ncol(mar_app) #identify columns with cfs data
+    mar_app[,flow_cols][is.na(mar_app[,flow_cols])]= 0
     colnames(mar_app)[colnames(mar_app)!="Date"] =
       substr(colnames(mar_app)[colnames(mar_app)!="Date"], start=1, stop=1)
     # convert from daily avg cfs to cubic meters per day
     mar_app_m3day = mar_app
     cfs_to_m3day = 1 * 60*60*24 / 35.3147
-    mar_app_m3day[,cfs_data] = round(mar_app[,cfs_data] * cfs_to_m3day)
+    AF_to_m3 = 1233.48
+    mar_app_m3day[,flow_cols] = round(mar_app[,flow_cols] * cfs_to_m3day)
     # aggregate to monthly for MAR input file
-    mar_app_m3month = aggregate(x = mar_app_m3day[,cfs_data],
+    mar_app_m3month = aggregate(x = mar_app_m3day[,flow_cols],
                                 by = list(Date = floor_date(mar_app_m3day$Date, unit="month")),
                                 FUN = sum)
+    # Add measured ditch leakage to field volumes, proportionally
+    total_added_m3 = 585 * AF_to_m3
+    mar_app_m3month_tot = sum(apply(X=mar_app_m3month[,flow_cols], MARGIN = 2, FUN = sum))
+    added_by_field = total_added_m3 * mar_app_m3month[,flow_cols] / mar_app_m3month_tot
+    mar_app_m3month[,flow_cols] = mar_app_m3month[,flow_cols] + added_by_field
     # mar_depth_monthly = mar_app_m3month
     # mar_depth_monthly[,cfs_data] = mapply(`/`,mar_app_m3month[,cfs_data], mar_fields24_areas)
 
