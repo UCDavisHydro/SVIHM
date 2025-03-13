@@ -85,19 +85,26 @@ create_sp_charts = FALSE  # Many SPs, very slow
 
 
 ### Plot 4: Flow difference maps for 2024 MAR applications
-s1 = "basecase_thru_2025.01.31"  # then process for stream maps.
+s1 = "basecase_thru_2025.01.31"
 s1_dir <- file.path('../../Scenarios', s1)
 # s1_dir = file.path('../../Run')
 swbm1_dir = file.path(s1_dir, 'SWBM')
 mf1_dir <- file.path(s1_dir, 'MODFLOW')
-s2 = "basecase_noMAR_thru_2024.09.30" #, then process for stream maps.
+s2 = "basecase_noMAR_thru_2025.01.31"
 s2_dir <- file.path('../../Scenarios',s2)
 swbm2_dir = file.path(s2_dir, 'SWBM')
 mf2_dir <- file.path(s2_dir, 'MODFLOW')
-s3 = "maxMAR2024_thru_2024.09.30" #, then process for stream maps.
+s3 = "maxMAR2024_thru_2025.01.31"
 s3_dir <- file.path('../../Scenarios',s3)
 swbm3_dir = file.path(s3_dir, 'SWBM')
 mf3_dir <- file.path(s3_dir, 'MODFLOW')
+
+s4 = "natveg_all_lowET"
+s4_dir <- file.path('../../Scenarios',s4)
+swbm4_dir = file.path(s4_dir, 'SWBM'); mf4_dir <- file.path(s4_dir, 'MODFLOW')
+s5 = "natveg_all_highET"
+s5_dir <- file.path('../../Scenarios',s5)
+swbm5_dir = file.path(s5_dir, 'SWBM'); mf5_dir <- file.path(s5_dir, 'MODFLOW')
 
 
 
@@ -205,13 +212,13 @@ streams_sim2 <- list(import_sfr_gauge(file.path(mf2_dir, 'Streamflow_FJ_SVIHM.da
 streams_sim3 <- list(import_sfr_gauge(file.path(mf3_dir, 'Streamflow_FJ_SVIHM.dat'), origin_date = origin_date),
                      import_sfr_gauge(file.path(mf3_dir, 'Streamflow_AS_SVIHM.dat'), origin_date = origin_date),
                      import_sfr_gauge(file.path(mf3_dir, 'Streamflow_BY_SVIHM.dat'), origin_date = origin_date))
-# streams_sim4 <- list(import_sfr_gauge(file.path(mf4_dir, 'Streamflow_FJ_SVIHM.dat'), origin_date = origin_date),
-#                      import_sfr_gauge(file.path(mf4_dir, 'Streamflow_AS_SVIHM.dat'), origin_date = origin_date),
-#                      import_sfr_gauge(file.path(mf4_dir, 'Streamflow_BY_SVIHM.dat'), origin_date = origin_date))
-#
-# streams_sim5 <- list(import_sfr_gauge(file.path(mf5_dir, 'Streamflow_FJ_SVIHM.dat'), origin_date = origin_date),
-#                      import_sfr_gauge(file.path(mf5_dir, 'Streamflow_AS_SVIHM.dat'), origin_date = origin_date),
-#                      import_sfr_gauge(file.path(mf5_dir, 'Streamflow_BY_SVIHM.dat'), origin_date = origin_date))
+streams_sim4 <- list(import_sfr_gauge(file.path(mf4_dir, 'Streamflow_FJ_SVIHM.dat'), origin_date = origin_date),
+                     import_sfr_gauge(file.path(mf4_dir, 'Streamflow_AS_SVIHM.dat'), origin_date = origin_date),
+                     import_sfr_gauge(file.path(mf4_dir, 'Streamflow_BY_SVIHM.dat'), origin_date = origin_date))
+
+streams_sim5 <- list(import_sfr_gauge(file.path(mf5_dir, 'Streamflow_FJ_SVIHM.dat'), origin_date = origin_date),
+                     import_sfr_gauge(file.path(mf5_dir, 'Streamflow_AS_SVIHM.dat'), origin_date = origin_date),
+                     import_sfr_gauge(file.path(mf5_dir, 'Streamflow_BY_SVIHM.dat'), origin_date = origin_date))
 
 #-------------------------------------------------------------------------------------------------#
 
@@ -516,7 +523,8 @@ streamflow_comparison_maps = function(){
 # -------------------------------------------------------------------------#
 # FJ Flow Comparison 1: SWBM 2018 vs 2023 updated basecase ------------------------------------------------------
 
-fj_flow_comparison = function(){
+fj_flow_comparison_MAR = function(){
+
   fjsim1 = streams_sim1[[1]]
   fjsim2 = streams_sim2[[1]]
   fjsim3 = streams_sim3[[1]]
@@ -525,24 +533,24 @@ fj_flow_comparison = function(){
 
 
   # png(filename = file.path(out_dir, "basecase 2018 vs updated 2023 basecase.png"),
-  png(filename = file.path(out_dir, "basecase vs basecase with no MAR_thru 2024.09.30.png"),
+  png(filename = file.path(out_dir, "basecase vs maxMAR2024 vs basecase_noMAR thru 2025.01.31.png"),
       # png(filename = file.path(out_dir, "basecase vs maxMAR2024_thru 2024.09.30.png"),
   # filename = "prelim fj comparison, 0 curtail, basecase and obs.png",
       height = 11/2, width = 18, units = "in", res = 300)
 
   flow_units = "Flow (cfs)"
-  date_lims = as.Date(c("2023-09-01","2024-10-01"))
+  date_lims = as.Date(c("2023-09-01","2025-01-31"))
   plot(x = fjsim1$Date, y = fjsim1$Flow_cfs, type = "l", log = "y",
        yaxt = "n", xaxt = "n", lwd=2, col = NA,
        # main = "Fort Jones Flow Comparison: Observed vs \n 2018 calibrated basecase, and updated 2023 basecase",
-       main = "Fort Jones Flow Comparison, Oct 2024: Observed \n vs basecase, and basecase with no MAR",
+       main = "Fort Jones Flow Comparison, 2024-2025: Observed \n vs basecase, and basecase with no MAR",
        xlab = "Date", ylab = flow_units,
        xlim = date_lims)
   # lines(x = fjsim2$Date, y = fjsim2$Flow_cfs, col = 'dodgerblue', lwd = 2)
   lines(x = fj_obs$Date, y = fj_obs$Flow, col = "black", lwd = 2)
   lines(x = fjsim1$Date, y = fjsim1$Flow_cfs, col = "green3", lwd = 2)
-  lines(x = fjsim2$Date, y = fjsim2$Flow_cfs, col = "darkblue", lwd = 2, lty = 2)
-  lines(x = fjsim3$Date, y = fjsim3$Flow_cfs, col = "goldenrod", lwd = 2, lty =3)
+  lines(x = fjsim2$Date, y = fjsim2$Flow_cfs, col = "dodgerblue", lwd = 2, lty = 2)
+  lines(x = fjsim3$Date, y = fjsim3$Flow_cfs, col = "firebrick", lwd = 2, lty =3)
 
   # lines(x = fjsim4$Date, y = fjsim4$Flow_cfs, col = "goldenrod", lwd = 2)
   # lines(x = curtail_flows_line$dates, y = curtail_flows_line$flow_cfs, lwd = 2, lty = 2, col = "blue")
@@ -563,12 +571,24 @@ fj_flow_comparison = function(){
   #                                     "Basecase 2018 (through WY 2018)",
   #                                     "Updated Basecase (June 5, 2023)"#, "Sim. 50% curtail", "Sim. 30% curtail",
   # ),
-  color = c("black","green3","darkblue", "goldenrod" ##"green4", "goldenrod",
+  color = c("black","green3","dodgerblue", "goldenrod" ##"green4", "goldenrod",
   #           # "gray30"
   ), lty = c(1,1,2,3))
 
+  # Annotate + and - flow periods
+  x1="2024-04-01"; x2="2024-05-15"
+  x3=x2; x4 = "2024-08-01"
+  x5="2024-10-10"; x6="2025-01-01"
+  y1=0.1; y2=5E5
+  fpc = c(rgb(0, 0.5, 0.3, 0.2), rgb(0.5, 0, 0.3, 0.2), rgb(0, 0.3, 0.5, 0.2)) # flow period colors
+  polygon(x=as.Date(c(x1, x2, x2, x1, x1)), y = as.Date(c(y1, y1, y2, y2, y1)), col=fpc[1], border = NA)
+  polygon(x=as.Date(c(x3, x4, x4, x3, x3)), y = as.Date(c(y1, y1, y2, y2, y1)), col=fpc[2], border = NA)
+  polygon(x=as.Date(c(x5, x6, x6, x5, x5)), y = as.Date(c(y1, y1, y2, y2, y1)), col=fpc[3], border = NA)
+
+
   legend(x = "bottomleft", legend = legend_tab$descrip, lty = legend_tab$lty,
          col = legend_tab$color, lwd = 2,  cex = .7, horiz=T)
+  legend(x = "topleft", fill = fpc, legend = c("April (+)", "May-Jul (-)", "Oct-Jan (+)"))
 
   dev.off()
 
@@ -583,17 +603,17 @@ fj_flow_comparison = function(){
 
 
 # flow differences
-  png(filename = file.path(out_dir, "Flow diff- basecase vs basecase with no MAR_thru 2024.09.30.png"),
+  png(filename = file.path(out_dir, "Flow diff- basecase vs maxMAR2024 vs basecase_noMAR thru 2025.01.31.png"),
       # filename = "prelim fj comparison, 0 curtail, basecase and obs.png",
       height = 11/2, width = 18, units = "in", res = 300)
 
   flow_units = "Flow (cfs)"
-  date_lims = as.Date(c("2023-11-01","2024-10-01"))
+  date_lims = as.Date(c("2023-11-01","2025-01-31"))
   plot(x = fjsim1$Date, y = fjsim1$Flow_cfs - fjsim2$Flow_cfs, type = "l",# log = "y",
         xaxt = "n", lwd=2, col = NA, #yaxt = "n",
-       main = "Fort Jones Flow Comparison, Oct 2024: \n basecase or max MAR minus basecase with no MAR",
-       xlab = "Date", ylab = flow_units,
-       xlim = date_lims, ylim = c(-28,10))
+       main = "Fort Jones Flow Comparison, 2024-2025: \n basecase or max MAR minus basecase with no MAR",
+       xlab = "Date", ylab = flow_units, ylim = c(-30,30),
+       xlim = date_lims)
   abline(h=0, lwd=1.5)
   lines(x = fjsim1$Date, y = fjsim1$Flow_cfs - fjsim2$Flow_cfs, lwd=2, col = 'brown')
   lines(x = fjsim1$Date, y = fjsim3$Flow_cfs - fjsim2$Flow_cfs, col = 'goldenrod', lwd = 2)
@@ -622,8 +642,119 @@ fj_flow_comparison = function(){
   legend(title = "Flow Differences", x = "bottomleft", legend = legend_tab$descrip, lty = legend_tab$lty,
          col = legend_tab$color, lwd = 2,  cex = .7, horiz=T)
 
-  text(x = as.Date("2024-04-01"), y = 8, label = "(+) Applied MAR increases \n GW discharge", pos = 4)
-  text(x = as.Date("2024-04-01"), y = -10, label = "(-) MAR diversions decrease flow", pos = 4)
+  text(x = as.Date("2024-06-01"), y = 8, label = "(+) Applied MAR increases \n GW discharge", pos = 4)
+  text(x = as.Date("2024-06-01"), y = -15, label = "(-) MAR diversions decrease flow", pos = 4)
+
+  # x1="2024-04-01"; x2="2024-05-15"
+  # x3=x2; x4 = "2024-08-01"
+  # x5="2024-10-10"; x6="2025-01-01"
+  y1=-50; y2=50
+  polygon(x=as.Date(c(x1, x2, x2, x1, x1)), y = as.Date(c(y1, y1, y2, y2, y1)), col=fpc[1], border = NA)
+  polygon(x=as.Date(c(x3, x4, x4, x3, x3)), y = as.Date(c(y1, y1, y2, y2, y1)), col=fpc[2], border = NA)
+  polygon(x=as.Date(c(x5, x6, x6, x5, x5)), y = as.Date(c(y1, y1, y2, y2, y1)), col=fpc[3], border = NA)
+
+  legend(x = "topleft", fill = fpc, legend = c("April (+)", "May-Jul (-)", "Oct-Jan (+)"))
+
+  dev.off()
+
+}
+
+fj_flow_comparison_unimpaired_flows = function(){
+
+  fjsim1 = streams_sim1[[1]]
+  # fjsim2 = streams_sim2[[1]]
+  # fjsim3 = streams_sim3[[1]]
+  fjsim4 = streams_sim4[[1]]
+  fjsim5 = streams_sim5[[1]]
+
+
+  # png(filename = file.path(out_dir, "basecase 2018 vs updated 2023 basecase.png"),
+  png(filename = file.path(out_dir, "Unimpaired Flows (all native veg) thru 2025.01.31.png"),
+      # png(filename = file.path(out_dir, "basecase vs maxMAR2024_thru 2024.09.30.png"),
+      # filename = "prelim fj comparison, 0 curtail, basecase and obs.png",
+      height = 11, width = 18, units = "in", res = 300)
+  par(mfrow=c(2,1))
+  flow_units = "Flow (cfs)"
+  date_lims = as.Date(c("2021-09-01","2025-02-01"))
+  plot(x = fj_obs$Date, y = fj_obs$Flow, type = "l", log = "y",
+       yaxt = "n", xaxt = "n", lwd=2, col = NA,
+       # main = "Fort Jones Flow Comparison: Observed vs \n 2018 calibrated basecase, and updated 2023 basecase",
+       main = "Fort Jones Flow Comparison, 2021-2025: Observed \n vs basecase (BC) and unimpaired flow (UF) bookends",
+       xlab = "Date", ylab = flow_units,xlim = date_lims
+       )
+  # lines(x = fjsim2$Date, y = fjsim2$Flow_cfs, col = 'dodgerblue', lwd = 2)
+  lines(x = fj_obs$Date, y = fj_obs$Flow, col = "black", lwd = 2)
+  lines(x = fjsim1$Date, y = fjsim1$Flow_cfs, col = "green3", lwd = 2)
+  lines(x = fjsim4$Date, y = fjsim4$Flow_cfs, col = "dodgerblue", lwd = 2, lty = 2)
+  lines(x = fjsim5$Date, y = fjsim5$Flow_cfs, col = "firebrick3", lwd = 2, lty =3)
+
+  axis_interval = "month" # "year"
+  axis(side = 1, at = seq.Date(from = date_lims[1], to = date_lims[2], by = axis_interval),
+       labels = strftime(seq.Date(from = date_lims[1], to = date_lims[2], by = axis_interval), format = "%b-%y"),
+       crt = 45)
+  abline(v = seq.Date(from = date_lims[1], to = date_lims[2], by = axis_interval), lty = 2, col = "gray")
+  abline(h = (10^c(0,1,2,3,4)), lty = 2, col = "gray")
+  axis(side = 2, 10^c(0,1,2,3,4))
+  axis(side = 2, at = 1:9 * sort(rep(10^c(0,1,2,3,4),9)), labels = NA)
+
+  x1=c("2021-07-01","2021-12-15","2022-04-01","2023-01-01","2023-04-20","2024-01-01","2024-05-01","2024-12-05")
+  x2=c(x1[2:length(x1)],"2025-03-31")
+  poly_color = rep(fpc[1:2],length(x1)/2)
+
+  y1=0.1; y2=5E5
+  for(i in 1:length(x1)){
+    x1i=x1[i]; x2i=x2[i]
+    polygon(x=as.Date(c(x1i, x2i, x2i, x1i, x1i)), y = as.Date(c(y1, y1, y2, y2, y1)), col=poly_color[i], border = NA)
+
+  }
+  # flow difference periods legend
+  legend(x = "topleft", fill = fpc[1:2], legend = c("UF higher than BC", "UF lower than BC"))
+
+  legend_tab = data.frame(descrip=c("FJ Obs.", "Basecase", "Nat. Veg, low ET", "Nat. Veg, high ET"),
+                          color = c("black","green3","dodgerblue", "firebrick3" ##"green4", "goldenrod",
+                                    #           # "gray30"
+                          ), lty = c(1,1,2,3))
+
+  legend(x = "bottomleft", legend = legend_tab$descrip, lty = legend_tab$lty,
+         col = legend_tab$color, lwd = 2,  cex = .7, horiz=T, bg="white")
+
+
+  flow_units = "Flow (cfs)"
+  # date_lims = as.Date(c("2023-11-01","2025-01-31"))
+  plot(x = fjsim4$Date, y = fjsim5$Flow_cfs - fjsim1$Flow_cfs, type = "l",# log = "y",
+       xaxt = "n", lwd=2, col = NA, #yaxt = "n",
+       main = "Fort Jones Flow Comparison, 2021-2025: \n unimpaired flow (UF) minus basecase (BC)",
+       xlab = "Date", ylab = flow_units, ylim = c(-100,400),
+       xlim = date_lims)
+  abline(h=0, lwd=1.5)
+  lines(x = fjsim1$Date, y = fjsim4$Flow_cfs - fjsim1$Flow_cfs, lwd=2, col = 'dodgerblue')
+  lines(x = fjsim1$Date, y = fjsim5$Flow_cfs - fjsim1$Flow_cfs, col = 'firebrick3', lwd = 2)
+
+  axis_interval = "month" # "year"
+  axis(side = 1, at = seq.Date(from = date_lims[1], to = date_lims[2], by = axis_interval),
+       labels = strftime(seq.Date(from = date_lims[1], to = date_lims[2], by = axis_interval), format = "%b-%y"),
+       crt = 45)
+  abline(v = seq.Date(from = date_lims[1], to = date_lims[2], by = axis_interval), lty = 2, col = "gray")
+  abline(h = seq(from = -200, by = 100, length.out = 10), lty = 2, col = "gray")
+
+  text(x = as.Date("2023-09-01"), y = 150, label = "(+) Full nat. veg cover \n increases flow", pos = 4)
+  text(x = as.Date("2024-02-15"), y = -70, label = "(-) Full nat. veg cover \n decreases flow", pos = 4)
+
+  y1=-500; y2=500
+  for(i in 1:length(x1)){
+    x1i=x1[i]; x2i=x2[i]
+    polygon(x=as.Date(c(x1i, x2i, x2i, x1i, x1i)), y = as.Date(c(y1, y1, y2, y2, y1)), col=poly_color[i], border = NA)
+  }
+
+    # flow difference periods legend
+  legend(x = "topleft", fill = fpc[1:2], legend = c("UF higher than BC", "UF lower than BC"))
+
+  #main legend
+  legend_tab = data.frame(descrip=c("Low ET nat. veg. - basecase", "High ET nat. veg. - basecase"),
+                          color = c("dodgerblue","firebrick3"), lty = c(1,1), lwd = c(2,2))
+
+  legend(title = "Flow Differences", x = "bottomleft", legend = legend_tab$descrip, lty = legend_tab$lty,
+         col = legend_tab$color, lwd = 2,  cex = .7, horiz=T, bg="white")
 
   dev.off()
 
@@ -778,8 +909,8 @@ fj_flow_comparison_alt_analyses = function(){
 #________________________________________________________________________________________
 
 MODFLOW_Budget = function(in_dir, filename, mf_bud_terms, suffix,
-                          start_date = as.Date("1990-10-01"), end_date = as.Date("2018-09-30"),
-                          nstress = 336, start_wy = 1991, end_wy = 2018){
+                          start_date = as.Date("1990-10-01"), end_date = as.Date("2024-09-30"),
+                          nstress = 336, start_wy = 1991, end_wy = 2024){
   library(magrittr)
   InputText = readLines(file.path(in_dir,filename))  #Read in text file
   # Extract Convergence Failures
