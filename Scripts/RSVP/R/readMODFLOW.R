@@ -35,7 +35,8 @@ import_HOB <- function(hob_input, hob_output, origin_date) {
   # Combine (assumes exact same order, should always be true)
   combined <- cbind(hobs$data[c("obsnam","layer","row","column","irefsp","toffset","roff","coff")],
                     hsim[,c('sim','obs')])
-  combined$well_id <- sub("_[^_]+$", "", combined$obsnam)
+  combined$well_id <- unlist(lapply(strsplit(combined$obsnam, ".", fixed=T), '[[', 1))
+  # combined$well_id <- sub("_[^_]+$", "", combined$well_id)
 
   # Handle dry values
   combined$sim[combined$sim==hobs$hobdry] = NA
