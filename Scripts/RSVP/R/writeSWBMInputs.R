@@ -1,4 +1,3 @@
-
 #-------------------------------------------------------------------------------------------------#
 
 #' Write SWBM Drains Input Files (Drain_m3day.txt, Drains_initial_m3day.txt)
@@ -788,12 +787,8 @@ write_muni_pumping_file <- function(start_date, n_stress, output_dir,
 #'
 write_SWBM_landcover_file <- function(scenario_id = "basecase",
                                       output_dir, start_date, end_date) {
-  recognized_basecase_landuse_scenarios = c("basecase",
-                                            "curtail_00_pct_all_years",
-                                            "curtail_30_pct_2022","curtail_50_pct_2022",
-                                            "curtail_10_pct_2022")
-  recognized_scenarios = c(recognized_basecase_landuse_scenarios,
-                           "natveg_all_lowET", "natveg_all_highET")
+  recognized_scenarios = scen_param_tab$scen_id
+
   output_filename = "polygon_landcover_ids.txt"
 
   # pull reference land cover
@@ -824,7 +819,7 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
 
   # Write land cover file for scenarios with basecase land use
   # i.e., no major crop changes or native vegetation coverage changes
-  if(tolower(scenario_id) %in% recognized_basecase_landuse_scenarios | # If it's a basecase-landuse scenario OR
+  if(scen_param_tab$basecase_landuse[scen_param_tab$scen_id == scenario_id] == T | # If it's a basecase-landuse scenario OR
      !(tolower(scenario_id) %in% recognized_scenarios)){ # If it's not any of the recognized scenarios
     #Set fields equal to unchanging default
     landcover_output = field_df
@@ -862,7 +857,7 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
     }
   }
 
-  if(tolower(scenario_id) %in% tolower(c("natveg_all_lowET","natveg_all_highET"))){
+  if(scen_param_tab$basecase_landuse[scen_param_tab$scen_id == scenario_id] == F){
     # table indicating which numeric code corresponds to which crop
     landcover_descriptions = read.table(comment = "!", header = T,
                                         file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
@@ -920,13 +915,15 @@ write_updated_crop_info = function(scenario_id, output_dir, start_date, end_date
   # table indicating which numeric code corresponds to which crop
   landcover_descriptions = read.table(comment = "!", header = T,
                                       file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
-
-  if(scenario_id %in% c("natveg_all_lowET", "natveg_all_highET")){
+  scen_picker = scen_param_tab$scen_id==current_scenario
+  if(!is.na(scen_param_tab$swbm_natveg_RD_m[scen_picker])){
+    natveg_rd = scen_param_tab$swbm_natveg_RD_m[scen_picker]
     natveg_i = grep(x = landcover_descriptions$Landcover_Name, pattern = "Native")
-    landcover_descriptions$RootDepth[natveg_i] = round(3,4)
+    landcover_descriptions$RootDepth[natveg_i] = round(natveg_rd,4)
     landcover_descriptions$RD_Mult[natveg_i] = round(1,1)
   }
-  write.table(landcover_descriptions, row.names = F, col.names = T, quote=F, sep = "\t",
+  write.table(landcover_descriptions, row.names = F, col.names = T,
+              quote=F, sep = "\t",
               file = file.path(output_dir, "landcover_table.txt"))
 }
 
@@ -969,14 +966,9 @@ write_updated_crop_info = function(scenario_id, output_dir, start_date, end_date
 #'                             end_date = as.Date("2024-12-31"))
 
 write_updated_ET_inputs = function(scenario_id, output_dir, start_date, end_date){
-  # table indicating which numeric code corresponds to which crop
-  if(tolower(scenario_id) %in% tolower(c("natveg_all_lowET", "natveg_all_highET"))){
-    if(tolower(scenario_id) == tolower("natveg_all_lowET")){nv_ext_depth_m = 3}
-    if(tolower(scenario_id) == tolower("natveg_all_highET")){nv_ext_depth_m = 3} # currently the 2 bookends use the same extinction depth
+  scen_picker = scen_param_tab$scen_id==scenario_id
+  nv_ext_depth_m = scen_param_tab$modflow_ExtD_m[scen_picker]
 
-    # to do: optional: read rooting depth from the landcover_table file, if it has already been updated for the scenario
-    # landcover_descriptions = read.table(comment = "!", header = T,
-    #                                     file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
     # to do: optional: turn on et from gw only under native vegetation (in spatially heterogeneous landcover scenarios)
     ET_cells = as.matrix(read.table(comment = "!", header = F,
                                     file.path(data_dir["time_indep_dir","loc"], "ET_Zone_Cells.txt")))
@@ -1002,7 +994,6 @@ write_updated_ET_inputs = function(scenario_id, output_dir, start_date, end_date
                 file = file.path(output_dir, "ET_Zone_Cells.txt"),
                 row.names = F, col.names = F, sep = "\t")
 
-  }
 }
 
 # ------------------------------------------------------------------------------------------------#
@@ -1021,7 +1012,8 @@ write_updated_ET_inputs = function(scenario_id, output_dir, start_date, end_date
 #'
 write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
                                       output_dir, start_date, end_date) {
-  no_mar_scenarios = c("basecase_noMAR", "natveg_all_lowET", "natveg_all_highET")
+  scen_picker = scen_param_tab$scen_id==scenario_id
+  no_mar_scenarios = scen_param_tab$scen_id[scen_param_tab$mar_scen == "none"]
   recognized_scenarios = c("basecase", "maxMAR2024", no_mar_scenarios)
   output_filename = "MAR_depth.txt"
 
@@ -1043,11 +1035,11 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
   field_column_selector = grepl(pattern = "ID", x = colnames(field_df))
   field_df[,field_column_selector] = 0
 
-  if(tolower(scenario_id) %in% tolower(no_mar_scenarios)){
+  if(tolower(scen_param_tab$mar_scen[scen_picker]) == "none"){#} tolower(scenario_id) %in% tolower(no_mar_scenarios)){
     mar_depth_output = field_df
   }
 
-  if(tolower(scenario_id) %in% tolower(c("basecase", "maxMAR2024"))){
+  if(tolower(scen_param_tab$mar_scen[scen_picker]) %in% c("basecase","max")){
     # Initialize output file
     mar_depth_output = field_df
     # 1) TO DO: add in observed MAR for winter 2023
@@ -1069,12 +1061,12 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
     mar_fields24_areas = st_area(mar_fields24)
     names(mar_fields24_areas) = substr(x = mar_fields24$Name, start = 7, stop = 7)
     # read in and process MAR diversion volumes
-    if(tolower(scenario_id)=="basecase"){
+    if(tolower(scen_param_tab$mar_scen[scen_picker]) == "basecase"){
       mar_app = read.csv(file=file.path(data_dir["ref_data_dir","loc"],
                                         "Scott MAR wy 2024_cfs daily record.csv"),
                          colClasses = c("character",rep("numeric",10)))
     }
-    if(tolower(scenario_id)==tolower("maxMAR2024")){
+    if(tolower(scen_param_tab$mar_scen[scen_picker]) == "max"){
       mar_app = read.csv(file=file.path(data_dir["ref_data_dir","loc"],
                                         "Scott MAR wy 2024_cfs daily record_Max Div.csv"),
                          colClasses = c("character",rep("numeric",10)))
@@ -1181,7 +1173,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
   # possible steps: read in fields and potentially adjudicated zone
   # potentially read in schedule of land use updates
 
-  if(!(tolower(scenario_id) %in% tolower(recognized_scenarios))){
+  if(!(tolower(scenario_id) %in% tolower(scen_param_tab$scen_id))){
     print("Warning: specified MAR scenario not recognized in current codebase. Using basecase MAR file (no irrigation applied for MAR)")
     mar_depth_output = field_df
   }
@@ -1223,6 +1215,7 @@ write_SWBM_MAR_depth_file <- function(scenario_id = "basecase",
 write_SWBM_curtailment_file <- function(output_dir, scenario_id,
                                         start_date, end_date) {
   m2_to_acres = 1/4046.856
+  scen_picker = scen_param_tab$scen_id==scenario_id
 
   # generate a stress-period-by-field table (wide format)  for saving to output
   curtail_output <- swbm_build_field_value_df(model_start_date = start_date,
@@ -1231,7 +1224,7 @@ write_SWBM_curtailment_file <- function(output_dir, scenario_id,
   no_curtail_scenarios = c("natveg_all_lowET", "natveg_all_highET", "curtail_00_pct_all_years")
   basecase_curtail_scenarios = c("basecase", "basecase_noMAR", "maxMAR2024")
 
-  if(scenario_id %in% basecase_curtail_scenarios){
+  if(scen_param_tab$curtail_scen[scen_picker] == "basecase"){
     # Read in 2021/2022 LCS/curtailments (see SVIHM/Scripts/Stored_Analyses/2021_2022_LCS_Curtailments.R)
     curt21_22 <- read.csv(file.path(data_dir["ref_data_dir","loc"], 'Curtail_21_22.csv'))
     curt21_22$Stress_Period <- as.Date(curt21_22$Stress_Period)
@@ -1249,7 +1242,7 @@ write_SWBM_curtailment_file <- function(output_dir, scenario_id,
     curtail_output <- rbind(curtail_output, curt21_22, curt23, curt24)
   }
 
-  if(scenario_id %in% no_curtail_scenarios){
+  if(scen_param_tab$curtail_scen[scen_picker] == "none"){
     #do nothing - keep default all-0% curtailments
   }
 
@@ -1324,18 +1317,13 @@ write_SWBM_ET_correction_file <- function(output_dir, start_date, end_date) {
 #'
 #'
 #'
-write_daily_crop_coeff_values_file = function(model_start_date, model_end_date, output_dir,
+write_daily_crop_coeff_values_file = function(model_start_date, model_end_date,
+                                              output_dir,
                                               scenario_id = current_scenario){
+  scen_picker = scen_param_tab$scen_id==scenario_id
 
-  #TO DO: Read max kc values from the landcover_table. Use to update scenarios
-  recognized_basecase_landuse_scenarios = c("basecase",
-                                            "basecase_noMAR", "maxMAR2024",
-                                            "curtail_00_pct_all_years",
-                                            "curtail_30_pct_2022","curtail_50_pct_2022",
-                                            "curtail_10_pct_2022")
-  if(scenario_id %in% recognized_basecase_landuse_scenarios){natveg_kc = 0.6}
-  if(scenario_id == "natveg_all_lowET"){natveg_kc = 0.6}
-  if(scenario_id == "natveg_all_highET"){natveg_kc = 1.0}
+  natveg_kc = scen_param_tab$natveg_kc[scen_picker]
+  if(is.na(scen_param_tab$natveg_kc[scen_picker])){natveg_kc = 0.6} # default basecase value
 
   # Generate new kc records based on model period
   kc_alfalfa <- gen_daily_binary_crop_coefficients(model_start_date, model_end_date)
@@ -1362,6 +1350,44 @@ write_daily_crop_coeff_values_file = function(model_start_date, model_end_date, 
   write.table(kc_values, file = file.path(output_dir, "kc_values.txt"),
               sep = "  ", quote = FALSE, col.names = TRUE, row.names = FALSE)
   }
+
+# ------------------------------------------------------------------------------------------------#
+
+#' Write updated polygons_table.txt
+#'
+#' Overwrites the default master file containing SVIHM field properties.
+#'
+#' @param output_dir directory to write the files to
+#' @param filename output filename (default: polygons_table.txt)
+#'
+#' @return none; writes file
+#' @export
+#'
+#' @examples
+copy_or_overwrite_poly_table <- function(scenario_id, output_dir) {
+
+  if(tolower(scenario_id) == "no_pumping" |
+     (scen_param_tab$change_polygons_file[scen_param_tab$scen_id == scenario_id] == T)){
+    poly_tab = read.table(file.path(data_dir["time_indep_dir","loc"], "polygons_table.txt"),
+                          header = T)
+    # convert water sources: GW to DRY, MIX to SW
+    # WATERSOURC data: 1 = surface water; 2 = groundwater; 3 = mix
+    # 4 = subirrigated; 5 = dry-farmed; 999 = unknown, assume GW
+    poly_tab$WATERSOURC[poly_tab$WATERSOURC == 2] = 5
+    poly_tab$WATERSOURC[poly_tab$WATERSOURC == 3] = 1
+
+    write.table(x = poly_tab, file = file.path(output_dir, "polygons_table.txt"),
+                row.names = F, col.names = T,
+                quote=F, sep = "\t")
+  }
+
+  if(scen_param_tab$change_polygons_file[scen_param_tab$scen_id == scenario_id] == F){
+    file.copy(from = read.table(file.path(data_dir["time_indep_dir","loc"], "polygons_table.txt"),
+                                header = T),
+              to = file.path(output_dir, "polygons_table.txt"))
+  }
+
+}
 
 # ------------------------------------------------------------------------------------------------#
 

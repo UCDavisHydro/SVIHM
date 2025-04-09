@@ -115,3 +115,5 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+/basecase_thru_2024.09.30
+/no_pumping

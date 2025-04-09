@@ -12,29 +12,29 @@ end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
 
 # Directory (Created in SVIHM_Input_Files/Updates) - Grabs latest version
 update_dir <- latest_dir(data_dir['update_dir','loc'])
+update_dir = "C:/Users/ck798/Documents/GitHub/SVIHM/Updates/2024-10-01"
 
 # Scenario selection
-current_scenario = "basecase" # default is "basecase". Affects a variety of input files.
+current_scenario = "no_pumping" # default is "basecase". Affects a variety of input files.
 
-# Current coded-up scenario names:
-# "basecase"
-# "basecase_noMAR", "maxMAR2024"
-# "natveg_all_lowET", "natveg_all_highET"
+# Scenario Parameters -----------------------------------------------------
 
-# Old scenarios
-# "curtail_00_pct_all_years"
-# "curtail_10_pct_2022"
-# "curtail_30_pct_2022"
-# "curtail_50_pct_2022"
-# forecast_2023_curtail = c("basecase_2023.06.05_curtail_00_pct_2023",
-#                           "basecase_2023.06.05_curtail_10_pct_2023",
-#                           "basecase_2023.06.05_curtail_30_pct_2023",
-#                           "basecase_2023.06.05_curtail_50_pct_2023")
+scen_param_tab = data.frame(scen_id = c("basecase", "no_pumping",
+                                        "basecase_noMAR", "maxMAR2024",
+                                        "no_gw_irr_3a", "no_gw_irr_3b", "no_gw_irr_3c", "no_gw_irr_3d",
+                                        "natveg_all_4a", "natveg_all_4b", "natveg_all_4c", "natveg_all_4d"),
+                            swbm_natveg_RD_m = c(rep(NA, 4),  #defaults to basecase value in orig. files
+                                                 rep(c(1.2, 2.4),4)),
+                            natveg_kc = c(rep(NA, 4), # defaults to basecase value in orig. files
+                                          rep(c(0.6, 0.6, 1, 1),2)),
+                            modflow_ExtD_m = c(rep(NA, 4), # defaults to basecase values in orig. file
+                                               rep(3.05, 8)),
+                            change_polygons_file = c(F, T, rep(F, 10)),
+                            basecase_landuse = c(rep(T, 8), rep(F, 4)),
+                            mar_scen = c("basecase","basecase","none","max",rep("none",8)),
+                            curtail_scen = c(rep("basecase",4), rep("none",8)))
 
-# any new scenarios with crop kc changes or new land cover types/new kc values
-kc_change_scenarios = c("natveg_all_lowET", "natveg_all_highET")
-# any new scenarios changing the ET-from-gw extinction depth or the extent of ET-from-GW
-ET_zone_or_depth_change_scenarios = c("natveg_all_lowET", "natveg_all_highET")
+
 # ------------------------------------------------------------------------------------------------#
 
 # Temporal discretization -------------------------------------------------------------------------
@@ -116,14 +116,19 @@ write_ag_pumping_file(start_date = model_start_date, n_stress = num_stress_perio
 write_muni_pumping_file(start_date = model_start_date, n_stress = num_stress_periods,
                       output_dir = update_dir, muni_pumping_data = NA)
 
-# Land use by field by month. Potentially also edit the kc and ET-from-GW inputs.
+# Land use by field by month. Potentially also edit the master field attributes
+# table, the daily kc and ET-from-GW inputs.
 write_SWBM_landcover_file(scenario_id = current_scenario, output_dir = update_dir,
                           start_date = model_start_date, end_date = model_end_date)
-if(current_scenario %in% kc_change_scenarios){
-  write_updated_crop_info(scenario_id = current_scenario, output_dir = update_dir,
+# Master field attributes table (polygons_table.txt)
+copy_or_overwrite_poly_table(scenario_id = current_scenario, output_dir = update_dir)
+# Rooting depth in the crop parameters table
+if(!is.na(scen_param_tab$swbm_natveg_RD_m[scen_param_tab$scen_id == current_scenario])){
+    write_updated_crop_info(scenario_id = current_scenario, output_dir = update_dir,
                         start_date = model_start_date, end_date = model_end_date)
 }
-if(current_scenario %in% ET_zone_or_depth_change_scenarios){
+# Extinction depth for ET-from-GW
+if(!is.na(scen_param_tab$modflow_ExtD_m[scen_param_tab$scen_id == current_scenario])){
   write_updated_ET_inputs(scenario_id = current_scenario, output_dir = update_dir,
                           start_date = model_start_date, end_date = model_end_date)
 }
