@@ -819,7 +819,7 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
 
   # Write land cover file for scenarios with basecase land use
   # i.e., no major crop changes or native vegetation coverage changes
-  if(scen_param_tab$basecase_landuse[scen_param_tab$scen_id == scenario_id] == T | # If it's a basecase-landuse scenario OR
+  if(scen_param_tab$landuse_scen[scen_param_tab$scen_id == scenario_id] == "basecase" | # If it's a basecase-landuse scenario OR
      !(tolower(scenario_id) %in% recognized_scenarios)){ # If it's not any of the recognized scenarios
     #Set fields equal to unchanging default
     landcover_output = field_df
@@ -857,7 +857,7 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
     }
   }
 
-  if(scen_param_tab$basecase_landuse[scen_param_tab$scen_id == scenario_id] == F){
+  if(scen_param_tab$landuse_scen[scen_param_tab$scen_id == scenario_id] == "nv_all_cult"){
     # table indicating which numeric code corresponds to which crop
     landcover_descriptions = read.table(comment = "!", header = T,
                                         file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
@@ -872,11 +872,28 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
     }
 
     landcover_output = field_df
-  } # Placeholder :
-  # Replace default with new landcover file, and update recognized_scenarios
+  }
+
+  if(scen_param_tab$landuse_scen[scen_param_tab$scen_id == scenario_id] == "nv_gw_mix"){
+    field_nv_gw_mix = field_df
+    # table indicating which numeric code corresponds to which crop
+    landcover_descriptions = read.table(comment = "!", header = T,
+                                        file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
+    natveg_code = landcover_descriptions$id[grep(pattern = "Native", landcover_descriptions$Landcover_Name)]
+
+    # Build new time-invarying fields table
+    for(i in 1:num_unique_fields){
+      field_id = poly_tab$SWBM_id[i]
+      if(poly_tab$WATERSOURC[i] %in% c(2,3)){ # GW or MIX source
+        # set entire model period to native vegetation land use
+        field_nv_gw_mix[,paste0("ID_",field_id)] = natveg_code
+      }
+    }
+    landcover_output = field_nv_gw_mix
+  }
+  # Placeholder :
   # possible steps: read in fields and potentially adjudicated zone
   # potentially read in schedule of land use updates
-
 
   write.table(landcover_output, file = file.path(output_dir, output_filename),
               sep = "  ", quote = FALSE, col.names = TRUE, row.names = FALSE)
@@ -911,7 +928,7 @@ write_SWBM_landcover_file <- function(scenario_id = "basecase",
 #'                             start_date = as.Date("2024-01-01"),
 #'                             end_date = as.Date("2024-12-31"))
 
-write_updated_crop_info = function(scenario_id, output_dir, start_date, end_date){
+copy_or_overwrite_crop_info_table = function(scenario_id, output_dir){
   # table indicating which numeric code corresponds to which crop
   landcover_descriptions = read.table(comment = "!", header = T,
                                       file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
@@ -921,10 +938,16 @@ write_updated_crop_info = function(scenario_id, output_dir, start_date, end_date
     natveg_i = grep(x = landcover_descriptions$Landcover_Name, pattern = "Native")
     landcover_descriptions$RootDepth[natveg_i] = round(natveg_rd,4)
     landcover_descriptions$RD_Mult[natveg_i] = round(1,1)
+
+    write.table(landcover_descriptions, row.names = F, col.names = T,
+                quote=F, sep = "\t",
+                file = file.path(output_dir, "landcover_table.txt"))
+
+  } else {
+    file.copy(from = file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"),
+              to = file.path(output_dir, "landcover_table.txt"))
   }
-  write.table(landcover_descriptions, row.names = F, col.names = T,
-              quote=F, sep = "\t",
-              file = file.path(output_dir, "landcover_table.txt"))
+
 }
 
 # ------------------------------------------------------------------------------------------------#
@@ -965,25 +988,43 @@ write_updated_crop_info = function(scenario_id, output_dir, start_date, end_date
 #'                             start_date = as.Date("2024-01-01"),
 #'                             end_date = as.Date("2024-12-31"))
 
-write_updated_ET_inputs = function(scenario_id, output_dir, start_date, end_date){
+copy_or_overwrite_ET_inputs = function(scenario_id, output_dir){
   scen_picker = scen_param_tab$scen_id==scenario_id
-  nv_ext_depth_m = scen_param_tab$modflow_ExtD_m[scen_picker]
 
-    # to do: optional: turn on et from gw only under native vegetation (in spatially heterogeneous landcover scenarios)
+  if(!is.na(scen_param_tab$modflow_ExtD_m[scen_picker])){
+    # retrieve new extinction depth from scenario parameter table
+    nv_ext_depth_m = scen_param_tab$modflow_ExtD_m[scen_picker]
+    # read in default ET files
     ET_cells = as.matrix(read.table(comment = "!", header = F,
                                     file.path(data_dir["time_indep_dir","loc"], "ET_Zone_Cells.txt")))
     ET_ext_depth = as.matrix(read.table(comment = "!", header = F,
                                         file.path(data_dir["time_indep_dir","loc"],
                                                   "ET_Cells_Extinction_Depth.txt")))
-
+    # Read in file assigning SVIHM field IDs in each gridcell
     poly_cells = as.matrix(read.table(header = F,
                                       file = file.path(file.path(data_dir["time_indep_dir","loc"], "recharge_zones.txt"))))
-    # Assign cells in natural vegetation fields a 4.5 m extinction depth
-    ET_ext_depth[poly_cells != 0] = nv_ext_depth_m
-    # Assign Discharge Zone cells an extinction depth of 0.5 m
-    ET_ext_depth[ET_cells == 1] = 0.5
-    # Turn on ET from GW in all active cells
-    ET_cells[poly_cells != 0] = 1
+    # Read in crop info to retrieve the code for native vegetation
+    landcover_descriptions = read.table(comment = "!", header = T,
+                                        file.path(data_dir["time_indep_dir","loc"], "landcover_table.txt"))
+    natveg_code = landcover_descriptions$id[grep(pattern = "Native", landcover_descriptions$Landcover_Name)]
+
+    # Turn on et from gw only under native vegetation
+    # Read in the monthly polygon landuse IDs (after it's been written for current scenario)
+    landcover_file = read.table(file.path(output_dir,"polygon_landcover_ids.txt"), header = T)
+    # calculate the percentage of months in which the landcover is Native Vegetation
+    fraction_time_natveg = apply(X = landcover_file, MARGIN = 2, function(x){sum(x == natveg_code)}) / nrow(landcover_file)
+    # make a vector of field IDs in which the field is natveg > 50% of the time
+    natveg_cols = colnames(landcover_file)[fraction_time_natveg >= 0.5]
+    natveg_field_ids = as.numeric(gsub(x = natveg_cols, pattern = "ID_", replacement = ""))
+
+    # Assign ET_cells active to all fields that have been set to NatVeg
+
+    # Default: ET_cells = 1 (et cells active) and ET_ext_depth = 0.5, only in Discharge Zone.
+    # For all cells OUTSIDE the Discharge Zone, assign cells in natural vegetation
+    # fields the new extinction depth from scenario parameters
+    ET_ext_depth[poly_cells %in% natveg_field_ids & ET_cells == 0] = nv_ext_depth_m
+    # Then, activate ET from GW in all native vegetation cells
+    ET_cells[poly_cells %in% natveg_field_ids] = 1
 
     # Save extinction depth matrix
     write.table(x =ET_ext_depth,
@@ -993,6 +1034,28 @@ write_updated_ET_inputs = function(scenario_id, output_dir, start_date, end_date
     write.table(x =ET_cells,
                 file = file.path(output_dir, "ET_Zone_Cells.txt"),
                 row.names = F, col.names = F, sep = "\t")
+
+
+
+    # # Diagnostic: make a matrix of water source and plot it to see if getting reasonable ET extent
+    # poly_tab = read.table(file.path(data_dir["time_indep_dir","loc"],"polygons_table.txt"),
+    #                       header = T)
+    # wat_source_cells = poly_cells; wat_source_cells[,] = 0
+    # wat_source_cells[poly_cells %in% poly_tab$SWBM_id[poly_tab$WATERSOURC == 1]] = 1
+    # wat_source_cells[poly_cells %in% poly_tab$SWBM_id[poly_tab$WATERSOURC == 2]] = 2
+    # wat_source_cells[poly_cells %in% poly_tab$SWBM_id[poly_tab$WATERSOURC == 3]] = 3
+    # wat_source_cells[poly_cells %in% poly_tab$SWBM_id[poly_tab$WATERSOURC == 4]] = 4
+    # wat_source_cells[poly_cells %in% poly_tab$SWBM_id[poly_tab$WATERSOURC == 5]] = 5
+    # wat_source_cells[poly_cells %in% poly_tab$SWBM_id[poly_tab$WATERSOURC == 999]] = 2
+    # image(wat_source_cells)
+  } else {
+    # If not making any ET-from-GW changes, copy the default files into the output_dir
+    file.copy(from = file.path(data_dir["time_indep_dir","loc"], "ET_Zone_Cells.txt"),
+              to = file.path(output_dir, "ET_Zone_Cells.txt"))
+    file.copy(from = file.path(data_dir["time_indep_dir","loc"],"ET_Cells_Extinction_Depth.txt"),
+              to = file.path(outp_dir, "ET_Cells_Extinction_Depth.txt"))
+  }
+
 
 }
 
@@ -1382,9 +1445,8 @@ copy_or_overwrite_poly_table <- function(scenario_id, output_dir) {
   }
 
   if(scen_param_tab$change_polygons_file[scen_param_tab$scen_id == scenario_id] == F){
-    file.copy(from = read.table(file.path(data_dir["time_indep_dir","loc"], "polygons_table.txt"),
-                                header = T),
-              to = file.path(output_dir, "polygons_table.txt"))
+    file.copy(from = file.path(data_dir["time_indep_dir","loc"], "polygons_table.txt"),
+              to = file.path(output_dir, "polygons_table.txt"), overwrite=T)
   }
 
 }

@@ -15,7 +15,7 @@ update_dir <- latest_dir(data_dir['update_dir','loc'])
 update_dir = "C:/Users/ck798/Documents/GitHub/SVIHM/Updates/2024-10-01"
 
 # Scenario selection
-current_scenario = "no_pumping" # default is "basecase". Affects a variety of input files.
+current_scenario = "basecase" # default is "basecase". Affects a variety of input files.
 
 # Scenario Parameters -----------------------------------------------------
 
@@ -30,7 +30,7 @@ scen_param_tab = data.frame(scen_id = c("basecase", "no_pumping",
                             modflow_ExtD_m = c(rep(NA, 4), # defaults to basecase values in orig. file
                                                rep(3.05, 8)),
                             change_polygons_file = c(F, T, rep(F, 10)),
-                            basecase_landuse = c(rep(T, 8), rep(F, 4)),
+                            landuse_scen = c(rep("basecase", 4), rep("nv_gw_mix", 4), rep("nv_all_cult",4)),
                             mar_scen = c("basecase","basecase","none","max",rep("none",8)),
                             curtail_scen = c(rep("basecase",4), rep("none",8)))
 
@@ -123,15 +123,9 @@ write_SWBM_landcover_file(scenario_id = current_scenario, output_dir = update_di
 # Master field attributes table (polygons_table.txt)
 copy_or_overwrite_poly_table(scenario_id = current_scenario, output_dir = update_dir)
 # Rooting depth in the crop parameters table
-if(!is.na(scen_param_tab$swbm_natveg_RD_m[scen_param_tab$scen_id == current_scenario])){
-    write_updated_crop_info(scenario_id = current_scenario, output_dir = update_dir,
-                        start_date = model_start_date, end_date = model_end_date)
-}
-# Extinction depth for ET-from-GW
-if(!is.na(scen_param_tab$modflow_ExtD_m[scen_param_tab$scen_id == current_scenario])){
-  write_updated_ET_inputs(scenario_id = current_scenario, output_dir = update_dir,
-                          start_date = model_start_date, end_date = model_end_date)
-}
+copy_or_overwrite_crop_info_table(scenario_id = current_scenario, output_dir = update_dir)
+# Extinction depth for ET-from-GW. NOTE: must come after the landcover file is written to the update_dir
+copy_or_overwrite_ET_inputs(scenario_id = current_scenario, output_dir = update_dir)
 
 # MAR applications by field by month
 write_SWBM_MAR_depth_file(scenario_id = current_scenario, output_dir = update_dir,
