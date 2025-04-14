@@ -74,13 +74,8 @@ hob <- import_HOB(hob_input = file.path(mf_dir, 'SVIHM.hob'),
                   hob_output = file.path(mf_dir, 'HobData_SVIHM.dat'),
                   origin_date = origin_date)
 
-hob_key <- read.csv(file.path(data_dir['ref_plot_dir','loc'], 'hob_key.csv'), stringsAsFactors = F)
-hob_key <- unique(hob_key[,c("well_id","x_proj","y_proj")])
-
-# Deal with well_ids with different coordinates in hob_key
-#TODO Fix Data
-hob_key <- hob_key[!duplicated(hob_key$well_id), ]
-rownames(hob_key) <- hob_key$well_id
+hob_key <- read.csv(file.path(data_dir['ref_plot_dir','loc'], '_hob_key.csv'), stringsAsFactors = F)
+hob_key <- unique(hob_key[,c("well_id","well_code","x_proj","y_proj")])
 
 #-- SFR Data (Turn into function?)
 sfr_locs <- read.csv(file.path(data_dir['ref_data_dir','loc'], 'sfr_gages.csv'),
@@ -135,8 +130,8 @@ for (well in unique(hob$well_id)) {
   plot.gw.hydrograph_wMap(wsub$date,
                        wsub$obs,
                        wsub$sim,
-                       xloc = hob_key[well,'x_proj'],
-                       yloc = hob_key[well,'y_proj'],
+                       xloc = hob_key[hob_key$well_id==well,'x_proj'],
+                       yloc = hob_key[hob_key$well_id==well,'y_proj'],
                        map_xs = hob_key[,'x_proj'],
                        map_ys = hob_key[,'y_proj'],
                        ylabel = 'Groundwater Elevation (m)',
