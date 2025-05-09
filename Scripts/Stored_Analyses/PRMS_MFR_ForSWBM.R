@@ -10,7 +10,7 @@ model_output_dir <- "C:/Users/lelan/Box/Research/Scott Valley/Files Recieved/LWA
 ref_dir <- "C:/Users/lelan/Box/Research/Scott Valley/Files Recieved/LWA_MFR_2025-04-11/"
 gis_dir <- 'C:/Users/lelan/Box/Research/Scott Valley/GIS'
 
-out_dir <- file.path(data_dir['input_files_dir','loc'],'PRMS')
+out_dir <- file.path(data_dir['input_files_dir','loc'],'PRMS_outputs_for_SWBM')
 dir.create(out_dir)
 
 # Functions ---------------------------------------------------------------
@@ -124,35 +124,52 @@ mfr_by_hru <- full_join(gw_mfr, hortn_mfr, by = c("Date", "HRU_ID"), suffix = c(
 
 # Map HRUs to catchments -------------------------------------------------------
 prms_catchments <- read_sf(file.path(gis_dir,'PRMS','PRMS_Grid_ScottWatershedOutsideSVIHM_catchments.shp'))
+mf_catchments <- read_sf(file.path(gis_dir,'MODFLOW','grid_outmostcells_catchments.shp'))
 
 cell_to_subid <- mf_catchments %>%
   st_drop_geometry() %>%
-  select(row, col, SubID) %>%
-  arrange(SubID, row, col)
+  select(row, column, SubId) %>%
+  arrange(SubId, row, column)
 
-write_csv(cell_to_subid, file.path(out_dir, "modflow_cell_to_catchment.csv"))
+write.table(cell_to_subid, file.path(out_dir, "modflow_cell_to_catchment.txt"), row.names = F, quote = F)
 
 # Map cells to catchments -------------------------------------------------
-
-mf_catchments <- read_sf(file.path(gis_dir,'MODFLOW','grid_outmostcells_catchments.shp'))
 
 # Drop geometry and keep HRU_ID + SubID
 hru_to_subid <- prms_catchments %>%
   st_drop_geometry() %>%
-  select(HRU_ID, SubID)
+  select(HRU_ID, SubId)
 
 # Join catchment IDs to full MFR table
 mfr_by_catchment <- mfr_by_hru %>%
   left_join(hru_to_subid, by = "HRU_ID") %>%
-  filter(!is.na(SubID)) %>%
-  group_by(Date, SubID) %>%
+  filter(!is.na(SubId)) %>%
+  group_by(Date, SubId) %>%
   summarise(MFR_m3 = sum(MFR_m3, na.rm = TRUE), .groups = "drop")
 
 # Pivot to wide format (SubID columns, Date rows)
 mfr_table_wide <- mfr_by_catchment %>%
-  pivot_wider(names_from = SubID, values_from = MFR_m3)
+  pivot_wider(names_from = SubId, values_from = MFR_m3)
 
-write_csv(mfr_table_wide, file.path(out_dir, "monthly_MFR_by_catchment.csv"))
+# write.table(mfr_table_wide, file.path(out_dir, "monthly_MFR_by_catchment.txt"), row.names = F, quote = F)
 
+# Format header
+header <- c(format("Date", width = 10, justify = "right"),
+            format(names(mfr_table_wide)[-1], width = 14, justify = "right"))
 
+# Format each row
+formatted_rows <- apply(mfr_table_wide, 1, function(row) {
+  date_str <- format(row[1], width = 10, justify = "right")
+  value_strs <- formatC(as.numeric(row[-1]),
+                        width = 14,
+                        digits = 6,
+                        format = "E",
+                        flag = " ")
+  paste(c(date_str, value_strs), collapse = "")
+})
 
+# Combine header + data
+output_lines <- c(paste(header, collapse = ""), formatted_rows)
+
+# Write to file
+writeLines(output_lines, file.path(out_dir, "monthly_MFR_by_catchment.txt"))
