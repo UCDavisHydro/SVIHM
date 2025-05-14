@@ -13,6 +13,8 @@ gis_dir <- 'C:/Users/lelan/Box/Research/Scott Valley/GIS'
 out_dir <- file.path(data_dir['input_files_dir','loc'],'PRMS_outputs_for_SWBM')
 dir.create(out_dir)
 
+origin_date <- as.Date('1990-09-30')  # Day zero
+
 # Functions ---------------------------------------------------------------
 
 read_prms_file <- function(file_path, hru_ids_char, skip = 1, sep = ",") {
@@ -121,6 +123,8 @@ mfr_by_hru <- full_join(gw_mfr, hortn_mfr, by = c("Date", "HRU_ID"), suffix = c(
   ) %>%
   select(Date, HRU_ID, MFR_m3)
 
+# Remove data outside of model dates
+mfr_by_hru <- mfr_by_hru[mfr_by_hru$Date > origin_date,]
 
 # Map HRUs to catchments -------------------------------------------------------
 prms_catchments <- read_sf(file.path(gis_dir,'PRMS','PRMS_Grid_ScottWatershedOutsideSVIHM_catchments.shp'))
