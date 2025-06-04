@@ -12,7 +12,6 @@ end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
 
 # Directory (Created in SVIHM_Input_Files/Updates) - Grabs latest version
 update_dir <- latest_dir(data_dir['update_dir','loc'])
-update_dir = "C:/Users/ck798/Documents/GitHub/SVIHM/Updates/2024-10-01"
 
 # Scenario selection
 current_scenario = "basecase" # default is "basecase". Affects a variety of input files.
@@ -61,17 +60,15 @@ fjd <- read.csv(file.path(update_dir, list.files(update_dir, pattern = 'FJ (USGS
                           stringsAsFactors = F)
 fjd$Date <- as.Date(fjd$Date)
 
-sfr_subws_flow_partitioning <- gen_sfr_flow_partition(model_start_date, model_end_date, update_dir, monthly=F,
-                                                              streamflow_records_file="streamflow_records_regressed.txt")
-subws_inflow_filename = file.path(update_dir,"daily_streamflow_input.txt")
+subws_inflow_filename = file.path(update_dir,"daily_tributary_streamflow.txt")
 subws_irr_inflows <- process_sfr_inflows(model_start_date, model_end_date,
                                          stream_inflow_filename = subws_inflow_filename,
                                          avail_for_irr = T,
-                                         scenario_id = current_scenario) # Possibly divide flow into avail and unavail for irr based on flow regime
+                                         scenario_id = current_scenario)
 subws_nonirr_inflows <- process_sfr_inflows(model_start_date, model_end_date,
                                             stream_inflow_filename = subws_inflow_filename,
                                             avail_for_irr = F,
-                                            scenario_id = current_scenario) # Possibly divide flow into avail and unavail for irr based on flow regime
+                                            scenario_id = current_scenario)
 
 # Move water to non-irr to enforce SW curtailments (also in curtailment file, but with slightly different dates for GW)
 
@@ -95,7 +92,7 @@ write.table(num_days_tab, file = file.path(update_dir, "stress_period_days.txt")
             sep = " ", quote = FALSE, col.names = TRUE, row.names = FALSE)
 
 # Drains
-write_SWBM_drain_files(num_stress_periods = num_stress_periods, output_dir = update_dir)
+#write_SWBM_drain_files(num_stress_periods = num_stress_periods, output_dir = update_dir)
 
 # Instream available flow ratio
 # write_SWBM_instream_available_file(avail_monthly, output_dir = update_dir)
@@ -105,7 +102,6 @@ write_daily_crop_coeff_values_file(model_start_date, model_end_date, update_dir,
                                    scenario_id = current_scenario)
 
 # Surface flow / SFR files
-write_SWBM_SFR_inflow_files(sfr_subws_flow_partitioning, update_dir, "SFR_subws_flow_partitioning.txt")
 write_SWBM_SFR_inflow_files(subws_irr_inflows, update_dir, "subwatershed_irrigation_inflows.txt")
 write_SWBM_SFR_inflow_files(subws_nonirr_inflows, update_dir, "subwatershed_nonirrigation_inflows.txt")
 write_SWBM_SFR_diversions_file(output_dir = update_dir, num_divs = 0)  # Using SWBM irr ditch capability instead

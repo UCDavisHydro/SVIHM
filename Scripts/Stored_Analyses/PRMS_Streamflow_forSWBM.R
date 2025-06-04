@@ -5,11 +5,16 @@ library(hydroGOF)
 
 #-------------------------------------------------------------------------------------------------#
 #-- Settings
-prms_dir <- file.path('C:/Projects/SVIHM/2024_PRMS/TestRun_0802/PRMS')
-update_dir <- file.path("../../SVIHM_Input_Files/Updates/PRMS") # for now...
-seg_file <- 'segout.txtseg_outflow.csv'
+model_output_dir <- "C:/Users/lelan/Box/Research/Scott Valley/Models/PRMS/2025-04-29/output/"
+update_dir <- latest_dir(data_dir['update_dir','loc'])
+out_dir <- file.path(data_dir['input_files_dir','loc'],'PRMS_outputs_for_SWBM')
+plot_dir <- file.path(out_dir, 'Plots')
 
-if (!dir.exists(update_dir)) { dir.create(update_dir, recursive = T)}
+seg_file <- 'seg_outflow.csv'
+
+
+if (!dir.exists(plot_dir)) { dir.create(plot_dir, recursive = T)}
+dir.create(out_dir, recursive = T)
 
 start_year <- 1991 # WY 1991; do not change
 end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
@@ -25,7 +30,7 @@ num_days <- days_in_month_diff(model_start_date, model_end_date)  # current setu
 
 #-------------------------------------------------------------------------------------------------#
 #-- Read in PRMS segment outflow file (units are CFS)
-prms <- read.csv(file.path(prms_dir,seg_file))
+prms <- read.csv(file.path(model_output_dir,seg_file))
 
 #-- Subset to our streams
 prms <- prms[,colnames(prms) %in% c('Date',paste0('X',stream_metadata$PRMS_seg))]
@@ -74,10 +79,9 @@ prms_wobs <- lapply(streams, FUN=function(name){
   combined$merged_cfs <- ifelse(!is.na(combined$obs_cfs), combined$obs_cfs, combined$prms_cfs)
 
   # Convert to AF
-  # TODO: When we're done with the regression, this should be m3/day for SWBM
-  combined$pred_AF <- combined$merged_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft 2.29569e-5
-  combined$pred_noobs_AF <- combined$prms_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft 2.29569e-5
-  combined$obs_AF <- combined$obs_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft 2.29569e-5
+  combined$pred_AF <- combined$merged_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft
+  combined$pred_noobs_AF <- combined$prms_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft
+  combined$obs_AF <- combined$obs_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft
 
   # Just to be sure... make sure there are no NAs
   if (nrow(combined[is.na(combined$pred_AF),]) > 0) {stop('NAs present in pred_AF for ',name)}
@@ -106,14 +110,44 @@ for (col in colnames(prms_wobs$East_Fork)[2:length(colnames(prms_wobs$East_Fork)
 # Add the merged dataframe to prms_wobs under the name "Scott_River"
 prms_wobs$Scott_River <- scott_df
 
-tribs_prms = write_trib_file_for_partitioning(gauges = prms_wobs, output_dir = update_dir,monthly = F,
+# `tribs_prms` converts from AF/day to m3/day
+tribs_prms = write_trib_file_for_partitioning(gauges = prms_wobs, output_dir = out_dir,monthly = F,
                                                    start_date=model_start_date, end_date=model_end_date)
 
 write_streamflow_by_subws_input_file(tribs_df = tribs_prms, #gauges = tribs,
-                                     output_dir = update_dir,filename = 'daily_streamflow_input.txt',
+                                     output_dir = out_dir,filename = 'daily_streamflow_input.txt',
                                      start_date=model_start_date, end_date=model_end_date, monthly = F)
 
 #-------------------------------------------------------------------------------------------------#
+
+# Generate various SWBM trib inputs ---------------------------------------
+
+sfr_subws_flow_partitioning <- gen_sfr_flow_partition(model_start_date, model_end_date, out_dir, monthly=F,
+                                                      streamflow_records_file="streamflow_records_regressed.txt")
+subws_inflow_filename = file.path(out_dir,"daily_streamflow_input.txt")
+subws_irr_inflows <- process_sfr_inflows(model_start_date, model_end_date,
+                                         stream_inflow_filename = subws_inflow_filename,
+                                         avail_for_irr = T,
+                                         scenario_id = current_scenario) # Possibly divide flow into avail and unavail for irr based on flow regime
+subws_nonirr_inflows <- process_sfr_inflows(model_start_date, model_end_date,
+                                            stream_inflow_filename = subws_inflow_filename,
+                                            avail_for_irr = F,
+                                            scenario_id = current_scenario) # Possibly divide flow into avail and unavail for irr based on flow regime
+
+# Move water to non-irr to enforce SW curtailments (also in curtailment file, but with slightly different dates for GW)
+
+# 2021
+subws_nonirr_inflows <- move_inflows(subws_nonirr_inflows, subws_irr_inflows, date_start = '2021-09-10', date_end = '2021-10-25')
+subws_irr_inflows <- set_inflows(subws_irr_inflows, date_start = '2021-09-10', date_end = '2021-10-25', value = 0.0)
+
+# 2022
+subws_nonirr_inflows <- move_inflows(subws_nonirr_inflows, subws_irr_inflows, date_start = '2022-07-01', date_end = '2022-12-27')
+subws_irr_inflows <- set_inflows(subws_irr_inflows, date_start = '2022-07-01', date_end = '2022-12-27', value = 0.0)
+
+# Surface flow / SFR files
+write_SWBM_SFR_inflow_files(sfr_subws_flow_partitioning, update_dir, "SFR_subws_flow_partitioning.txt")
+write_SWBM_SFR_inflow_files(subws_irr_inflows, update_dir, "subwatershed_irrigation_inflows.txt")
+write_SWBM_SFR_inflow_files(subws_nonirr_inflows, update_dir, "subwatershed_nonirrigation_inflows.txt")
 
 #-------------------------------------------------------------------------------------------------#
 
@@ -121,11 +155,7 @@ write_streamflow_by_subws_input_file(tribs_df = tribs_prms, #gauges = tribs,
 
 #-------------------------------------------------------------------------------------------------#
 #-- Setup
-#plot_dir <- file.path('C:/Users/lelan/Documents/CodeProjects/SVIHM/Run/Plots/')
-plot_dir <- file.path(prms_dir, '../Plots')
-if (!dir.exists(plot_dir)) { dir.create(plot_dir, recursive = T)}
-
-fjd <- read.csv('../../SVIHM_Input_Files/Updates/2024-08-01/FJ (USGS 11519500) Daily Flow, 1990-10-01_2024-07-31.csv')
+fjd <- read.csv(file.path(update_dir, list.files(update_dir, pattern = 'FJ (USGS 11519500)*')))
 
 # Do tribs regression
 tribs_regr_no_obs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd, monthly = F, one_regression = F, use_obs = F)
@@ -170,7 +200,7 @@ regr_noobs_eval <- lapply(names(tribs_regr_no_obs), function(stream_name) {
 all_eval <- do.call(rbind, c(prms_noobs_eval, regr_noobs_eval))
 
 # Write the combined results to a CSV file
-write.csv(all_eval, file.path(prms_dir,"../model_evaluation_comparison.csv"), row.names = FALSE)
+write.csv(all_eval, file.path(out_dir,"model_evaluation_comparison.csv"), row.names = FALSE)
 
 #-------------------------------------------------------------------------------------------------#
 

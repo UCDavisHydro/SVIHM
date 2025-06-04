@@ -1053,7 +1053,7 @@ copy_or_overwrite_ET_inputs = function(scenario_id, output_dir){
     file.copy(from = file.path(data_dir["time_indep_dir","loc"], "ET_Zone_Cells.txt"),
               to = file.path(output_dir, "ET_Zone_Cells.txt"))
     file.copy(from = file.path(data_dir["time_indep_dir","loc"],"ET_Cells_Extinction_Depth.txt"),
-              to = file.path(outp_dir, "ET_Cells_Extinction_Depth.txt"))
+              to = file.path(output_dir, "ET_Cells_Extinction_Depth.txt"))
   }
 
 

@@ -89,6 +89,15 @@ get_tributary_flows <- function(start_date=as.Date('1990-10-01'),
                        Crystal = gauge_percent_model(combined[['Patterson']], 0.15, 'Crystal'))
   combined <- append(combined, perc_streams)
 
+  #-- Split French into Miner and French
+  combined[['French']]$pred_AF <- combined[['French']]$pred_AF * 0.5
+  combined[['Miners']] <- combined[['French']]
+  combined[['Miners']]$stream_name <- 'Miners'
+  #frnc_streams <- list()
+
+  # Combine East and South Fork stream records into one volumetric record (since that is how it's simulated in SVIHM)
+  combined <- combine_east_and_south_fork(tribs_list = combined)
+
   #-- Return
   return(combined)
 
@@ -474,27 +483,27 @@ write_tributary_input_file_2_forks_old <- function(gauges,
 
 #-------------------------------------------------------------------------------------------------#
 
-#' Write Tributary Flow Record File (retains all records for inflow partitioning)
+#' Write Tributary Flow Record File
 #'
 #' @param gauges List of gauge data from \code{\link{get_tributary_flows}}
 #' @param output_dir Directory to write file
 #' @param start_date Simulation start date
 #' @param end_date Simulation end date
-#' @param filename Filename (optional, default: streamflow_input.txt)
+#' @param filename Filename (optional, default: daily_tributary_streamflow.txt)
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
 #' @return None
 #' @export
 #'
 #' @examples
-write_trib_file_for_partitioning <- function(gauges,
-                                           output_dir,
-                                           start_date,
-                                           end_date,
-                                           old_tribs_df = NA,
-                                           monthly=T,
-                                           filename='streamflow_records_regressed.txt',
-                                           verbose=TRUE) {
+write_trib_file <- function(gauges,
+                            output_dir,
+                            start_date,
+                            end_date,
+                            old_tribs_df = NA,
+                            monthly=T,
+                            filename='daily_tributary_streamflow.txt',
+                            verbose=TRUE) {
 
   # Need days in months for moving average from monthly to daily
   days_in_mon = days_in_month_diff(start_date, end_date)
@@ -520,7 +529,7 @@ write_trib_file_for_partitioning <- function(gauges,
     } else {
       # assume daily
       names(out)[names(out)=='Date'] <- 'Day'
-      out[,m3_col_name] <- out$pred_AF * 1233.48 # AF/mon to m^3/day
+      out[,m3_col_name] <- out$pred_AF * 1233.48 # AF/day to m^3/day
       if (i == 1) {
         # Date only for the first value
         return(out[,c('Day',m3_col_name)])
@@ -536,8 +545,8 @@ write_trib_file_for_partitioning <- function(gauges,
 
   # Arrange like original
   outdf <- outdf[,c(ifelse(monthly,'Month','Day'),
-                    "Scott_River_Avg_Flow_m3day",
-                    "Sugar_Avg_Flow_m3day", "French_Avg_Flow_m3day",
+                    "Scott_River_Avg_Flow_m3day","Sugar_Avg_Flow_m3day",
+                    "French_Avg_Flow_m3day","Miners_Avg_Flow_m3day",
                     "Etna_Avg_Flow_m3day", "Johnson_Avg_Flow_m3day",
                     "Crystal_Avg_Flow_m3day","Patterson_Avg_Flow_m3day",
                     "Kidder_Avg_Flow_m3day", "Moffett_Avg_Flow_m3day",
@@ -557,7 +566,6 @@ write_trib_file_for_partitioning <- function(gauges,
     outdf[join_old_to_outdf,] = old_tribs_df
   }
 
-
   if (verbose) {message(paste('Writing file: ', filename))}
 
   write.table(outdf,
@@ -568,7 +576,7 @@ write_trib_file_for_partitioning <- function(gauges,
               col.names = T,
               sep = '\t')
 
-  return(outdf)
+  #return(outdf)
 }
 
 

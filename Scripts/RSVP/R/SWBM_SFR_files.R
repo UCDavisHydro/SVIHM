@@ -94,11 +94,8 @@ gen_sfr_flow_partition <- function(model_start_date,
           # Assign total flow proportion to each inflow segment
           sfr_part_tab[i,tribs_in_subws] = flow_partition#[match(colnames(flow_in_tribs), stream_tab_names)]
         }
-
       }
     }
-
-
   }
 
   return(sfr_part_tab)
@@ -108,7 +105,7 @@ gen_sfr_flow_partition <- function(model_start_date,
 
 #' Process SFR Irrigation Inflows
 #'
-#' Generates table of monthly stream inflow volumes that are either available for irrigation
+#' Generates table of daily stream inflow volumes that are either available for irrigation
 #' purposes or are unavailable for irrigation (i.e., flows reserved for environmental uses).
 #'
 #' @param model_start_date Start date of model
@@ -145,7 +142,7 @@ process_sfr_inflows <- function(model_start_date,
       sfr_inflow_tab = subws_inflow
     } else {
       # Process sfr_inflow_tab by subtracting reserved flows from sfr_inflows
-
+      .NotYetImplemented()
     }
 
   } else if(avail_for_irr == FALSE) { # If writing the subwatershed_nonirrigation_inflows.txt file
@@ -157,9 +154,8 @@ process_sfr_inflows <- function(model_start_date,
       sfr_inflow_tab[,flow_columns] = 0
     } else {
       # process the inflow regime to produce monthly flow volumes for each tributary
-
+      .NotYetImplemented()
     }
-
   }
 
   return(sfr_inflow_tab)

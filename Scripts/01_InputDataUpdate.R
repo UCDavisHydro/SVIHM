@@ -75,20 +75,8 @@ fjd_model <- download_fort_jones_flow(model_start_date,
                                     output_dir = update_dir,
                                     save_csv = TRUE)
 
-# Hopefully temporary date filling for FJ (11/20/2024 - 11/21/2024)
-fjd_model <- complete_ts(fjd_model, date_col = 'Date', by = 'day', keep_col_order=T)
-fjd_model$Flow <- zoo::na.approx(fjd_model$Flow, x = as.numeric(fjd_model$Date), na.rm = FALSE)
-#fjd_model[is.na(fjd_model$Flow)]
-
 tribs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd_model, monthly = F, one_regression = F)
 
-# Combine East and South Fork stream records into one volumetric record (since that is how it's simulated in SVIHM)
-tribs <- combine_east_and_south_fork(tribs_list = tribs)
-
-tribs_regressed = write_trib_file_for_partitioning(gauges = tribs, output_dir = update_dir,
-                           start_date=model_start_date, end_date=model_end_date, monthly = F)
-
-write_streamflow_by_subws_input_file(tribs_df = tribs_regressed, #gauges = tribs,
-                                     output_dir = update_dir,filename = 'daily_streamflow_input.txt',
-                                     start_date=model_start_date, end_date=model_end_date, monthly = F)
+write_trib_file(gauges = tribs, output_dir = update_dir,
+                start_date=model_start_date, end_date=model_end_date, monthly = F)
 
