@@ -546,7 +546,7 @@ write_trib_file <- function(gauges,
   # Arrange like original
   outdf <- outdf[,c(ifelse(monthly,'Month','Day'),
                     "Scott_River_Avg_Flow_m3day","Sugar_Avg_Flow_m3day",
-                    "French_Avg_Flow_m3day","Miners_Avg_Flow_m3day",
+                    "Miners_Avg_Flow_m3day","French_Avg_Flow_m3day",
                     "Etna_Avg_Flow_m3day", "Johnson_Avg_Flow_m3day",
                     "Crystal_Avg_Flow_m3day","Patterson_Avg_Flow_m3day",
                     "Kidder_Avg_Flow_m3day", "Moffett_Avg_Flow_m3day",
