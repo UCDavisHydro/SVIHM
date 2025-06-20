@@ -26,6 +26,8 @@ model_end_date <- as.Date("2023-09-30")
 num_stress_periods <- calc_num_stress_periods(model_start_date, model_end_date)
 num_days <- days_in_month_diff(model_start_date, model_end_date)  # current setup: days = time steps
 
+use_gauge_data <- FALSE
+
 #-------------------------------------------------------------------------------------------------#
 
 #-------------------------------------------------------------------------------------------------#
@@ -55,33 +57,40 @@ daily_all <- read_gauge_daily_data()
 streams <- colnames(prms)[rename_cols]
 prms_wobs <- lapply(streams, FUN=function(name){
 
-  #message(paste("Working on",name))
+  message(paste("Working on",name))
 
   # Collect PRMS data
   prms_subset <- prms[,c('Date',name)]
   colnames(prms_subset) <- c('Date', 'prms_cfs')
 
-  # Do we have observed data for the stream?
-  if (name %in% names(daily_all)) {
+  if (use_gauge_data) {
+    # Do we have observed data for the stream?
+    if (name %in% names(daily_all)) {
 
-    # Collect Gauge data
-    gage_subset <- daily_all[[name]][,c('Date','mean_cfs')]
-    gage_subset <- gage_subset[!is.na(gage_subset$mean_cfs),]
-    colnames(gage_subset) <- c('Date', 'obs_cfs')
+      # Collect Gauge data
+      gage_subset <- daily_all[[name]][,c('Date','mean_cfs')]
+      gage_subset <- gage_subset[!is.na(gage_subset$mean_cfs),]
+      colnames(gage_subset) <- c('Date', 'obs_cfs')
 
-    combined <- merge(prms_subset, gage_subset, by="Date", all.x = TRUE)
+      combined <- merge(prms_subset, gage_subset, by="Date", all.x = TRUE)
+    } else {
+      combined <- prms_subset
+      combined$obs_cfs <- NA
+    }
+
+    # Make a merged column
+    combined$merged_cfs <- ifelse(!is.na(combined$obs_cfs), combined$obs_cfs, combined$prms_cfs)
   } else {
     combined <- prms_subset
-    combined$obs_cfs <- NA
+    combined$merged_cfs <- combined$prms_cfs
   }
-
-  # Make a merged column
-  combined$merged_cfs <- ifelse(!is.na(combined$obs_cfs), combined$obs_cfs, combined$prms_cfs)
 
   # Convert to AF
   combined$pred_AF <- combined$merged_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft
   combined$pred_noobs_AF <- combined$prms_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft
-  combined$obs_AF <- combined$obs_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft
+  if (use_gauge_data){
+    combined$obs_AF <- combined$obs_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft
+  }
 
   # Just to be sure... make sure there are no NAs
   if (nrow(combined[is.na(combined$pred_AF),]) > 0) {stop('NAs present in pred_AF for ',name)}
@@ -110,29 +119,31 @@ for (col in colnames(prms_wobs$East_Fork)[2:length(colnames(prms_wobs$East_Fork)
 # Add the merged dataframe to prms_wobs under the name "Scott_River"
 prms_wobs$Scott_River <- scott_df
 
-# `tribs_prms` converts from AF/day to m3/day
-tribs_prms = write_trib_file_for_partitioning(gauges = prms_wobs, output_dir = out_dir,monthly = F,
-                                                   start_date=model_start_date, end_date=model_end_date)
+#-- Split French into Miner and French
+prms_wobs[['French']]$pred_AF <- prms_wobs[['French']]$pred_AF * 0.5
+prms_wobs[['Miners']] <- prms_wobs[['French']]
+prms_wobs[['Miners']]$stream_name <- 'Miners'
 
-write_streamflow_by_subws_input_file(tribs_df = tribs_prms, #gauges = tribs,
-                                     output_dir = out_dir,filename = 'daily_streamflow_input.txt',
-                                     start_date=model_start_date, end_date=model_end_date, monthly = F)
+# Move Scott River to first, take out east and west & FJ
+prms_wobs <- prms_wobs[c('Scott_River', names(prms_wobs)[!names(prms_wobs) %in% c('East_Fork','South_Fork','Scott_River', 'FJ')])]
+
+# `tribs_prms` converts from AF/day to m3/day
+write_trib_file(prms_wobs, output_dir = out_dir,filename = 'daily_tributary_streamflow_prms.txt',
+                start_date=model_start_date, end_date=model_end_date, monthly = F)
 
 #-------------------------------------------------------------------------------------------------#
 
 # Generate various SWBM trib inputs ---------------------------------------
 
-sfr_subws_flow_partitioning <- gen_sfr_flow_partition(model_start_date, model_end_date, out_dir, monthly=F,
-                                                      streamflow_records_file="streamflow_records_regressed.txt")
-subws_inflow_filename = file.path(out_dir,"daily_streamflow_input.txt")
+subws_inflow_filename = file.path(out_dir,"daily_tributary_streamflow_prms.txt")
 subws_irr_inflows <- process_sfr_inflows(model_start_date, model_end_date,
                                          stream_inflow_filename = subws_inflow_filename,
                                          avail_for_irr = T,
-                                         scenario_id = current_scenario) # Possibly divide flow into avail and unavail for irr based on flow regime
+                                         scenario_id = current_scenario)
 subws_nonirr_inflows <- process_sfr_inflows(model_start_date, model_end_date,
                                             stream_inflow_filename = subws_inflow_filename,
                                             avail_for_irr = F,
-                                            scenario_id = current_scenario) # Possibly divide flow into avail and unavail for irr based on flow regime
+                                            scenario_id = current_scenario)
 
 # Move water to non-irr to enforce SW curtailments (also in curtailment file, but with slightly different dates for GW)
 
@@ -144,10 +155,9 @@ subws_irr_inflows <- set_inflows(subws_irr_inflows, date_start = '2021-09-10', d
 subws_nonirr_inflows <- move_inflows(subws_nonirr_inflows, subws_irr_inflows, date_start = '2022-07-01', date_end = '2022-12-27')
 subws_irr_inflows <- set_inflows(subws_irr_inflows, date_start = '2022-07-01', date_end = '2022-12-27', value = 0.0)
 
-# Surface flow / SFR files
-write_SWBM_SFR_inflow_files(sfr_subws_flow_partitioning, update_dir, "SFR_subws_flow_partitioning.txt")
-write_SWBM_SFR_inflow_files(subws_irr_inflows, update_dir, "subwatershed_irrigation_inflows.txt")
-write_SWBM_SFR_inflow_files(subws_nonirr_inflows, update_dir, "subwatershed_nonirrigation_inflows.txt")
+# Write it out
+write_SWBM_SFR_inflow_files(subws_irr_inflows, out_dir, "subwatershed_irrigation_inflows_prms.txt")
+write_SWBM_SFR_inflow_files(subws_nonirr_inflows, out_dir, "subwatershed_nonirrigation_inflows_prms.txt")
 
 #-------------------------------------------------------------------------------------------------#
 
