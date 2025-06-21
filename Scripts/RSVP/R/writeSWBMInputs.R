@@ -1482,3 +1482,34 @@ write_sfr_network_file <- function(nsteps, output_dir, filename='SFR_network.txt
   sfr <- readLines(file.path(data_dir['ref_data_dir','loc'], 'SFR_network_template.txt'))
   write(sfr,f, append=ifelse(daily,T,F))
 }
+
+# ------------------------------------------------------------------------------------------------#
+
+#' Write SWBM SFR Inflow Segments file
+#'
+#' Writes file to establish connection between tributaries, subwatersheds, and MODFLOW SFR package
+#'
+#' @param output_dir directory to write the files to
+#' @param filename input filename, SFR_inflow_segments.txt by default
+#' @param only_mf_tribs Only include the tributaries explicitly modeled in the MF file (no PRMS additions)
+#' @param verbose Logical. Whether to print status information to the console. Default is TRUE.
+#'
+#' @returns None. The function writes the input file to the specified directory.
+#' @export
+#'
+#' @examples
+#'
+#' write_SWBM_SFR_segment_file(output_dir=out_dir)
+#'
+write_SWBM_SFR_segment_file <- function(output_dir, filename='SFR_inflow_segments.txt', only_mf_tribs=T, verbose=T) {
+  tribs <- stream_metadata
+  if (only_mf_tribs) {
+    prms_stream_metadata <- prms_stream_metadata[prms_stream_metadata$in_modflow,]
+  }
+  if (verbose) {message(paste('Writing SWBM SFR Segment file: ', filename))}
+  write.table(tribs[,c('subws','MF_seg','subws_name','name')],
+              file.path(output_dir,filename),
+              quote = F,
+              row.names = F,
+              col.names = c('subws_ID', 'sfr_seg', 'subws_name','trib_name'))
+}

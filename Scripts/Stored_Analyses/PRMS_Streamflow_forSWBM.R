@@ -1,5 +1,6 @@
 library(RSVP)
 library(hydroGOF)
+library(dplyr)
 
 # Write SWBM Streamflow File From PRMS ------------------------------------
 
@@ -27,6 +28,18 @@ num_stress_periods <- calc_num_stress_periods(model_start_date, model_end_date)
 num_days <- days_in_month_diff(model_start_date, model_end_date)  # current setup: days = time steps
 
 use_gauge_data <- FALSE
+use_all_prms_streams <- TRUE
+
+#-------------------------------------------------------------------------------------------------#
+
+#-------------------------------------------------------------------------------------------------#
+# Setup prms_stream_metadata
+
+prms_stream_metadata <- stream_metadata
+
+if (!use_all_prms_streams) {
+  prms_stream_metadata <- prms_stream_metadata[prms_stream_metadata$in_modflow,]
+}
 
 #-------------------------------------------------------------------------------------------------#
 
@@ -35,14 +48,14 @@ use_gauge_data <- FALSE
 prms <- read.csv(file.path(model_output_dir,seg_file))
 
 #-- Subset to our streams
-prms <- prms[,colnames(prms) %in% c('Date',paste0('X',stream_metadata$PRMS_seg))]
+prms <- prms[,colnames(prms) %in% c('Date',paste0('X',prms_stream_metadata$PRMS_seg))]
 
 #-- Create a logical vector for renaming
 rename_cols <- colnames(prms) != 'Date'
 
 #-- Rename columns (excluding "Date")
-colnames(prms) <- c('Date',stream_metadata$name[match(colnames(prms)[rename_cols],
-                                                           paste0("X", stream_metadata$PRMS_seg))])
+colnames(prms) <- c('Date',prms_stream_metadata$name[match(colnames(prms)[rename_cols],
+                                                           paste0("X", prms_stream_metadata$PRMS_seg))])
 prms$Date <- as.Date(prms$Date)
 #-------------------------------------------------------------------------------------------------#
 
@@ -109,23 +122,23 @@ prms_wobs <- setNames(prms_wobs, streams)
 
 # Combine South & East forks (TODO: Revise the function we have to do this)
 # Merge the dataframes on the "Date" column
-scott_df <- merge(prms_wobs$East_Fork, prms_wobs$South_Fork, by = "Date", all = TRUE, suffixes = c("_East_Fork", "_South_Fork"))
+#scott_df <- merge(prms_wobs$East_Fork, prms_wobs$South_Fork, by = "Date", all = TRUE, suffixes = c("_East_Fork", "_South_Fork"))
 
 # Sum the corresponding columns (excluding "Date")
-for (col in colnames(prms_wobs$East_Fork)[2:length(colnames(prms_wobs$East_Fork))]) {
-  scott_df[[col]] <- rowSums(scott_df[, grep(col, colnames(scott_df))], na.rm = FALSE)
-}
+#for (col in colnames(prms_wobs$East_Fork)[2:length(colnames(prms_wobs$East_Fork))]) {
+#  scott_df[[col]] <- rowSums(scott_df[, grep(col, colnames(scott_df))], na.rm = FALSE)
+#}
 
 # Add the merged dataframe to prms_wobs under the name "Scott_River"
-prms_wobs$Scott_River <- scott_df
+#prms_wobs$Scott_River <- scott_df
 
 #-- Split French into Miner and French
-prms_wobs[['French']]$pred_AF <- prms_wobs[['French']]$pred_AF * 0.5
-prms_wobs[['Miners']] <- prms_wobs[['French']]
-prms_wobs[['Miners']]$stream_name <- 'Miners'
+# prms_wobs[['French']]$pred_AF <- prms_wobs[['French']]$pred_AF * 0.5
+# prms_wobs[['Miners']] <- prms_wobs[['French']]
+# prms_wobs[['Miners']]$stream_name <- 'Miners'
 
 # Move Scott River to first, take out east and west & FJ
-prms_wobs <- prms_wobs[c('Scott_River', names(prms_wobs)[!names(prms_wobs) %in% c('East_Fork','South_Fork','Scott_River', 'FJ')])]
+#prms_wobs <- prms_wobs[c('Scott_River', names(prms_wobs)[!names(prms_wobs) %in% c('East_Fork','South_Fork','Scott_River', 'FJ')])]
 
 # `tribs_prms` converts from AF/day to m3/day
 write_trib_file(prms_wobs, output_dir = out_dir,filename = 'daily_tributary_streamflow_prms.txt',
@@ -158,6 +171,9 @@ subws_irr_inflows <- set_inflows(subws_irr_inflows, date_start = '2022-07-01', d
 # Write it out
 write_SWBM_SFR_inflow_files(subws_irr_inflows, out_dir, "subwatershed_irrigation_inflows_prms.txt")
 write_SWBM_SFR_inflow_files(subws_nonirr_inflows, out_dir, "subwatershed_nonirrigation_inflows_prms.txt")
+
+# Write SFR_inflow_segments file
+write_SWBM_SFR_segment_file(out_dir)
 
 #-------------------------------------------------------------------------------------------------#
 

@@ -25,6 +25,10 @@ options(noaakey = noaa_token)
 # (free online: https://cimis.water.ca.gov/)
 cimis_key <- read_lines(file='_CIMIS_API_key.txt')
 cimir::set_key(cimis_key)
+
+swbm_stream_order <-  c("Scott_River","Sugar","Miners","French","Etna","Johnson",
+                        "Crystal","Patterson","Kidder","Moffett","Mill","Shackleford")
+
 # ------------------------------------------------------------------------------------------------#
 
 # ------------------------------------------------------------------------------------------------#
@@ -76,6 +80,9 @@ fjd_model <- download_fort_jones_flow(model_start_date,
                                     save_csv = TRUE)
 
 tribs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd_model, monthly = F, one_regression = F)
+
+# Rearrange to match SWBM expectations
+tribs <- tribs[swbm_stream_order]
 
 write_trib_file(gauges = tribs, output_dir = update_dir,
                 start_date=model_start_date, end_date=model_end_date, monthly = F)

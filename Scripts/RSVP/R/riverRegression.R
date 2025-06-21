@@ -191,11 +191,11 @@ read_gauge_daily_data <-  function(sf_reg_dir=data_dir['sf_reg_dir', 'loc']){
   # Loop over streams reading in pre-downloaded time series datasets
   daily_means_all = list()
   for (i in 1:nrow(stream_metadata)) {
-    if (is.na(stream_metadata[i,'daily_mean_file'])) {
+    if (is.na(stream_metadata[i,'daily_file'])) {
       message(paste('No obs data for stream:', stream_metadata[i,'name']))
       next
     }
-    df <- read.table(file.path(sf_reg_dir, stream_metadata[i,'daily_mean_file']),
+    df <- read.table(file.path(sf_reg_dir, stream_metadata[i,'daily_file']),
                                        header = T,
                                        stringsAsFactors = F,
                                        sep = '\t')[,-4]
@@ -208,7 +208,7 @@ read_gauge_daily_data <-  function(sf_reg_dir=data_dir['sf_reg_dir', 'loc']){
     daily_means_all[[i]] <- df
   }
 
-  names(daily_means_all) <- stream_metadata[!is.na(stream_metadata$daily_mean_file), 'name']
+  names(daily_means_all) <- stream_metadata[!is.na(stream_metadata$daily_file), 'name']
 
   return(daily_means_all)
 }
@@ -501,7 +501,7 @@ write_trib_file <- function(gauges,
                             start_date,
                             end_date,
                             old_tribs_df = NA,
-                            monthly=T,
+                            monthly=F,
                             filename='daily_tributary_streamflow.txt',
                             verbose=TRUE) {
 
@@ -543,14 +543,14 @@ write_trib_file <- function(gauges,
   # A dumb fix for trying to be too clever
   names(outdf)[1:2] <- c(ifelse(monthly,'Month','Day'), 'Scott_River_Avg_Flow_m3day')
 
-  # Arrange like original
-  outdf <- outdf[,c(ifelse(monthly,'Month','Day'),
-                    "Scott_River_Avg_Flow_m3day","Sugar_Avg_Flow_m3day",
-                    "Miners_Avg_Flow_m3day","French_Avg_Flow_m3day",
-                    "Etna_Avg_Flow_m3day", "Johnson_Avg_Flow_m3day",
-                    "Crystal_Avg_Flow_m3day","Patterson_Avg_Flow_m3day",
-                    "Kidder_Avg_Flow_m3day", "Moffett_Avg_Flow_m3day",
-                    "Mill_Avg_Flow_m3day","Shackleford_Avg_Flow_m3day")]
+  # Arrange like original - instead, order enforced by calling functions
+  # out_cols <- c(ifelse(monthly,'Month','Day'),
+  #               "Scott_River_Avg_Flow_m3day","Sugar_Avg_Flow_m3day",
+  #               "Miners_Avg_Flow_m3day","French_Avg_Flow_m3day",
+  #               "Etna_Avg_Flow_m3day", "Johnson_Avg_Flow_m3day",
+  #               "Crystal_Avg_Flow_m3day","Patterson_Avg_Flow_m3day",
+  #               "Kidder_Avg_Flow_m3day", "Moffett_Avg_Flow_m3day",
+  #               "Mill_Avg_Flow_m3day","Shackleford_Avg_Flow_m3day")
 
   # If old tributary inflow data provided, retain all old trib records
   if(sum(!is.na(old_tribs_df))>1){
