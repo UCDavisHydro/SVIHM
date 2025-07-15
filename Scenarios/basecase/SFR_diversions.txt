@@ -1,4 +1,0 @@
-0      ! Number of diversions
-3  10      ! ISEG for diversions
-1  1      ! IPRIOR for diversions
-19600  39100      ! FLOW for diversions

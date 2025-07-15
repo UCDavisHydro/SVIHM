@@ -1,5 +1,5 @@
 # MODFLOW Parameter Value File
-43           # Number of Parameters contained in this file	
+36           # Number of Parameters contained in this file	
 kx1	1.94E+02
 kx2	7.44E+00
 kx3	1.03E+01
@@ -36,10 +36,3 @@ ss6	1.00E-05
 ss7	1.00E-05
 ss8	1.00E-05
 ss9	1.00E-05
-MFR5	2.00E+00
-MFR6	6.00E+01
-MFR7	7.00E+01
-MFR8	1.50E+02
-MFR9	5.00E+00
-MFR10	2.00E+01
-MFR11	9.00E+01

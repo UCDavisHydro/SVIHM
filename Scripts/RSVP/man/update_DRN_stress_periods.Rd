@@ -27,9 +27,16 @@ update_DRN_stress_periods(
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
+\value{
+None, writes file to disk
+}
 \description{
 In SVIHM, the drains represent saturation excess overland flow within the discharge zone. The
 drain activation elevations are set at land surface.
+}
+\examples{
+update_DRN_stress_periods(416, '.')
+
 }
 \author{
 Claire Kouba

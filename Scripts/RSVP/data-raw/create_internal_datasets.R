@@ -15,9 +15,11 @@ data_dir <- read.table(text=
                     time_indep_dir   SVIHM_Input_Files/time_independent_input_files
                     ref_data_dir     SVIHM_Input_Files/reference_data
                     ref_plot_dir     SVIHM_Input_Files/reference_data_for_plots
+                    scenario_dir     Scenarios
                     scenario_dev_dir SVIHM_Input_Files/Scenario_Development
                     update_dir       SVIHM_Input_Files/Updates
                     sf_reg_dir       Streamflow_Regression_Model/
+                    key_dir          Scripts/API_keys
                    ', header=T, row.names=1)
 
 # Add relative path to create "exact" location column
@@ -82,25 +84,40 @@ Rattlesnake	123	26	11	Unnamed_North	FALSE	NA
 Mill	132	27	7	Mill	TRUE	Mill_Creek_R_input.txt
 Shackleford	134	28	8	Shackleford	TRUE	Shackleford_Creek_R_input.txt
 Sniktaw	137	30	11	Unnamed_North	FALSE	NA
-Patterson_North	126	136	11	Unnamed_North	FALSE	NA
+Patterson_North	126	30	11	Unnamed_North	FALSE	NA
                                 ', header=T)
 
 #-------------------------------------------------------------------------------------------------#
 
 #-- Soil Water Balance Model Tables
 
-# Irrigation
-swbm_irrtype <- data.frame('Name'=c('Flood', 'Wheel Line', 'Center Pivot', 'No Source', 'Unknown'),
-                           'Code'=c(      1,            2,              3,         555,       999),
-                           row.names=1)
-# Land Use
-swbm_lutype <- data.frame('Name'=c('Alfalfa', 'Pasture', 'ET_NoIrr', 'NoET_NoIrr', 'Water'),
-                          'Code'=c(       25,         2,          3,            4,       6),
-                          row.names=1)
+# Irrigation method codes
+swbm_irr_key <- data.frame(
+  code = c(1, 2, 3, 555, 999),
+  name = c("Flood",
+           "Wheel Line",
+           "Center Pivot",
+           "No Source",
+           "Unknown (Assumed Wheel Line)"),
+  stringsAsFactors = FALSE
+)
+
+# Water source codes
+watersource_key <- data.frame(
+  code = c(1, 2, 3, 4, 5, 999),
+  name = c("Surface Water",
+           "Groundwater",
+           "Mixed",
+           "Sub-irrigated",
+           "Dry Farmed",
+           "Unknown (GW Assumed)"),
+  stringsAsFactors = FALSE
+)
 
 #-- Add to internal data
 usethis::use_data(data_dir,
                   stream_metadata,
-                  swbm_irrtype,
-                  swbm_lutype,
-                  internal = T, overwrite = T)
+                  swbm_irr_key,
+                  watersource_key,
+                  internal = T,
+                  overwrite = T)

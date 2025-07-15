@@ -27,9 +27,16 @@ update_DIS_stress_periods(
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
+\value{
+None, writes file to disk
+}
 \description{
 Uses the reference SVIHM DIS file as a template and write a new version with the updated
 temporal discretization at the specified directory.
+}
+\examples{
+num_days <- days_in_month_diff(scen$start_date, scen$end_date)
+update_DIS_stress_periods(num_steps=num_days, num_stress_periods=length(num_days), '.')
 }
 \author{
 Claire Kouba

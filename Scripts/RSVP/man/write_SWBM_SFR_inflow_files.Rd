@@ -15,7 +15,7 @@ write_SWBM_SFR_inflow_files(
 \item{sfr_component}{Dataframe of months and either: 1) subwatershed inflow partition
 fractions (see \code{\link{gen_monthly_sfr_flow_partition}}), or 2) inflows available
 for irrigation, or 3) inflows NOT available for irrigation (e.g. reserved for environmental
-flows) (for items 2 and 3 see \code{\link{process_monthly_sfr_inflows}}).}
+flows) (for items 2 and 3 see \code{\link{process_sfr_inflows}}).}
 
 \item{output_dir}{directory to write the files to}
 
@@ -23,6 +23,15 @@ flows) (for items 2 and 3 see \code{\link{process_monthly_sfr_inflows}}).}
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
+\value{
+None, writes file to disk
+}
 \description{
 Write SWBM File Partitioning Subwatershed Surface Flows to Stream Inflows
+}
+\examples{
+\dontrun{
+subws_inflows <- process_sfr_inflows(scen, "daily_tributary_streamflow.txt")
+write_SWBM_SFR_inflow_files(subws_inflows$non_irr, '.', "subwatershed_irrigation_inflows.txt")
+}
 }

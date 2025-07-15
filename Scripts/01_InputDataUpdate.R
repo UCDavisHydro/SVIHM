@@ -18,12 +18,12 @@ end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
 
 # Rainfall data requires NOAA CDO token
 # (free online: https://www.ncdc.noaa.gov/cdo-web/webservices/v2)
-noaa_token <- read_lines(file='_noaa_cdo_token.txt', n_max = 1)
+noaa_token <- read_lines(file=file.path(data_dir['key_dir','loc'], '_noaa_cdo_token.txt'), n_max = 1)
 options(noaakey = noaa_token)
 
 # ET data requires CIMIS Token
 # (free online: https://cimis.water.ca.gov/)
-cimis_key <- read_lines(file='_CIMIS_API_key.txt')
+cimis_key <- read_lines(file=file.path(data_dir['key_dir','loc'], '_CIMIS_API_key.txt'), n_max = 1)
 cimir::set_key(cimis_key)
 
 swbm_stream_order <-  c("Scott_River","Sugar","Miners","French","Etna","Johnson",

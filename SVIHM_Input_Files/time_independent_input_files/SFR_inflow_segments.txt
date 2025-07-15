@@ -11,4 +11,3 @@ subws_ID	ISEG	subws_name	stream_name
 6	24	Moffett	Moffett Creek
 7	27	Mill	Mill Creek
 8	28	Shackleford	Shackleford Creek
-!4	19	Patterson	Big Slough Drain Inflow

@@ -15,6 +15,7 @@ write_SWBM_main_input_file(
   nAgWells = 167,
   nSpecWells = 0,
   nSubws = 8,
+  nMfrWells = 1163,
   inflow_is_vol = FALSE,
   daily_sw = TRUE,
   nSFR_inflow_segs = 12,
@@ -25,26 +26,32 @@ write_SWBM_main_input_file(
   writeUCODE = TRUE,
   writePEST = FALSE,
   precip_file = "precip.txt",
-  poly_landcover_file = "polygon_landcover_ids.txt",
-  poly_agwell_file = "ag_well_list_by_polygon.txt",
   et_file = "ref_et.txt",
   et_ext_depth_file = "ET_Cells_Extinction_Depth.txt",
   ets_template_file = "SVIHM_ETS_template.txt",
   kc_frac_file = "kc_values.txt",
-  sfr_network_file = "SFR_network.txt",
-  sfr_partition_file = "SFR_subws_flow_partitioning.txt",
+  sfr_template_file = "SFR_network.txt",
+  sfr_routing_file = "SFR_routing.txt",
+  sfr_segments_file = "SFR_inflow_segments.txt",
+  sfr_irr_flows_file = "subwatershed_irrigation_inflows.txt",
+  sfr_nonirr_flows_file = "subwatershed_nonirrigation_inflows.txt",
   wel_template_file = "SVIHM_WEL_template.txt",
-  agwell_locs_file = "ag_well_summary.txt",
   recharge_zones_file = "recharge_zones.txt",
+  poly_landcover_file = "polygon_landcover_ids.txt",
+  poly_agwell_file = "ag_well_list_by_polygon.txt",
+  agwell_locs_file = "ag_well_summary.txt",
+  specwell_locs_file = NULL,
+  specwell_vol_file = NULL,
+  mfrwell_locs_file = "modflow_cell_to_catchment.txt",
+  mfrwell_rates_file = "monthly_MFR_by_catchment.txt",
+  mfrwell_mult_file = NULL,
+  et_zone_cells_file = "ET_Zone_Cells.txt",
   sfr_jtf_file = "SFR_network_jtf.txt",
   irr_ditch_file = "irr_ditch.txt",
-  et_zone_cells_file = "ET_Zone_Cells.txt",
   mar_depth_file = "MAR_depth.txt",
   curtail_frac_file = "curtailment_fractions.txt",
   et_correction_file = "field_et_corrections.txt",
   water_mover_file = NULL,
-  specwell_locs_file = NULL,
-  specwell_vol_file = NULL,
   print_daily_fields = list(),
   verbose = TRUE
 )
@@ -52,95 +59,115 @@ write_SWBM_main_input_file(
 \arguments{
 \item{output_dir}{Directory where the input file will be written.}
 
-\item{num_stress_periods}{Integer. Number of model stress periods (NMONTHS in the input file).}
+\item{num_stress_periods}{Integer. Number of model stress periods (\code{NMONTHS}).}
 
-\item{filename}{Character. The name of the output file. Default is "svihm.swbm".}
+\item{filename}{Character. Name of the output file. Default: \code{"svihm.swbm"}.}
 
-\item{modelName}{Character. The name of the MODFLOW model. Default is "SVIHM".}
+\item{modelName}{Character. MODFLOW model name (\code{MFNAME}). Default: \code{"SVIHM"}.}
 
-\item{WYstart}{Integer. The water year start (WYSTART in the input file). Default is 1991.}
+\item{WYstart}{Integer. Water-year start (\code{WYSTART}). Default: \code{1991}.}
 
-\item{npoly}{Integer. The number of polygons (NPOLY in the input file). Default is 2119.}
+\item{npoly}{Integer. Number of polygons (\code{NPOLY}). Default: \code{2119}.}
 
-\item{nlandcover}{Integer. The number of land cover types (NLANDCOVER in the input file). Default is 6.}
+\item{nlandcover}{Integer. Number of land-cover types (\code{NLANDCOVER}). Default: \code{6}.}
 
-\item{nAgWells}{Integer. The number of agricultural wells (NAGWELLS in the input file). Default is 167.}
+\item{nAgWells}{Integer. Number of agricultural wells (\code{NAGWELLS}). Default: \code{167}.}
 
-\item{nSubws}{Integer. The number of sub-watersheds (NSUBWS in the input file). Default is 8.}
+\item{nSpecWells}{Integer. Number of special wells (\code{NSPECWELLS}). Default: \code{0}.}
 
-\item{inflow_is_vol}{Logical. Whether the inflow is volume-based. Default is FALSE.}
+\item{nSubws}{Integer. Number of sub-watersheds (\code{NSUBWS}). Default: \code{8}.}
 
-\item{daily_sw}{Logical. Whether to write daily soil water budget (DAILY_SW in the input file). Default is TRUE.}
+\item{nMfrWells}{Integer. Number of managed-recharge wells (\code{NMFRWELLS}). Default: \code{1163}.}
 
-\item{nSFR_inflow_segs}{Integer. The number of streamflow routing inflow segments (NSFR_INFLOW_SEGS in the input file). Default is 12.}
+\item{inflow_is_vol}{Logical. Whether inflow is volume-based. Default: \code{FALSE}.}
 
-\item{nrows}{Integer. The number of rows in the model grid (NROWS in the input file). Default is 440.}
+\item{daily_sw}{Logical. Write daily soil-water budget output (\code{DAILY_SW}). Default: \code{TRUE}.}
 
-\item{ncols}{Integer. The number of columns in the model grid (NCOLS in the input file). Default is 210.}
+\item{nSFR_inflow_segs}{Integer. Number of SFR inflow segments (\code{NSFR_INFLOW_SEGS}). Default: \code{12}.}
 
-\item{neighborRuleYearDay}{Integer. The neighbor rule cutoff day of the year (NEIGHBOR_RULE in the input file). Default is 250.}
+\item{nrows}{Integer. Number of grid rows (\code{NROWS}). Default: \code{440}.}
 
-\item{absoluteIrrDate}{Integer vector of length 2. The absolute irrigation cutoff date as month and day (ABSOLUTE_IRR_DATE in the input file). Default is c(5, 15).}
+\item{ncols}{Integer. Number of grid columns (\code{NCOLS}). Default: \code{210}.}
 
-\item{writeUCODE}{Logical. Whether to write UCODE files (WRITE_UCODE in the input file). Default is TRUE.}
+\item{neighborRuleYearDay}{Integer. Neighbor rule cutoff day (\code{NEIGHBOR_RULE}). Default: \code{250}.}
 
-\item{writePEST}{Logical. Whether to write PEST files (WRITE_PEST in the input file). Default is FALSE.}
+\item{absoluteIrrDate}{Integer(2). Absolute irrigation cutoff date (\code{ABSOLUTE_IRR_DATE}) as \code{c(month, day)}. Default: \code{c(5, 15)}.}
 
-\item{precip_file}{Character. The name of the precipitation input file (PRECIP in the input file). Default is "precip.txt".}
+\item{writeUCODE}{Logical. Write UCODE block (\code{WRITE_UCODE}). Default: \code{TRUE}.}
 
-\item{poly_landcover_file}{Character. The name of the polygon landcover IDs file (POLY_LANDCOVER in the input file). Default is "polygon_landcover_ids.txt".}
+\item{writePEST}{Logical. Write PEST block (\code{WRITE_PEST}). Default: \code{FALSE}.}
 
-\item{et_file}{Character. The name of the reference evapotranspiration file (ET in the input file). Default is "ref_et.txt".}
+\item{precip_file}{Character. PRECIP file. Default: \code{"precip.txt"}.}
 
-\item{et_ext_depth_file}{Character. The name of the ET cells extinction depth file (ET_EXT_DEPTH in the input file). Default is "ET_Cells_Extinction_Depth.txt".}
+\item{et_file}{Character. ET file. Default: \code{"ref_et.txt"}.}
 
-\item{ets_template_file}{Character. The name of the ETS template file (ETS_TEMPLATE in the input file). Default is "SVIHM_ETS_template.txt".}
+\item{et_ext_depth_file}{Character. ET_EXT_DEPTH file. Default: \code{"ET_Cells_Extinction_Depth.txt"}.}
 
-\item{kc_frac_file}{Character. The name of the crop coefficient fractions file (KC_FRAC in the input file). Default is "kc_values.txt".}
+\item{ets_template_file}{Character. ETS_TEMPLATE file. Default: \code{"SVIHM_ETS_template.txt"}.}
 
-\item{sfr_network_file}{Character. The name of the streamflow routing network file (SFR_NETWORK in the input file). Default is "SFR_network.txt".}
+\item{kc_frac_file}{Character. KC_FRAC file. Default: \code{"kc_values.txt"}.}
 
-\item{sfr_partition_file}{Character. The name of the streamflow routing partition file (SFR_PARTITION in the input file). Default is "SFR_subws_flow_partitioning.txt".}
+\item{sfr_template_file}{Character. SFR_TEMPLATE file. Default: \code{"SFR_network.txt"}.}
 
-\item{wel_template_file}{Character. The name of the well template file (WEL_TEMPLATE in the input file). Default is "SVIHM_WEL_template.txt".}
+\item{sfr_routing_file}{Character. SFR_ROUTING file. Default: \code{"SFR_routing.txt"}.}
 
-\item{recharge_zones_file}{Character. The name of the recharge zones file (RECHARGE_ZONES in the input file). Default is "recharge_zones.txt".}
+\item{sfr_segments_file}{Character. SFR_SEGMENTS file. Default: \code{"SFR_inflow_segments.txt"}.}
 
-\item{irr_ditch_file}{Character. The name of the irrigation ditch file (IRR_DITCH in the input file). Default is "irr_ditch.txt".}
+\item{sfr_irr_flows_file}{Character. SFR_IRR_FLOWS file. Default: \code{"subwatershed_irrigation_inflows.txt"}.}
 
-\item{et_zone_cells_file}{Character. The name of the ET zone cells file (ET_ZONE_CELLS in the input file). Default is "ET_Zone_Cells.txt".}
+\item{sfr_nonirr_flows_file}{Character. SFR_NONIRR_FLOWS file. Default: \code{"subwatershed_nonirrigation_inflows.txt"}.}
 
-\item{mar_depth_file}{Character. The name of the managed aquifer recharge depth file (MAR_DEPTH in the input file). Default is "MAR_depth.txt".}
+\item{wel_template_file}{Character. WEL_TEMPLATE file. Default: \code{"SVIHM_WEL_template.txt"}.}
 
-\item{curtail_frac_file}{Character. The name of the curtailment fractions file (CURTAIL_FRAC in the input file). Default is "curtailment_fractions.txt".}
+\item{recharge_zones_file}{Character. RECHARGE_ZONES file. Default: \code{"recharge_zones.txt"}.}
 
-\item{water_mover_file}{Character. The name of the water mover file (WATER_MOVER in the input file). Default is NULL.}
+\item{poly_landcover_file}{Character. POLY_LANDCOVER file. Default: \code{"polygon_landcover_ids.txt"}.}
 
-\item{print_daily_fields}{List of named lists. Each element should contain \code{id} (Integer, Field ID) and \code{prefix} (Character, filename prefix) for fields to print daily in the PRINT_DAILY block.}
+\item{poly_agwell_file}{Character. POLY_AGWELL file. Default: \code{"ag_well_list_by_polygon.txt"}.}
 
-\item{verbose}{Logical. Whether to print status information to the console. Default is TRUE.}
+\item{agwell_locs_file}{Character. AGWELL_LOCS file. Default: \code{"ag_well_summary.txt"}.}
 
-\item{nMuniWells}{Integer. The number of municipal wells (NMUNIWELLS in the input file). Default is 0.}
+\item{specwell_locs_file}{Character or NULL. SPECWELL_LOCS file. Default: \code{NULL}.}
 
-\item{RD_Mult}{Numeric. The root depth multiplier (RD_MULT in the input file). Default is 1.4.}
+\item{specwell_vol_file}{Character or NULL. SPECWELL_VOL file. Default: \code{NULL}.}
+
+\item{mfrwell_locs_file}{Character or NULL. MFRWELL_LOCS file. Default: \code{"modflow_cell_to_catchment.txt"}.}
+
+\item{mfrwell_rates_file}{Character or NULL. MFRWELL_RATES file. Default: \code{"monthly_MFR_by_catchment.txt"}.}
+
+\item{mfrwell_mult_file}{Character or NULL. MFRWELL_MULT file. Default: \code{NULL}.}
+
+\item{et_zone_cells_file}{Character or NULL. ET_ZONE_CELLS file. Default: \code{"ET_Zone_Cells.txt"}.}
+
+\item{sfr_jtf_file}{Character or NULL. SFR_NETWORK_JTF file. Default: \code{"SFR_network_jtf.txt"}.}
+
+\item{irr_ditch_file}{Character or NULL. IRR_DITCH file. Default: \code{"irr_ditch.txt"}.}
+
+\item{mar_depth_file}{Character or NULL. MAR_DEPTH file. Default: \code{"MAR_depth.txt"}.}
+
+\item{curtail_frac_file}{Character or NULL. CURTAIL_FRAC file. Default: \code{"curtailment_fractions.txt"}.}
+
+\item{et_correction_file}{Character or NULL. ET_CORRECTION file. Default: \code{"field_et_corrections.txt"}.}
+
+\item{water_mover_file}{Character or NULL. WATER_MOVER file. Default: \code{NULL}.}
+
+\item{print_daily_fields}{List of named lists, each with \code{id} (integer) and \code{prefix} (character), for the PRINT_DAILY block. Default: \code{list()}.}
+
+\item{verbose}{Logical. Print progress messages? Default: \code{TRUE}.}
 }
 \value{
-None. The function writes the input file to the specified directory.
+None; writes the SWBM input file to \code{file.path(output_dir, filename)}.
 }
 \description{
-This function writes the main input file for the Soil Water Budget Model (SWBM).
+Writes the main input file for the Soil Water Budget Model (SWBM), using defaults
+consistent with the example configuration. All potential input files can be specified,
+including optional managed-recharge and streamflow files.
 }
 \examples{
-# Set Directory (Created in SVIHM_Input_Files/Updates) - Grabs latest version
-update_dir <- latest_dir(data_dir['update_dir','loc'])
-
-# Set output fields
-print_daily_fields <- list(
-  list(id = 1, prefix = "Field_1"),
-  list(id = 91, prefix = "Field_91"),
-  list(id = 136, prefix = "AG_MIX_Flood")
-# Add more fields as needed
-
-# Write file
-write_SWBM_main_input_file(output_dir = update_dir, num_stress_periods = 395)
+\dontrun{
+write_SWBM_main_input_file(
+  output_dir           = "inputs",
+  num_stress_periods   = 396
+)
+}
 }

@@ -2,38 +2,44 @@
 % Please edit documentation in R/SWBM_SFR_files.R
 \name{process_sfr_inflows}
 \alias{process_sfr_inflows}
-\title{Process SFR Irrigation Inflows}
+\title{Process SFR Irrigation Inflows for a Scenario}
 \usage{
-process_sfr_inflows(
-  model_start_date,
-  model_end_date,
-  scenario_id,
-  stream_inflow_filename,
-  avail_for_irr = T,
-  instream_flow_regime = NA
-)
+process_sfr_inflows(scen, stream_inflow_filename)
 }
 \arguments{
-\item{model_start_date}{Start date of model}
+\item{scen}{Named list with at least:
+\itemize{
+\item \code{start_date} - \code{Date}; first day of model period.
+\item \code{end_date}   - \code{Date}; last day of model period.
+}}
 
-\item{model_end_date}{End date of model}
-
-\item{stream_inflow_filename}{Filename of the gap-filled tributary flow records for each
-subwatershed (see \code{\link{write_tributary_input_file}}).}
-
-\item{avail_for_irr}{Boolean. Writes the file "subwatershed_irrigation_inflows.txt" if TRUE
-and the file "subwatershed_nonirrigation_inflows.txt" if FALSE.}
-
-\item{instream_flow_regime}{Date frame of start- and end-dates and flow values
-describing an annual instream flow regime. If NA, produces a 0-flow nonirrigation inflows
-table or passes 100\% of inflow to the irrigation inflows table.}
-
-\item{instream_flow_units}{Handles "cfs", "cms" or "m3day". Defaults to NA.}
+\item{stream_inflow_filename}{\code{character(1)} path to the gap-filled tributary
+inflow file (first column must be a Date).}
+}
+\value{
+A \code{list} with two data frames:
+\describe{
+\item{\code{irr}}{Original daily inflow volumes within the model period.}
+\item{\code{non_irr}}{Same dates, but all flow columns set to zero.}
+}
 }
 \description{
-Generates table of monthly stream inflow volumes that are either available for irrigation
-purposes or are unavailable for irrigation (i.e., flows reserved for environmental uses).
+Reads a gap-filled tributary inflow file, subsets it to the model period defined in \code{scen},
+and returns both the original daily inflows (available for irrigation) and a version
+with all "reserved" flows zeroed out (unavailable for irrigation).
 }
-\author{
-Claire Kouba, Leland Scantlebury
+\examples{
+\dontrun{
+scen <- list(
+  start_date = as.Date("1991-01-01"),
+  end_date   = as.Date("2020-12-31")
+)
+file <- file.path("data", "subwatershed_inflows.txt")
+inflows <- process_sfr_inflows(scen, file)
+head(inflows$irr)
+head(inflows$non_irr)
+}
+}
+\seealso{
+\code{\link{subset.DateTwoSided}}
 }

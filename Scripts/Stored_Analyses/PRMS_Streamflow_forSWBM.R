@@ -56,6 +56,9 @@ rename_cols <- colnames(prms) != 'Date'
 #-- Rename columns (excluding "Date")
 colnames(prms) <- c('Date',prms_stream_metadata$name[match(colnames(prms)[rename_cols],
                                                            paste0("X", prms_stream_metadata$PRMS_seg))])
+#-- Order same as stream metadata table
+prms <- prms[,c('Date',prms_stream_metadata$name)]
+
 prms$Date <- as.Date(prms$Date)
 #-------------------------------------------------------------------------------------------------#
 
