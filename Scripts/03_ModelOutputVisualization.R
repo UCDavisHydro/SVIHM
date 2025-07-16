@@ -261,6 +261,14 @@ print(p)
 dev.off()
 #-------------------------------------------------------------------------------------------------#
 
+# Write MF Budget out to CSV files
+mfbud_cumul <- bud$cumulative
+mfbud_cumul$Date <- mftime2date(mfbud_cumul$kper, mfbud_cumul$kstp, origin_date = origin_date)
+mfbud_rates <- bud$rates
+mfbud_rates$Date <- mfbud_cumul$Date  # No need to recompute
+write.csv(mfbud_cumul, file.path(out_dir,'MFBudget_cumulative.csv'), row.names = F)
+write.csv(mfbud_rates, file.path(out_dir,'MFBudget_rates.csv'), row.names = F)
+
 #-------------------------------------------------------------------------------------------------#
 # Heads/DTW ---------------------------------------------------------------
 
