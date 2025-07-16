@@ -1926,37 +1926,6 @@ write_SWBM_sfr_template_file <- function(nsteps, output_dir, filename='SFR_netwo
 #'   input_file  = "monthly_MFR_by_catchment.txt"
 #' )
 create_SWBM_MFR_df <- function(num_days_df,
-                               use_PRMS = FALSE,
-                               input_dir = NULL,
-                               input_file = "monthly_MFR_by_catchment.txt",
-                               catchment_ids = c('5','6','7','8','9','10','11'),
-                               catchment_daily_rates = c(234.0, 6300.0, 12040.0, 22350.0, 2000.0, 3860.0, 2430.0),
-                               no_mfr_months = 6:9) {
-  if (use_PRMS) {
-    if (is.null(input_dir)) {
-      stop('Must pass input_dir of PRMS files if use_PRMS is TRUE')
-    }
-    mfr_df <- read.table(file.path(input_dir, input_file), header = TRUE)
-    mfr_df$Stress_Period <- as.Date(mfr_df$Date)
-  } else {
-    mfr_df <- num_days_df
-    for (i in seq_along(catchment_ids)) {
-      mfr_df[[catchment_ids[i]]] <- mfr_df$ndays * catchment_daily_rates[i]
-    }
-    mfr_df$Stress_Period <- mftime2date(
-      sp          = mfr_df$stress_period,
-      ts          = 1,
-      origin_date = '1990-09-30'
-    )
-    # Zero out specified months
-    mfr_df[lubridate::month(mfr_df$Stress_Period) %in% no_mfr_months,
-           catchment_ids] <- 0.0
-  }
-
-  return(mfr_df[, c('Stress_Period', catchment_ids)])
-}
-
-create_SWBM_MFR_df <- function(num_days_df,
                                use_PRMS=FALSE,
                                input_dir=NULL,
                                input_file="monthly_MFR_by_catchment.txt",
@@ -1966,7 +1935,13 @@ create_SWBM_MFR_df <- function(num_days_df,
   if (use_PRMS) {
     if (is.null(input_dir)) {stop('Must pass input_dir of PRMS files if use_PRMS is TRUE')}
     mfr_df <- read.table(file.path(input_dir,input_file),header = T)
-    mfr_df <- as.Date(mfr_df['Date'])
+    names(mfr_df)[1] <- 'Stress_Period'
+    mfr_df$Stress_Period <- as.Date(mfr_df$Stress_Period)
+    # Remove leading Xs that R adds...
+    # These columns must be numeric
+    names(mfr_df)[2:length(names(mfr_df))] <- as.numeric(gsub('X', '', names(mfr_df)[2:length(names(mfr_df))]))
+    # Overwrite catchment_ids
+    catchment_ids <- names(mfr_df)[2:length(names(mfr_df))]
   } else {
     # Use basecase calibrated values
     mfr_df <- num_days_df

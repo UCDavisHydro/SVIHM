@@ -43,7 +43,7 @@ polygon_fields <- read_SWBM_polygon_file(scen$polygon_file, landcover_desc, trib
 num_days_df <-  data.frame("stress_period" = 1:scen$num_stress_periods, ndays = scen$num_days)
 
 #-- Streamflow
-subws_inflow_filename <- file.path(scen$input_dir,"daily_tributary_streamflow.txt")
+subws_inflow_filename <- file.path(scen$input_dir,"daily_tributary_streamflow_prms.txt")
 subws_inflows <- process_sfr_inflows(scen, subws_inflow_filename)
 
 # Historical Streamflow Curtailments for 2021, 2022
@@ -77,7 +77,7 @@ daily_kc_df <- create_daily_crop_coeff_df(scen$start_date, scen$end_date, natveg
 mar_depth_df <- create_MAR_depth_df(scen$start_date, scen$end_date, mar_scenario='basecase')
 
 # Mountain Front Recharge (water passed through SWBM to MODFLOW)
-mfr_df <- create_SWBM_MFR_df(num_days_df, use_PRMS = TRUE)
+mfr_df <- create_SWBM_MFR_df(num_days_df, use_PRMS = TRUE, input_dir = scen$input_dir)
 
 # Irrigation curtailment fractions (as fraction of calculated demand) by field by month
 # Also includes Local Cooperative Solutions (LCSs) that reduce water use (implemented as curtailment)
@@ -126,6 +126,12 @@ write_SWBM_main_input_file(output_dir = working_dir,
 # Copy meteorological files from the input_dir to the working_dir
 file.copy(from=file.path(scen$input_dir, 'precip.txt'), to = working_dir)
 file.copy(from=file.path(scen$input_dir, 'ref_et.txt'), to = working_dir)
+
+# Additional file updates for PRMS
+file.copy(from=file.path(scen$input, 'SFR_inflow_segments.txt'), to = working_dir)
+file.copy(from=file.path(scen$input, 'modflow_cell_to_catchment.txt'), to = working_dir)
+file.copy(from=file.path(scen$input, 'modflow_cell_to_catchment.txt'), to = working_dir)
+file.copy(from=file.path(scen$input, 'SVIHM.hob'), to = working_dir)
 
 # Write MODFLOW Inputs ----------------------------------------------------
 
