@@ -23,3 +23,10 @@ The function searches for the specified block, which can appear anywhere in the 
 This function searches for a block in the SWBM input file using the block's "BEGIN" and "END" delimiters (e.g., \verb{BEGIN DISCRETIZATION} and \verb{END DISCRETIZATION}).
 It collects all the key-value pairs inside the block, ignoring comments and empty lines. Key-value pairs can appear in any order.
 }
+\examples{
+# Example usage
+run_dir <- file.path('../../Run/svihm.swbm')
+file_path <- file.path(run_dir,'/SWBM/')
+discretization_settings <- read_swbm_block(file_path, block_name = "DISCRETIZATION")
+
+}

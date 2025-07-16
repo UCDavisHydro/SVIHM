@@ -2,21 +2,42 @@
 % Please edit documentation in R/writeSWBMInputs.R
 \name{write_SWBM_landcover_file}
 \alias{write_SWBM_landcover_file}
-\title{Write file specifying land use types for each field, for each stress period}
+\title{Write SWBM Polygon Landcover ID File}
 \usage{
 write_SWBM_landcover_file(
-  scenario_id = "basecase",
+  landcover_df,
   output_dir,
-  start_date,
-  end_date
+  filename = "polygon_landcover_ids.txt",
+  verbose = TRUE
 )
 }
 \arguments{
-\item{scenario_name}{Name of  management scenario. Default is historical basecase or "basecase".}
+\item{landcover_df}{A \code{data.frame} of monthly polygon landcover codes.
+Each column should be named \code{"ID_<fieldID>"} and contain the landcover
+code for that field in each stress period (row).}
+
+\item{output_dir}{Character. Directory in which to write the file.}
+
+\item{filename}{Character. Name of the output file. Default:
+\code{"polygon_landcover_ids.txt"}.}
+
+\item{verbose}{Logical. Whether to print a message before writing. Default:
+\code{TRUE}.}
 }
 \value{
-landcover_tab
+Invisibly returns \code{NULL}. The primary effect is writing
+\code{landcover_df} to \code{file.path(output_dir, filename)} in SWBM format.
 }
 \description{
-Write file specifying land use types for each field, for each stress period
+Wrapper around \code{\link{write_SWBM_file}} to save the per-stress-period,
+per-field landcover ID table for SWBM.
+}
+\examples{
+\dontrun{
+# Suppose `lc_df` is your polygon_landcover_ids data.frame:
+write_SWBM_landcover_file(lc_df, output_dir = "model_inputs")
+}
+}
+\seealso{
+\code{\link{write_SWBM_file}}
 }

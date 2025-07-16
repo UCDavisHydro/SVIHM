@@ -18,13 +18,17 @@ end_year   <- as.numeric(format(Sys.Date(), "%Y"))  # Assumes current year
 
 # Rainfall data requires NOAA CDO token
 # (free online: https://www.ncdc.noaa.gov/cdo-web/webservices/v2)
-noaa_token <- read_lines(file='_noaa_cdo_token.txt', n_max = 1)
+noaa_token <- read_lines(file=file.path(data_dir['key_dir','loc'], '_noaa_cdo_token.txt'), n_max = 1)
 options(noaakey = noaa_token)
 
 # ET data requires CIMIS Token
 # (free online: https://cimis.water.ca.gov/)
-cimis_key <- read_lines(file='_CIMIS_API_key.txt')
+cimis_key <- read_lines(file=file.path(data_dir['key_dir','loc'], '_CIMIS_API_key.txt'), n_max = 1)
 cimir::set_key(cimis_key)
+
+swbm_stream_order <-  c("Scott_River","Sugar","Miners","French","Etna","Johnson",
+                        "Crystal","Patterson","Kidder","Moffett","Mill","Shackleford")
+
 # ------------------------------------------------------------------------------------------------#
 
 # ------------------------------------------------------------------------------------------------#
@@ -75,20 +79,11 @@ fjd_model <- download_fort_jones_flow(model_start_date,
                                     output_dir = update_dir,
                                     save_csv = TRUE)
 
-# Hopefully temporary date filling for FJ (11/20/2024 - 11/21/2024)
-fjd_model <- complete_ts(fjd_model, date_col = 'Date', by = 'day', keep_col_order=T)
-fjd_model$Flow <- zoo::na.approx(fjd_model$Flow, x = as.numeric(fjd_model$Date), na.rm = FALSE)
-#fjd_model[is.na(fjd_model$Flow)]
-
 tribs <- get_tributary_flows(end_date = model_end_date, fj_update = fjd_model, monthly = F, one_regression = F)
 
-# Combine East and South Fork stream records into one volumetric record (since that is how it's simulated in SVIHM)
-tribs <- combine_east_and_south_fork(tribs_list = tribs)
+# Rearrange to match SWBM expectations
+tribs <- tribs[swbm_stream_order]
 
-tribs_regressed = write_trib_file_for_partitioning(gauges = tribs, output_dir = update_dir,
-                           start_date=model_start_date, end_date=model_end_date, monthly = F)
-
-write_streamflow_by_subws_input_file(tribs_df = tribs_regressed, #gauges = tribs,
-                                     output_dir = update_dir,filename = 'daily_streamflow_input.txt',
-                                     start_date=model_start_date, end_date=model_end_date, monthly = F)
+write_trib_file(gauges = tribs, output_dir = update_dir,
+                start_date=model_start_date, end_date=model_end_date, monthly = F)
 

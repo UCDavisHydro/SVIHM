@@ -5,8 +5,8 @@
 \title{Generate Daily Curve Crop Coefficients (Kc)}
 \usage{
 gen_daily_curve_crop_coefficients(
-  model_start_date,
-  model_end_date,
+  start_date,
+  end_date,
   kc_dormant = 0,
   kc_by_crop_stage = c(0, 0.27, 1.15, 1.15, 0),
   days_in_crop_stage = c(38, 26, 32, 36),
@@ -18,9 +18,9 @@ gen_daily_curve_crop_coefficients(
 )
 }
 \arguments{
-\item{model_start_date}{Start date of model}
+\item{start_date}{Start date of model}
 
-\item{model_end_date}{End date of model}
+\item{end_date}{End date of model}
 
 \item{kc_dormant}{coefficient during dormant period, default 0.0}
 
@@ -40,8 +40,14 @@ to ignore}
 
 \item{irr_demand_mult}{Irrigation demand multiplier, default 1}
 }
+\value{
+DataFrame
+}
 \description{
 Currently used for grain (see: default values). Uses a curve to represent crop stages.
+}
+\examples{
+gen_daily_curve_crop_coefficients(start_date = as.Date("2000-01-01"), end_date = as.Date("2000-12-31"))
 }
 \author{
 Claire Kouba, Leland Scantlebury

@@ -16,7 +16,7 @@
 #' @examples
 #' # Example usage
 #' run_dir <- file.path('../../Run/svihm.swbm')
-#' file_path <- file.path(run_dir,'/SWBM/)
+#' file_path <- file.path(run_dir,'/SWBM/')
 #' discretization_settings <- read_swbm_block(file_path, block_name = "DISCRETIZATION")
 #'
 #' @export

@@ -9,7 +9,7 @@ update_OC_stress_periods(
   num_stress_periods,
   output_dir,
   filename = "SVIHM.oc",
-  monthly = T,
+  monthly = F,
   save_budget = T,
   save_drawdown = T,
   save_heads = T,
@@ -35,8 +35,22 @@ update_OC_stress_periods(
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
+\value{
+None, writes file
+}
 \description{
 Write SVIHM MODFLOW Output Control File (OC) with Updated Number of Stress Periods
+}
+\examples{
+
+num_days <- days_in_month_diff(scen$start_date, scen$end_date)
+
+update_OC_stress_periods(num_days,
+                         length(num_days),
+                         output_dir = working_dir,
+                         save_budget=F,
+                         save_drawdown=F)
+
 }
 \author{
 Claire Kouba, Leland Scantlebury

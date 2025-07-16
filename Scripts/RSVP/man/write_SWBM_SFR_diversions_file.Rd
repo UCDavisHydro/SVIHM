@@ -23,12 +23,18 @@ write_SWBM_SFR_diversions_file(
 
 \item{flow_for_divs}{Uniform flowrate for the diversion.}
 }
+\value{
+None, writes file to disk
+}
 \description{
 Generates text file specifying the number, stream segment, priority handling (in MODFLOW), and
 unchanging flowrate of each diversion point in the stream network.
 Default is currently (Nov 2022) configured to specify diversion points for the SVID ditch and
 Farmers ditch, with 0 flow in them (as ditch diversions are currently  handled in a
 separate module).
+}
+\examples{
+write_SWBM_SFR_diversions_file(output_dir='.')
 }
 \author{
 Claire Kouba, Leland Scantlebury

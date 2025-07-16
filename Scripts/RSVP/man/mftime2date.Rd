@@ -7,15 +7,30 @@
 mftime2date(sp, ts, origin_date)
 }
 \arguments{
-\item{sp}{Stress period}
+\item{sp}{Integer or numeric vector. Stress-period numbers (months since origin, 1-based).}
 
-\item{ts}{Time Step}
+\item{ts}{Integer or numeric vector. Timesteps (days within that period, 1-based).}
 
-\item{origin_date}{Date at ts=0}
+\item{origin_date}{Date or string coercible to Date. The "zero" time: \code{sp=0,ts=0}.}
+}
+\value{
+A \code{Date} vector of the same length as \code{sp} and \code{ts}.
 }
 \description{
-Assumes sp in months, and ts in days! Rounds to nearest day to prevent minor numerical errors
+Converts a stress-period index (in months) and a timestep index (in days)
+into actual Dates, relative to a given origin.
 }
-\author{
-Leland Scantlebury
+\details{
+\itemize{
+\item Assumes \code{origin_date} corresponds to \code{sp = 0, ts = 0}.
+\item \code{sp = 1, ts = 1} ??? first day of the first stress period after the origin.
+\item Adds \code{ts} days first, then advances by \code{(sp - 1)} whole calendar-month steps.
+}
+}
+\examples{
+# origin = 1990-09-30  (sp=0,ts=0)
+mftime2date(1, 1, "1990-09-30")  # ??? "1990-10-01"
+mftime2date(2, 10, "1990-09-30") # ??? "1990-11-10"
+mftime2date(3, 15, "1990-09-30") # ??? "1990-12-15"
+
 }

@@ -15,11 +15,13 @@
 #' (default: SVIHM/SVIHM_Input_Files/reference_data/)
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
-#' @return
+#' @return None, writes file to disk
 #' @author Claire Kouba
 #' @export
 #'
 #' @examples
+#' num_days <- days_in_month_diff(scen$start_date, scen$end_date)
+#' update_DIS_stress_periods(num_steps=num_days, num_stress_periods=length(num_days), '.')
 update_DIS_stress_periods <- function(num_steps,
                                       num_stress_periods,
                                       output_dir,
@@ -57,11 +59,13 @@ update_DIS_stress_periods <- function(num_steps,
 #' (default: SVIHM/SVIHM_Input_Files/reference_data/)
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
-#' @return
+#' @return None, writes file to disk
 #' @author Claire Kouba
 #' @export
 #'
 #' @examples
+#' update_DRN_stress_periods(416, '.')
+#'
 update_DRN_stress_periods <- function(num_stress_periods,
                                       output_dir,
                                       filename='SVIHM.drn',
@@ -106,10 +110,33 @@ update_DRN_stress_periods <- function(num_stress_periods,
 
 #-------------------------------------------------------------------------------------------------#
 
+#' Write SVIHM MODFLOW Drain Overland Flow File (DRNO) with Updated Number of Stress Periods
+#'
+#' In SVIHM, the drains represent saturation excess overland flow within the discharge zone. The
+#' drain activation elevations are set at land surface. The DRNO package is a modified version of
+#' the MODFLOW drain package able to route water "removed" from the MODFLOW model through the drain
+#' package to the SFR package. Each drain cell, therefore, has an associated SFR segment for it
+#' to route water to.
+#'
+#' @param num_stress_periods Number of stress periods
+#' @param output_dir Directory to write DRN file in
+#' @param filename character name of file to write (default: SVIHM.drno)
+#' @param default_drn_value Numeric value to be written for drain conductance (default, NA, results in 10,000)
+#' @param ref_data_dir Reference data directory (default: SVIHM/SVIHM_Input_Files/reference_data/)
+#' with `drno_cells.txt` file that defines drain cells and SFR segments
+#' @param verbose T/F write status info to console (default: TRUE)
+#'
+#' @return None, writes file to disk
+#' @author Leland Scantlebury, Claire Kouba
+#' @export
+#'
+#' @examples
+#' update_DRNO_stress_periods(416, '.')
+#'
 update_DRNO_stress_periods <- function(num_stress_periods,
                                        output_dir,
                                        filename='SVIHM.drno',
-                                       default_drn_value = 10000.0,
+                                       default_drn_value = NA,
                                        ref_data_dir = data_dir['ref_data_dir','loc'],
                                        verbose = TRUE) {
   #-- Read in DRNO reference - essentially the DRN package matched to nearby SFR reaches
@@ -124,7 +151,7 @@ update_DRNO_stress_periods <- function(num_stress_periods,
   f <- file.path(output_dir, filename)
 
   #-- Write DRNO Header
-  if (verbose) {message(paste('Writing SVIHM DRNO file: ', f))}
+  if (verbose) {message(paste('Writing SVIHM DRNO file: ', filename))}
   write('# MODFLOW Drain Overland Flow (DRNO) Package - written by RSVP', file = f, append = F)
   write('          2869        50   NOPRINT', file = f, append = T)
 
@@ -149,6 +176,8 @@ update_DRNO_stress_periods <- function(num_stress_periods,
 
 #' Write SVIHM Head Observation (HOBS) File
 #'
+#' **Deprecated, do not use**
+#'
 #' TODO: Accept data as arguments? Automate new data download?
 #'
 #' @param model_start_date Date of model start
@@ -159,11 +188,12 @@ update_DRNO_stress_periods <- function(num_stress_periods,
 #' (default: SVIHM/SVIHM_Input_Files/reference_data/)
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
-#' @return
+#' @return None, writes file
 #' @author Claire Kouba
 #' @export
 #'
 #' @examples
+#' write_SVIHM_head_obs_file(as.Date(1990-10-01), as.Date(2024-09-30), '.')
 write_SVIHM_head_obs_file <- function(model_start_date,
                                       model_end_date,
                                       output_dir,
@@ -272,16 +302,25 @@ write_SVIHM_head_obs_file <- function(model_start_date,
 #' @param save_heads T/F write out head file (default: True)
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
-#' @return
+#' @return None, writes file
 #' @author Claire Kouba, Leland Scantlebury
 #' @export
 #'
 #' @examples
+#'
+#' num_days <- days_in_month_diff(scen$start_date, scen$end_date)
+#'
+#' update_OC_stress_periods(num_days,
+#'                          length(num_days),
+#'                          output_dir = working_dir,
+#'                          save_budget=F,
+#'                          save_drawdown=F)
+#'
 update_OC_stress_periods <- function(num_steps,
                                      num_stress_periods,
                                      output_dir,
                                      filename='SVIHM.oc',
-                                     monthly=T,
+                                     monthly=F,
                                      save_budget=T,
                                      save_drawdown=T,
                                      save_heads=T,

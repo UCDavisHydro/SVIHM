@@ -2,21 +2,42 @@
 % Please edit documentation in R/writeSWBMInputs.R
 \name{write_SWBM_MAR_depth_file}
 \alias{write_SWBM_MAR_depth_file}
-\title{Write file specifying Managed Aquifer Recharge (applied irrigation) volumes for each field, for each stress period}
+\title{Write SWBM MAR Depth Table to SWBM Input File}
 \usage{
 write_SWBM_MAR_depth_file(
-  scenario_id = "basecase",
+  mar_df,
   output_dir,
-  start_date,
-  end_date
+  filename = "MAR_depth.txt",
+  verbose = TRUE
 )
 }
 \arguments{
-\item{scenario_name}{Name of  management scenario. Default is historical basecase or "basecase".}
+\item{mar_df}{A \code{data.frame} as returned by \code{create_MAR_depth_df()},
+with \code{Stress_Period} and \code{ID_<fieldID>} columns.}
+
+\item{output_dir}{Character. Directory in which to write the file.}
+
+\item{filename}{Character. Name of the output file. Default: \code{"MAR_depth.txt"}.}
+
+\item{verbose}{Logical. If \code{TRUE}, prints a message before writing. Default: \code{TRUE}.}
 }
 \value{
-none, saves MAR_volumes.txt
+Invisibly returns \code{NULL}.  Side effect: writes \code{mar_df} to
+\code{file.path(output_dir, filename)} using space-delimited format.
 }
 \description{
-Write file specifying Managed Aquifer Recharge (applied irrigation) volumes for each field, for each stress period
+Writes a managed-aquifer recharge (MAR) depth (m) table to disk in SWBM input format.
+}
+\examples{
+\dontrun{
+df <- create_MAR_depth_df(
+  start_date   = as.Date("2023-10-01"),
+  end_date     = as.Date("2024-09-30"),
+  mar_scenario = "max24"
+)
+write_SWBM_MAR_depth_file(df, output_dir = "SWBM_inputs")
+}
+}
+\seealso{
+\code{\link{create_MAR_depth_df}}
 }

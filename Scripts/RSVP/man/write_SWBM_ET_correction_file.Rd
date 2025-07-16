@@ -2,31 +2,45 @@
 % Please edit documentation in R/writeSWBMInputs.R
 \name{write_SWBM_ET_correction_file}
 \alias{write_SWBM_ET_correction_file}
-\title{Write ET Correction File for SWBM}
+\title{Write SWBM ET Correction File}
 \usage{
-write_SWBM_ET_correction_file(output_dir, start_date, end_date)
+write_SWBM_ET_correction_file(
+  et_cor_output,
+  output_dir,
+  filename = "field_et_corrections.txt",
+  verbose = TRUE
+)
 }
 \arguments{
-\item{output_dir}{Directory where the ET correction file will be saved.}
+\item{output_dir}{Character. Directory where the file will be written.}
 
-\item{start_date}{Start date of the simulation (as Date object).}
+\item{filename}{Character. Name of the output file. Default:
+\code{"ETcorrection_factors.txt"}.}
 
-\item{end_date}{End date of the simulation (as Date object).}
+\item{verbose}{Logical. If \code{TRUE}, prints a message before writing.
+Default: \code{TRUE}.}
+
+\item{et_cor_df}{A \code{data.frame} as returned by
+\code{\link{create_SWBM_ET_correction_df}()}, with \code{Stress_Period}
+and \code{ID_<fieldID>} columns.}
 }
 \value{
-None. Saves the ET correction data as \code{field_et_corrections.txt} in \code{output_dir}.
+Invisibly returns \code{NULL}.  Side effect: writes
+\code{et_cor_df} to \code{file.path(output_dir, filename)}.
 }
 \description{
-Generates and saves a file specifying evapotranspiration (ET) correction factors
-for each agricultural field for each stress period in the simulation.
-Fields without specific corrections default to a value of 1.0 (no change to ET).
-}
-\details{
-The correction file is used in the SWBM model to adjust evapotranspiration
-based on the implementation of best management practices (BMPs) in 2024.
+Writes an ET correction factors table to a space-delimited SWBM input file.
 }
 \examples{
-write_SWBM_ET_correction_file(output_dir = "model_outputs",
-                              start_date = as.Date("1990-10-01"),
-                              end_date = as.Date("2024-12-31"))
+\dontrun{
+df <- create_SWBM_ET_correction_df(
+  start_date  = as.Date("2023-10-01"),
+  end_date    = as.Date("2024-09-30"),
+  scenario_id = "basecase"
+)
+write_SWBM_ET_correction_file(df, output_dir = "SWBM_inputs")
+}
+}
+\seealso{
+\code{\link{create_SWBM_ET_correction_df}}, \code{\link{write_SWBM_file}}
 }

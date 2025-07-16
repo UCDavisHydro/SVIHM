@@ -27,8 +27,17 @@ write_SVIHM_head_obs_file(
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
+\value{
+None, writes file
+}
 \description{
+\strong{Deprecated, do not use}
+}
+\details{
 TODO: Accept data as arguments? Automate new data download?
+}
+\examples{
+write_SVIHM_head_obs_file(as.Date(1990-10-01), as.Date(2024-09-30), '.')
 }
 \author{
 Claire Kouba

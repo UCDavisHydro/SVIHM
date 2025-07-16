@@ -428,29 +428,53 @@ calc_num_stress_periods <- function(model_start, model_end, interval='month') {
 
 #' MODFLOW Model Time to Date
 #'
-#' Assumes sp in months, and ts in days! Rounds to nearest day to prevent minor numerical errors
+#' Converts a stress-period index (in months) and a timestep index (in days)
+#' into actual Dates, relative to a given origin.
 #'
-#' @param sp Stress period
-#' @param ts Time Step
-#' @param origin_date Date at ts=0
+#' * Assumes \code{origin_date} corresponds to \code{sp = 0, ts = 0}.
+#' * \code{sp = 1, ts = 1} ??? first day of the first stress period after the origin.
+#' * Adds \code{ts} days first, then advances by \code{(sp - 1)} whole calendar-month steps.
 #'
-#' @return
-#' @author Leland Scantlebury
-#' @export
+#' @param sp  Integer or numeric vector. Stress-period numbers (months since origin, 1-based).
+#' @param ts  Integer or numeric vector. Timesteps (days within that period, 1-based).
+#' @param origin_date  Date or string coercible to Date. The "zero" time: \code{sp=0,ts=0}.
+#'
+#' @return A \code{Date} vector of the same length as \code{sp} and \code{ts}.
 #'
 #' @examples
+#' # origin = 1990-09-30  (sp=0,ts=0)
+#' mftime2date(1, 1, "1990-09-30")  # ??? "1990-10-01"
+#' mftime2date(2, 10, "1990-09-30") # ??? "1990-11-10"
+#' mftime2date(3, 15, "1990-09-30") # ??? "1990-12-15"
+#'
+#' @export
 mftime2date <- function(sp, ts, origin_date) {
-  # Note: I hate sp/ts math - Leland
-  return(origin_date %m+% days(1) %m+% months(sp-1) %m+% days(ts-1))
-}
+  # Coerce input
+  origin_date <- as.Date(origin_date)
 
+  # Vectorize over sp & ts
+  out <- mapply(function(sp_i, ts_i) {
+    # Step 1: add ts days to origin (so ts=1 ??? origin + 1 day)
+    d <- origin_date + ts_i
+
+    # Step 2: if sp > 1, advance by (sp_i - 1) months from that date
+    if (sp_i > 1) {
+      # seq.Date with by="month" moves in calendar months
+      d <- seq(d, by = "month", length.out = sp_i)[sp_i]
+    }
+    d
+  }, sp, ts, SIMPLIFY = TRUE)
+
+  # Return as Date
+  as.Date(out)
+}
 #-------------------------------------------------------------------------------------------------#
 
 # File Management  -------------------------------------------------------------
 
 #' Create Update Directory
 #'
-#' For ModelUpdate.R to create/check if update directory exists. File formula is
+#' For 01_InputDataUpdate.R to create/check if update directory exists. File formula is
 #' SVIHM_Input_Files/Updates/[current date]
 #'
 #' @return new or existing update directory
@@ -468,6 +492,28 @@ create_update_dir <- function(end_date) {
     message('Warning: Files created by this script may overwrite those in the directory!')
   }
   return(update_dir)
+}
+
+#-------------------------------------------------------------------------------------------------#
+
+#' Create Scenario Directory
+#'
+#' For 02_ScenarioBuilder to create/check if scenario directory exists.
+#'
+#' @return new or existing update directory
+#' @export
+#'
+#' @examples
+#' create_update_dir()
+create_scenario_dir <- function(dir_name) {
+  if (!dir.exists(dir_name)) {
+    message(paste('Creating Directory:',dir_name))
+    dir.create(dir_name, recursive = T)
+  } else {
+    message(paste('Directory:',dir_name, 'already exists.'))
+    message('Warning: Files created by this script may overwrite those in the directory!')
+  }
+  return(dir_name)
 }
 
 #-------------------------------------------------------------------------------------------------#
@@ -545,4 +591,110 @@ ts_obs_sim_combine <- function(obs_df_list, sim_df_list, group_names, date_cols=
 
   # Done!
   return(merged)
+}
+
+#-------------------------------------------------------------------------------------------------#
+#' Translate SWBM Code Columns into Text Labels (In-Place)
+#'
+#' Given a data.frame that may contain SWBM code columns, adds corresponding
+#' "_txt" columns with human-readable labels, and inserts each new text column
+#' immediately after its source code column.  The function handles these mappings:
+#' \itemize{
+#'   \item \code{SWBM_LU}      to \code{LU_txt}, using \code{landcover_desc$id} to \code{landcover_desc$Landcover_Name}
+#'   \item \code{SWBM_IRR}     to \code{IRR_txt}, using internal \code{swbm_irr_key}
+#'   \item \code{WATERSOURC}   to \code{WS_txt}, using internal \code{watersource_key}
+#'   \item \code{subws_ID}     to \code{subws_txt}, using \code{tributary_desc$subws_ID} to \code{tributary_desc$subws_name}
+#' }
+#'
+#' @param df A \code{data.frame} that may include SWBM code columns.
+#' @param landcover_desc Optional \code{data.frame} with columns \code{id} and \code{Landcover_Name},
+#'   required to translate \code{SWBM_LU}.
+#' @param tributary_desc Optional \code{data.frame} with columns \code{subws_ID} and \code{subws_name},
+#'   required to translate \code{subws_ID}.
+#'
+#' @return The same \code{df}, but with any of the following new columns added and placed
+#'   immediately after their source columns:
+#'   \describe{
+#'     \item{\code{LU_txt}}{Character labels for \code{SWBM_LU}.}
+#'     \item{\code{IRR_txt}}{Character labels for \code{SWBM_IRR}.}
+#'     \item{\code{WS_txt}}{Character labels for \code{WATERSOURC}.}
+#'     \item{\code{subws_txt}}{Character labels for \code{subws_ID}.}
+#'   }
+#'   Columns are only added if the corresponding code column is present in \code{df}
+#'   and the needed lookup (\code{landcover_desc} or \code{tributary_desc}) is supplied.
+#'
+#' @examples
+#' \dontrun{
+#' data(swbm_irr_key); data(watersource_key)
+#' landcov <- read.table("landcover_table.txt", header=TRUE)
+#' trib    <- read.table("trib_desc.txt", header=TRUE)
+#' poly    <- read.table("polygons.txt", header=TRUE)
+#' poly2   <- translate_SWBM_codes(poly, landcov, trib)
+#' head(poly2[c("SWBM_LU","LU_txt","SWBM_IRR","IRR_txt")])
+#' }
+#' @export
+translate_SWBM_codes <- function(df,
+                                 landcover_desc = NULL,
+                                 tributary_desc = NULL) {
+  # remember original column order
+  orig_cols <- names(df)
+
+  # SWBM_LU to LU_txt
+  if ("SWBM_LU" %in% orig_cols) {
+    if (is.null(landcover_desc)) {
+      warning("SWBM_LU present but no landcover_desc provided; skipping LU_txt")
+    } else {
+      df$LU_txt <- landcover_desc$Landcover_Name[
+        match(df$SWBM_LU, landcover_desc$id)
+      ]
+    }
+  }
+
+  # SWBM_IRR to IRR_txt
+  if ("SWBM_IRR" %in% orig_cols) {
+    df$IRR_txt <- swbm_irr_key$name[
+      match(df$SWBM_IRR, swbm_irr_key$code)
+    ]
+  }
+
+  # WATERSOURC to WS_txt
+  if ("WATERSOURC" %in% orig_cols) {
+    df$WS_txt <- watersource_key$name[
+      match(df$WATERSOURC, watersource_key$code)
+    ]
+  }
+
+  # subws_ID to subws_txt
+  if ("subws_ID" %in% orig_cols) {
+    if (is.null(tributary_desc)) {
+      warning("subws_ID present but no tributary_desc provided; skipping subws_txt")
+    } else {
+      df$subws_txt <- tributary_desc$subws_name[
+        match(df$subws_ID, tributary_desc$subws_ID)
+      ]
+    }
+  }
+
+  # build new column order: for each original, include it and its *_txt if it exists
+  new_order <- c()
+  mapping <- list(
+    SWBM_LU    = "LU_txt",
+    SWBM_IRR   = "IRR_txt",
+    WATERSOURC = "WS_txt",
+    subws_ID   = "subws_txt"
+  )
+  for (col in orig_cols) {
+    new_order <- c(new_order, col)
+    txt_col <- mapping[[col]]
+    if (!is.null(txt_col) && txt_col %in% names(df)) {
+      new_order <- c(new_order, txt_col)
+    }
+  }
+  # include any other columns added after original set
+  extra <- setdiff(names(df), new_order)
+  new_order <- c(new_order, extra)
+
+  # reorder and return
+  df <- df[new_order]
+  return(df)
 }

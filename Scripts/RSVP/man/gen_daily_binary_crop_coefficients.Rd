@@ -5,8 +5,8 @@
 \title{Generate Daily Binary Crop Coefficients (Kc)}
 \usage{
 gen_daily_binary_crop_coefficients(
-  model_start_date,
-  model_end_date,
+  start_date,
+  end_date,
   kc_dormant = 0,
   kc_growing = 0.9,
   growing_season_start_month = 3,
@@ -17,9 +17,9 @@ gen_daily_binary_crop_coefficients(
 )
 }
 \arguments{
-\item{model_start_date}{Start date of model}
+\item{start_date}{Start date of model}
 
-\item{model_end_date}{End date of model}
+\item{end_date}{End date of model}
 
 \item{kc_dormant}{coefficient during dormant period, default 0.0}
 
@@ -35,8 +35,14 @@ gen_daily_binary_crop_coefficients(
 
 \item{irr_demand_mult}{Irrigation demand multiplier, default 1}
 }
+\value{
+DataFrame
+}
 \description{
 Currently used for alfalfa and pasture. Binary coefficients for growing/dormant.
+}
+\examples{
+gen_daily_binary_crop_coefficients(start_date = as.Date("2000-01-01"), end_date = as.Date("2000-12-31"))
 }
 \author{
 Claire Kouba, Leland Scantlebury

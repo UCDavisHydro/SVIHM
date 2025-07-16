@@ -2,32 +2,48 @@
 % Please edit documentation in R/writeSWBMInputs.R
 \name{write_SWBM_curtailment_file}
 \alias{write_SWBM_curtailment_file}
-\title{Write Curtailment Fractions File for SWBM}
+\title{Write SWBM Curtailment Fractions File}
 \usage{
-write_SWBM_curtailment_file(output_dir, start_date, end_date)
+write_SWBM_curtailment_file(
+  curtail_df,
+  output_dir,
+  filename = "curtailment_fractions.txt",
+  verbose = TRUE
+)
 }
 \arguments{
-\item{output_dir}{Directory where the curtailment file will be saved.}
+\item{curtail_df}{A \code{data.frame} as returned by
+\code{create_SWBM_curtailment_df()}, with \code{Stress_Period} (Date)
+plus \code{ID_<fieldID>} numeric columns.}
 
-\item{start_date}{Start date of the simulation (as a Date object).}
+\item{output_dir}{Character. Directory in which to write the file.}
 
-\item{end_date}{End date of the simulation (as a Date object).}
+\item{filename}{Character. Name of the output file. Default:
+\code{"curtailment_fractions.txt"}.}
+
+\item{verbose}{Logical. If \code{TRUE}, prints a message before writing.
+Default: \code{TRUE}.}
 }
 \value{
-None. Saves the curtailment fraction data as \code{curtailment_fractions.txt} in \code{output_dir}.
+Invisibly returns \code{NULL}.  Side effect: writes
+\code{curtail_df} to \code{file.path(output_dir, filename)} as a
+space-delimited text file with header.
 }
 \description{
-Generates and saves a file specifying water curtailment fractions for each agricultural
-field for each stress period in the simulation. Fields without curtailments are assigned a default value of 0.0.
-}
-\details{
-The curtailment fraction file is used in the SWBM model to specify reductions in applied irrigation water
-due to local cooperative solutions (LCS) and regulatory curtailments. The fraction represents the proportion
-of normal applied water that is reduced, with values typically ranging from 0.0 (no curtailment) to 1.0
-(full curtailment).
+Writes a curtailment fractions table to disk in SWBM input format.  The
+table should come from \code{\link{create_SWBM_curtailment_df}()} and
+contain \code{Stress_Period} and \code{ID_<fieldID>} columns.
 }
 \examples{
-write_SWBM_curtailment_file(output_dir = "model_outputs",
-                            start_date = as.Date("2024-01-01"),
-                            end_date = as.Date("2024-12-31"))
+\dontrun{
+df <- create_SWBM_curtailment_df(
+  start_date   = as.Date("2020-10-01"),
+  end_date     = as.Date("2024-09-30"),
+  scenario_id  = "basecase"
+)
+write_SWBM_curtailment_file(df, output_dir = "SWBM_inputs")
+}
+}
+\seealso{
+\code{\link{create_SWBM_curtailment_df}}, \code{\link{write_SWBM_file}}
 }
