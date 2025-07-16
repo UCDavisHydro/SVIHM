@@ -89,10 +89,15 @@ et_corr <- create_SWBM_ET_correction_df(scen$start_date, scen$end_date, scenario
 
 # Scenario-specific commands (please read documentation of commands)
 # Uncomment if desired
-#
 # polygon_fields <- SWBM_no_pumping(polygon_fields)
 cell_et <- apply_native_veg_ET_override(cell_et, cell_recharge, landcover_df, landcover_desc, scen$natveg_extD)
-# SWBM_monthly_curtailment(curtail_df, date_start, date_end)
+# curtail_df <- SWBM_monthly_curtailment(curtail_df, date_start, date_end)
+
+# Optional: Plots for QA/QC
+# plot_landcover(landcover_df, landcover_desc, stress_period="1990-10-01")
+# plot_curtailment(curtail_df, stress_period="2024-08-01")
+# plot_field_continuous(et_corr, stress_period="2024-08-01", plot_title=paste('ET Correction 2024-08-01'))
+# plot_field_continuous(mar_depth_df, stress_period="2024-03-01", plot_title=paste('MAR Depth 2024-03-01'))
 
 # ------------------------------------------------------------------------------------------------#
 
@@ -147,6 +152,6 @@ update_OC_stress_periods(scen$num_days,
 # Batch File --------------------------------------------------------------
 
 # Create new batchfile for assembling the updated model
-write_scen_prep_batchfile(scen_dir = working_dir,
-                            scenario_name = scen$name)
+write_scen_prep_batchfile(scen_dir = working_dir, scenario_name = scen$name)
+
 message('Done!')

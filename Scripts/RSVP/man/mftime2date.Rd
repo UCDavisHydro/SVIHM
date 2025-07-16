@@ -7,29 +7,30 @@
 mftime2date(sp, ts, origin_date)
 }
 \arguments{
-\item{sp}{Integer or numeric vector of stress-period numbers (months since origin, 1-based).}
+\item{sp}{Integer or numeric vector. Stress-period numbers (months since origin, 1-based).}
 
-\item{ts}{Integer or numeric vector of timesteps (days within that period, 1-based).}
+\item{ts}{Integer or numeric vector. Timesteps (days within that period, 1-based).}
 
-\item{origin_date}{Date (or character coercible to Date) corresponding to \code{sp = 1, ts = 1}.}
+\item{origin_date}{Date or string coercible to Date. The "zero" time: \code{sp=0,ts=0}.}
 }
 \value{
-A \code{Date} vector, same length as \code{sp} and \code{ts}.
+A \code{Date} vector of the same length as \code{sp} and \code{ts}.
 }
 \description{
-Converts a stress-period index (in months) and timestep (in days) into an actual
-Date, relative to a given origin.  Rounds internally to the nearest day.
+Converts a stress-period index (in months) and a timestep index (in days)
+into actual Dates, relative to a given origin.
 }
 \details{
-Assumes
 \itemize{
-\item \code{sp} counts whole months since \code{origin_date} (1 ??? first month),
-\item \code{ts} counts days \emph{within} that month (1 ??? first day).
+\item Assumes \code{origin_date} corresponds to \code{sp = 0, ts = 0}.
+\item \code{sp = 1, ts = 1} ??? first day of the first stress period after the origin.
+\item Adds \code{ts} days first, then advances by \code{(sp - 1)} whole calendar-month steps.
 }
 }
 \examples{
-# origin = 1990-09-30, sp=1 ts=1 ??? 1990-10-01
-mftime2date(1, 1, origin_date = "1990-09-30")
-# two months later, day 15:
-mftime2date(3, 15, origin_date = "1990-09-30")
+# origin = 1990-09-30  (sp=0,ts=0)
+mftime2date(1, 1, "1990-09-30")  # ??? "1990-10-01"
+mftime2date(2, 10, "1990-09-30") # ??? "1990-11-10"
+mftime2date(3, 15, "1990-09-30") # ??? "1990-12-15"
+
 }

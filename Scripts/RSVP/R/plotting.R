@@ -1,4 +1,3 @@
-
 # Precipitation -----------------------------------------------------------
 
 #-------------------------------------------------------------------------------------------------#
@@ -878,6 +877,7 @@ streamflow_maps <- function(mf_dir, out_dir,
 #'
 #' @return No return value. The function generates and saves the plot files.
 #' @author {Claire Kouba, Leland Scantlebury}
+#' @import ggplot2
 #'
 #' @examples
 #' \dontrun{
@@ -956,3 +956,282 @@ plot_swbm_volumetric_budget <- function(swbm_dir, out_dir,
 }
 
 #-------------------------------------------------------------------------------------------------#
+
+#' Plot a Continuous Field Attribute on a Map
+#'
+#' Reads a field-polygon shapefile, merges in a single-period continuous attribute
+#' (e.g. curtailment fraction) from a wide data.frame, and plots it with a Viridis color scale.
+#'
+#' @param data_df      A data.frame with a \code{Stress_Period} Date column and one \code{<prefix><fieldID>}
+#'                     column per field.
+#' @param stress_period Integer, Date, or character.  Which period to plot:
+#'                     \describe{
+#'                       \item{\code{numeric}}{treated as a stress-period index (months since \code{origin_date}, 1-based) and converted to Date via \code{mftime2date()}.}
+#'                       \item{\code{character}}{coerced to Date with \code{as.Date()}.}
+#'                       \item{\code{Date}}{used directly.}
+#'                     }
+#' @param field_shp_file Character. Path to the SWBM field shapefile. Defaults to
+#'   \code{file.path(data_dir["ref_data_dir","loc"], "Landuse_20190219.shp")}.
+#' @param prefix        Character. Column-name prefix in \code{data_df} (default \code{"ID_"}).
+#' @param plot_title     Character. Plot title (default NA)
+#' @param origin_date   Date. Reference date for numeric stress periods (default \code{as.Date("1990-09-30")}).
+#' @param value_label   Character. Legend title for the fill scale (default \code{"Value"}).
+#' @param viridis_option Character. One of \code{"viridis","magma","plasma","cividis"} (default \code{"viridis"}).
+#' @param direction     Integer 1 or -1.  Scale direction (default 1).
+#' @param na_color      Character. Color for \code{NA} fields (default \code{"grey40"}).
+#'
+#' @return A \code{ggplot} object with \code{geom_sf(aes(fill = value))}.
+#' @export
+#' @importFrom sf read_sf
+#' @importFrom ggplot2 ggplot geom_sf aes scale_fill_viridis_c theme_minimal theme ggtitle
+#' @examples
+#' \dontrun{
+#' # Assuming `curtail_df` from create_SWBM_curtailment_df()
+#' p <- plot_field_continuous(
+#'   data_df      = curtail_df,
+#'   stress_period= 5,
+#'   value_label  = "Curtailment Fraction"
+#' )
+#' print(p)
+#' }
+plot_field_continuous <- function(data_df,
+                                  stress_period,
+                                  field_shp_file=file.path(data_dir["ref_data_dir","loc"],"Landuse_20190219.shp"),
+                                  prefix       = "ID_",
+                                  origin_date  = as.Date("1990-09-30"),
+                                  plot_title   = NA,
+                                  value_label  = "Value",
+                                  viridis_option = "viridis",
+                                  direction    = 1,
+                                  na_color     = "grey40") {
+  # Normalize stress_period to Date
+  if (is.numeric(stress_period)) {
+    stress_period <- mftime2date(stress_period, ts = 1, origin_date = origin_date)
+  } else if (is.character(stress_period)) {
+    stress_period <- as.Date(stress_period)
+  }
+
+  # Read fields and pull out the one-row of values
+  fields <- sf::read_sf(field_shp_file)
+  cols   <- paste0(prefix, fields$Polynmbr)
+  fields$value <- unlist(
+    data_df[data_df$Stress_Period == stress_period, cols, drop = FALSE],
+    use.names = FALSE
+  )
+
+  # Plot
+  ggplot(fields) +
+    geom_sf(aes(fill = value), color = NA) +
+    scale_fill_viridis_c(
+      name      = value_label,
+      option    = viridis_option,
+      direction = direction,
+      na.value  = na_color
+    ) +
+    ggtitle(plot_title) +
+    theme_minimal() +
+    theme(
+      axis.text  = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid = element_blank()
+    )
+}
+
+#-------------------------------------------------------------------------------------------------#
+#' Plot a Categorical Field Attribute on a Map
+#'
+#' Reads a field-polygon shapefile, merges in a single-period categorical attribute
+#' (e.g. landcover type) from a wide data.frame via a lookup table, and plots it
+#' with a discrete color scale. If no colors are provided, a default palette
+#' from \code{viridisLite::viridis()} is used.
+#'
+#' @param data_df       A data.frame with a \code{Stress_Period} Date column and one \code{<prefix><fieldID>}
+#'                      column per field, containing integer codes or names.
+#' @param lookup_df     A data.frame with two columns: \code{id} (matching codes in \code{data_df})
+#'                      and \code{name} (the category label to plot).
+#' @param stress_period Integer, Date, or character. Which period to plot, as in \code{plot_field_continuous()}.
+#' @param field_shp_file Character. Path to the SWBM field shapefile. Defaults to
+#'   \code{file.path(data_dir["ref_data_dir","loc"], "Landuse_20190219.shp")}.
+#' @param prefix         Character. Column-name prefix in \code{data_df} (default \code{"ID_"}).
+#' @param id_col         Character. Name of the code column in \code{lookup_df} (default \code{"id"}).
+#' @param name_col       Character. Name of the label column in \code{lookup_df} (default \code{"name"}).
+#' @param colors         Named character vector of hex colors, names = category labels.
+#'                      If \code{NULL}, a default viridis palette is generated.
+#' @param origin_date    Date. Reference date for numeric stress periods (default \code{as.Date("1990-09-30")}).
+#' @param plot_title     Character. Plot title (default NA)
+#' @param legend_title   Character. Legend title (default \code{"Category"}).
+#'
+#' @return A \code{ggplot} object with \code{geom_sf(aes(fill = category))}.
+#' @export
+#' @importFrom sf read_sf
+#' @importFrom ggplot2 ggplot geom_sf aes scale_fill_manual theme_minimal theme ggtitle
+#' @importFrom viridisLite viridis
+#' @examples
+#' \dontrun{
+#' # landcover_df from create_SWBM_landcover_df(), and landcover_desc with id/name columns
+#' p <- plot_field_category(
+#'   data_df      = landcover_df,
+#'   lookup_df    = landcover_desc,
+#'   stress_period= "2021-06-01",
+#'   colors       = NULL,
+#'   legend_title = "Landcover"
+#' )
+#' print(p)
+#' }
+plot_field_category <- function(data_df,
+                                lookup_df,
+                                stress_period,
+                                field_shp_file = file.path(data_dir["ref_data_dir","loc"], "Landuse_20190219.shp"),
+                                prefix         = "ID_",
+                                id_col         = "id",
+                                name_col       = "name",
+                                colors         = NULL,
+                                origin_date    = as.Date("1990-09-30"),
+                                plot_title     = NA,
+                                legend_title   = "Category") {
+
+  # Normalize stress_period to Date
+  if (is.numeric(stress_period)) {
+    stress_period <- mftime2date(stress_period, ts = 1, origin_date = origin_date)
+  } else if (is.character(stress_period)) {
+    stress_period <- as.Date(stress_period)
+  }
+
+  # Read fields and extract codes
+  fields <- sf::read_sf(field_shp_file)
+  cols   <- paste0(prefix, fields$Polynmbr)
+  codes  <- unlist(
+    data_df[data_df$Stress_Period == stress_period, cols, drop = FALSE],
+    use.names = FALSE
+  )
+
+  # Map codes to labels
+  labels <- lookup_df[[name_col]][match(codes, lookup_df[[id_col]])]
+
+  # If no colors provided, generate a discrete viridis palette
+  if (is.null(colors)) {
+    cats   <- unique(labels)
+    colors <- setNames(viridisLite::viridis(length(cats)), cats)
+  }
+
+  fields$category <- factor(labels, levels = names(colors))
+
+  # Plot
+  ggplot(fields) +
+    geom_sf(aes(fill = category), color = NA) +
+    scale_fill_manual(
+      name     = legend_title,
+      values   = colors,
+      na.value = "grey40"
+    ) +
+    ggtitle(plot_title) +
+    theme_minimal() +
+    theme(
+      axis.text  = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid = element_blank()
+    )
+}
+#-------------------------------------------------------------------------------------------------#
+
+#' Plot Field-level Curtailment Fraction
+#'
+#' Renders a map of SWBM fields colored by their water curtailment fraction for a single stress period.
+#'
+#' Wrapper around \code{plot_field_continuous()}, specialized for curtailment data.
+#'
+#' @inheritParams plot_field_continuous
+#' @param curtail_df Data frame from \code{create_SWBM_curtailment_df()}.
+#'
+#' @return A \code{ggplot} object: an \code{geom_sf()} map of fields with \code{fill} = curtailment fraction.
+#'
+#' @importFrom sf read_sf
+#' @import ggplot2
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Plot curtailment for stress period 5:
+#' p <- plot_curtailment(curtail_df, stress_period = 5)
+#' print(p)
+#' }
+plot_curtailment <- function(curtail_df,
+                             stress_period,
+                             field_shp_file=file.path(data_dir["ref_data_dir","loc"],"Landuse_20190219.shp"),
+                             origin_date=as.Date('1990-09-30'),
+                             plot_title     = NA) {
+  if (is.na(plot_title)) {
+    plot_title = paste('Curtailment Fraction ', stress_period)
+  }
+
+  plot_field_continuous(
+    data_df       = curtail_df,
+    stress_period = stress_period,
+    field_shp_file= field_shp_file,
+    prefix        = "ID_",
+    origin_date   = origin_date,
+    value_label   = "Fraction",
+    plot_title    = plot_title
+  )
+}
+
+#-------------------------------------------------------------------------------------------------#
+
+#' Plot Field-level Land Cover
+#'
+#' Renders a map of SWBM fields colored by land cover type for a single stress period,
+#' using a custom discrete color palette.
+#'
+#' Wrapper around \code{plot_field_category()}, specialized for landcover data.
+#'
+#' @inheritParams plot_field_category
+#' @param landcover_df   Data frame of landcover-by-field values (wide form).
+#' @param landcover_desc Lookup table from \code{create_SWBM_landcover_df()}, with columns \code{id} and \code{Landcover_Name}.
+#' @param lu_colors      Named character vector of hex colors for each landcover category.
+#'
+#' @return A \code{ggplot} object: an \code{geom_sf()} map of fields with \code{fill} = landcover.
+#'
+#' @importFrom sf read_sf
+#' @import ggplot2
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' p2 <- plot_landcover(
+#'   landcover_df   = landcover_df,
+#'   landcover_desc = landcover_desc,
+#'   stress_period  = "2021-06-01"
+#' )
+#' print(p2)
+#' }
+plot_landcover <- function(landcover_df,
+                           landcover_desc,
+                           stress_period,
+                           field_shp_file=file.path(data_dir["ref_data_dir","loc"],"Landuse_20190219.shp"),
+                           lu_colors = c(
+                             "Urban_Barren"      = "#8c8c8c",
+                             "Pasture_Irrigated" = "#b7c72a",
+                             "Native_Vegetation" = "#2ca25f",
+                             "Water"             = "#3182bd",
+                             "Alfalfa_Irrigated" = "#fcb632",
+                             "Grain_Irrigated"   = "#e6550d"
+                           ),
+                           origin_date=as.Date('1990-09-30'),
+                           plot_title = NA) {
+  if (is.na(plot_title)) {
+    plot_title = paste('Land Cover ', stress_period)
+  }
+  plot_field_category(
+    data_df       = landcover_df,
+    lookup_df     = landcover_desc,
+    stress_period = stress_period,
+    field_shp_file= field_shp_file,
+    prefix        = "ID_",
+    id_col        = "id",
+    name_col      = "Landcover_Name",
+    colors        = lu_colors,
+    origin_date   = origin_date,
+    plot_title    = plot_title,
+    legend_title  = "Landcover"
+  )
+}

@@ -23,6 +23,7 @@ Imports:
     dplyr,
     rnoaa,
     RMODFLOW,
+    ggplot2
 Suggests:
   readr,
   hydroGOF,

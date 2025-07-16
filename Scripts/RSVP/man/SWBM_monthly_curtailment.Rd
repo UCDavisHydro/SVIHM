@@ -13,11 +13,12 @@ SWBM_monthly_curtailment(
   field_shp = NULL,
   swbm_fields = file.path(data_dir["ref_data_dir", "loc"], "Landuse_20190219.shp"),
   min_overlap_pct = 0.05,
+  additive = FALSE,
   verbose = TRUE
 )
 }
 \arguments{
-\item{curtailment_df}{A wide data frame produced by
+\item{curtailment_df}{A wide data.frame produced by
 \code{create_SWBM_curtailment_df()}. First column must be
 \code{Stress_Period}; remaining columns are \code{ID_<fieldID>}.}
 
@@ -25,38 +26,39 @@ SWBM_monthly_curtailment(
 (months) to which the curtailment is applied.}
 
 \item{percent}{Numeric (0-1).  Scalar or vector of curtailment fractions.
-Interpreted as "fraction of \emph{normal} irrigation that is curtailed".}
+Interpreted as "fraction of \emph{normal} irrigation that is curtailed."}
 
 \item{field_list}{Optional character or numeric vector of field IDs
-(\emph{without} the \code{"ID_"} prefix).  If supplied,
-curtailment is limited to these fields.}
+(without the "ID_" prefix).  If supplied, curtailment is limited to these fields.}
 
-\item{field_shp}{Optional \code{sf} object \emph{or} path to a polygon
-shapefile/GeoPackage defining the area(s) to be curtailed.  If present,
-\code{field_list} is ignored.
+\item{field_shp}{Optional \code{sf} object or path to polygon shapefile/GeoPackage defining
+areas to be curtailed.  If present, \code{field_list} is ignored.
 \itemize{
 \item If \code{field_shp} has a column named \code{percent}, those values
-are used \emph{per polygon}.  Otherwise the scalar
-\code{percent} argument is used.
-\item The function reprojects \code{field_shp} to the CRS of
-\code{swbm_fields}.
+are used per polygon.  Otherwise the scalar \code{percent} is used.
+\item The function reprojects \code{field_shp} to the CRS of \code{swbm_fields}.
 }}
 
-\item{swbm_fields}{An \code{sf} layer of SWBM agricultural fields
-(default \code{Landuse_20190219.shp} from \code{data_dir}).  Used only when
-\code{field_shp} is supplied.}
+\item{swbm_fields}{\code{sf} layer or path to SWBM fields (default
+\code{Landuse_20190219.shp} from \code{data_dir}).  Used only in spatial mode.}
 
-\item{min_overlap_pct}{Numeric. Ignore overlaps smaller than this fraction
-(\code{0.05} = 5 \%).  Spatial curtailments only.}
+\item{min_overlap_pct}{Numeric.  Polygons covering less than this fraction of a field
+are ignored (spatial mode only).  Default \code{0.05}.}
 
-\item{verbose}{Logical; print progress messages?}
+\item{additive}{Logical; if \code{TRUE}, \emph{adds} \code{percent} to existing values
+(capped at 1.0); if \code{FALSE} (default), \emph{replaces} existing values.}
+
+\item{verbose}{Logical; print progress messages? Default \code{TRUE}.}
 }
 \value{
-The updated \code{curtailment_df} (invisible).
+The updated \code{curtailment_df}.
 }
 \description{
-Updates a \code{curtailment_df} by adding user-specified curtailments for the
-given date range.  Three mutually-exclusive modes are supported:
+Updates a \code{curtailment_df} by applying user-specified curtailments over a date range.
+You can choose to either replace the existing curtailment fractions, or add to them.
+}
+\details{
+Three mutually-exclusive modes are supported:
 \enumerate{
 \item \strong{Global}: apply \code{percent} to \emph{every} field.
 \item \strong{Field list}: apply (vectorised) \code{percent} to the specified
@@ -65,33 +67,32 @@ given date range.  Three mutually-exclusive modes are supported:
 SWBM field shapefile; per-field curtailment is
 \code{overlap_fraction * percent_field}.
 }
+\emph{Imporantly, the function does not handle temporal fractions.} The start/end dates solely are used
+to select the appropriate stress periods. If your curtailment, for example, should only be applied
+1/2 the stress period (month) simply adjust your \code{percent} for that month to 0.5. This may mean
+you will need more than one call to \code{SWBM_monthly_curtailment} to implement a curtailment
+schedule that spans multiple months, but not in their entirety.
 }
 \examples{
-\dontrun{
-# 1) Curtail everything 20 \% July-September 2024:
-curtailment_df <- SWBM_monthly_curtailment(
-  curtailment_df,
-  date_start = as.Date("2024-07-01"),
-  date_end   = as.Date("2024-09-30"),
-  percent    = 0.20
-)
+# Get polygons (requires landcover_desc, tributary_desc), empty curtail_df
+landcover_desc <- read.table(scen$landcover_desc_file, header=T)
+tributary_desc <- read_inflow_seg_file(scen$inflow_seg_file)
+polygon_fields <- read_SWBM_polygon_file(scen$polygon_file, landcover_desc, tributary_desc)
+curtail_df <- create_SWBM_curtailment_df(scen$start_date, scen$end_date, scenario_id='none')
 
-# 2) Curtail two fields by different amounts:
-curtailment_df <- SWBM_monthly_curtailment(
-  curtailment_df,
-  date_start  = as.Date("2024-05-01"),
-  date_end    = as.Date("2024-05-31"),
-  field_list  = c("1234", "5678"),
-  percent     = c(0.10, 0.25)
-)
+# All fields
+curtail_df <- SWBM_monthly_curtailment(curtail_df, '2025-03-01', '2025-03-31', percent = .6)
+plot_curtailment(curtail_df, stress_period="2025-03-01")
 
-# 3) Spatial curtailment - polygon layer with its own 'percent' column:
-curtailment_df <- SWBM_monthly_curtailment(
-  curtailment_df,
-  date_start   = as.Date("2023-04-01"),
-  date_end     = as.Date("2023-10-31"),
-  field_shp    = "path/to/2023_LCS_Fields_Clean.shp",
-  min_overlap_pct = 0.05
-)
-}
+# By field, 10 largest
+biggest_fields <- polygon_fields[order(polygon_fields$MF_Area_m2, decreasing = T),]
+biggest_fields <- biggest_fields[biggest_fields$SWBM_LU \%in\% c(1,2,3),'SWBM_id'][1:10]
+curtail_df <- SWBM_monthly_curtailment(curtail_df, '2025-04-01', '2025-04-30', percent = 1, biggest_fields)
+plot_curtailment(curtail_df, stress_period="2025-04-01")
+
+# Using a shapefile
+curt_shp_file <- file.path(data_dir["ref_data_dir","loc"], '2024_LCS_Fields_Clean.shp')
+curtail_df <- SWBM_monthly_curtailment(curtail_df, '2025-05-01', '2025-05-31', percent = 1, field_shp = curt_shp_file)
+plot_curtailment(curtail_df, stress_period="2025-05-01")
+
 }

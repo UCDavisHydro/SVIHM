@@ -428,35 +428,46 @@ calc_num_stress_periods <- function(model_start, model_end, interval='month') {
 
 #' MODFLOW Model Time to Date
 #'
-#' Converts a stress-period index (in months) and timestep (in days) into an actual
-#' Date, relative to a given origin.  Rounds internally to the nearest day.
+#' Converts a stress-period index (in months) and a timestep index (in days)
+#' into actual Dates, relative to a given origin.
 #'
-#' Assumes
-#' * \code{sp} counts whole months since \code{origin_date} (1 ??? first month),
-#' * \code{ts} counts days *within* that month (1 ??? first day).
+#' * Assumes \code{origin_date} corresponds to \code{sp = 0, ts = 0}.
+#' * \code{sp = 1, ts = 1} ??? first day of the first stress period after the origin.
+#' * Adds \code{ts} days first, then advances by \code{(sp - 1)} whole calendar-month steps.
 #'
-#' @param sp Integer or numeric vector of stress-period numbers (months since origin, 1-based).
-#' @param ts Integer or numeric vector of timesteps (days within that period, 1-based).
-#' @param origin_date Date (or character coercible to Date) corresponding to \code{sp = 1, ts = 1}.
+#' @param sp  Integer or numeric vector. Stress-period numbers (months since origin, 1-based).
+#' @param ts  Integer or numeric vector. Timesteps (days within that period, 1-based).
+#' @param origin_date  Date or string coercible to Date. The "zero" time: \code{sp=0,ts=0}.
 #'
-#' @return A \code{Date} vector, same length as \code{sp} and \code{ts}.
-#'
-#' @importFrom lubridate days months
-#' @export
+#' @return A \code{Date} vector of the same length as \code{sp} and \code{ts}.
 #'
 #' @examples
-#' # origin = 1990-09-30, sp=1 ts=1 ??? 1990-10-01
-#' mftime2date(1, 1, origin_date = "1990-09-30")
-#' # two months later, day 15:
-#' mftime2date(3, 15, origin_date = "1990-09-30")
+#' # origin = 1990-09-30  (sp=0,ts=0)
+#' mftime2date(1, 1, "1990-09-30")  # ??? "1990-10-01"
+#' mftime2date(2, 10, "1990-09-30") # ??? "1990-11-10"
+#' mftime2date(3, 15, "1990-09-30") # ??? "1990-12-15"
+#'
+#' @export
 mftime2date <- function(sp, ts, origin_date) {
+  # Coerce input
   origin_date <- as.Date(origin_date)
-  origin_date %m+%
-    lubridate::days(1) %m+%                # move to day 1 of first month
-    lubridate::months(sp - 1) %m+%         # add (sp-1) whole months
-    lubridate::days(ts - 1)                # then advance (ts-1) days within that month
-}
 
+  # Vectorize over sp & ts
+  out <- mapply(function(sp_i, ts_i) {
+    # Step 1: add ts days to origin (so ts=1 ??? origin + 1 day)
+    d <- origin_date + ts_i
+
+    # Step 2: if sp > 1, advance by (sp_i - 1) months from that date
+    if (sp_i > 1) {
+      # seq.Date with by="month" moves in calendar months
+      d <- seq(d, by = "month", length.out = sp_i)[sp_i]
+    }
+    d
+  }, sp, ts, SIMPLIFY = TRUE)
+
+  # Return as Date
+  as.Date(out)
+}
 #-------------------------------------------------------------------------------------------------#
 
 # File Management  -------------------------------------------------------------
