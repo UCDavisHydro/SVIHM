@@ -9,9 +9,17 @@ get_tributary_flows <- function(start_date=as.Date('1990-10-01'),
                                 one_regression=TRUE,
                                 use_obs=TRUE,
                                 verbose = TRUE) {
+  # Setup read DF
+  streams <- stream_metadata
+  streams['FJ','name'] <- 'FJ'
+  streams['FJ','daily_file'] <- 'USGS_11519500_WY_1942_2018.txt'
+  streams <- streams[c("FJ", setdiff(rownames(streams), "FJ")), ]
 
   #-- Read in data
-  daily_all <- read_gauge_daily_data()
+  daily_all <- read_gauge_daily_data(streams)
+
+  # Pull out empty gauges - those used in regression-based SVIHM will be added back later
+  daily_all <- daily_all[lengths(daily_all) != 0]
 
   #-- Add in new FJ data
   if (!is.null(fj_update)) {
@@ -186,16 +194,16 @@ combine_east_and_south_fork= function(tribs_list){
 #' @export
 #'
 #' @examples
-read_gauge_daily_data <-  function(sf_reg_dir=data_dir['sf_reg_dir', 'loc']){
+read_gauge_daily_data <-  function(stream_df, sf_reg_dir=data_dir['sf_reg_dir', 'loc']){
 
   # Loop over streams reading in pre-downloaded time series datasets
   daily_means_all = list()
-  for (i in 1:nrow(stream_metadata)) {
-    if (is.na(stream_metadata[i,'daily_file'])) {
-      message(paste('No obs data for stream:', stream_metadata[i,'name']))
+  for (i in 1:nrow(stream_df)) {
+    if (is.na(stream_df[i,'daily_file'])) {
+      message(paste('No obs data for stream:', stream_df[i,'name']))
       next
     }
-    df <- read.table(file.path(sf_reg_dir, stream_metadata[i,'daily_file']),
+    df <- read.table(file.path(sf_reg_dir, stream_df[i,'daily_file']),
                                        header = T,
                                        stringsAsFactors = F,
                                        sep = '\t')[,-4]
@@ -205,10 +213,10 @@ read_gauge_daily_data <-  function(sf_reg_dir=data_dir['sf_reg_dir', 'loc']){
     df$AF <- df$mean_cfs * 86400 * 2.2957e-5  # cfs to cfd, to acre-ft 2.29569e-5
 
     # Put in list
-    daily_means_all[[i]] <- df
+    daily_means_all[[ stream_df[i, "name"] ]] <- df
   }
 
-  names(daily_means_all) <- stream_metadata[!is.na(stream_metadata$daily_file), 'name']
+  #names(daily_means_all) <- stream_metadata[!is.na(stream_metadata$daily_file), 'name']
 
   return(daily_means_all)
 }
@@ -254,7 +262,9 @@ gauge_prep <- function(df, max_missing_days=3, value_col='AF', date_col='Date', 
   df <- df[!is.na(df[,value_col]),]
 
   # Replace zeros (or mysterious negative values) with a very small value
-  df[df[,value_col]<=0.0,value_col] <- 1e-5
+  if (nrow(df[df[,value_col]<=0.0,]) > 0) {
+    df[df[,value_col]<=0.0,value_col] <- 1e-5
+  }
 
   if (monthly) {
     # Get monthly

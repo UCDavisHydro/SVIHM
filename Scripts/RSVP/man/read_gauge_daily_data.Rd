@@ -4,7 +4,7 @@
 \alias{read_gauge_daily_data}
 \title{Read in River Gauge Daily Means}
 \usage{
-read_gauge_daily_data(sf_reg_dir = data_dir["sf_reg_dir", "loc"])
+read_gauge_daily_data(stream_df, sf_reg_dir = data_dir["sf_reg_dir", "loc"])
 }
 \arguments{
 \item{sf_reg_dir}{streamflow regression directory (optional, default: SVIHM/Streamflow_Regression_Model)}
