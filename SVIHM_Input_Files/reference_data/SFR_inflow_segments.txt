@@ -1,0 +1,14 @@
+subws_ID	ISEG	subws_name	stream_name	!Partition from subwatershed total
+1	1	Scott_Tailings	Scott River	!0.875
+1	2	Scott_Tailings	Sugar Creek	!0.125
+2	6	French	Miners Creek	!0.5
+2	7	French	French Creek	!0.5
+3	11	Etna	Etna Creek	!1
+4	15	Patterson	Johnson Creek	!0.148
+4	16	Patterson	Crystal Creek	!0.111
+4	18	Patterson	Patterson Creek	!0.741
+4	19	Patterson	Big Slough Drain Inflow	!NA. Calculated from drains
+5	21	Kidder	Kidder Creek	!1
+6	24	Moffett	Moffett Creek	!1
+7	27	Shackleford	Mill Creek	!1
+8	28	Shackleford	Shackleford Creek	!1

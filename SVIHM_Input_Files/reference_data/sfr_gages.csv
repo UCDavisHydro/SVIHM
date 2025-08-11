@@ -1,0 +1,5 @@
+Short_Name,Gage_Name,x,y,SFR_Seg,SFR_Reach,Row,Col,Label_Name
+FJ,USGS Scott River Fort Jones Gage (11519500),500927,4609280,30,29,61,10,USGS Gage
+LS,Lower Shackleford Creek near Mugginsville,502860,4608120,29,47,73,29,Lower Shackleford
+BY,RCD Below Youngs Dam Scott River,512861,4587430,10,1,280,129,Below Young's Dam
+AS,RCD Above Serpa Lane Scott River,512799,4602130,12,153,133,129,Above Serpa Lane

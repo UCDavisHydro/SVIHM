@@ -1,0 +1,33 @@
+Package: RSVP
+Type: Package
+Title: R Scott Valley Package (RSVP)
+Version: 0.1.0
+Authors@R: c(person("Leland", "Scantlebury", email="lscantle@ucdavis.edu", role=c("cre","aut")),
+             person("Claire", "Kouba", email="cmkouba@ucdavis.edu", role=c("aut")))
+Maintainer: Leland Scantlebury <lscantle@ucdavis.edu>
+Description: R functions for pre-processing, post-processing, and scenario development for the Scott Valley Integrated Hydrologic Model (SVIHM)
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    RColorBrewer,
+    zoo,
+    sf,
+    sp,
+    raster,
+    dataRetrieval,
+    cimir,
+    Matrix,
+    dplyr,
+    rnoaa,
+    RMODFLOW,
+    ggplot2
+Suggests:
+  readr,
+  hydroGOF,
+  remotes
+Depends: 
+    R (>= 3.5),
+    lubridate

@@ -1,0 +1,53 @@
+#===============================================================#
+#                Soil Water Budget Model (SWBM)                 #
+#===============================================================#
+
+BEGIN DISCRETIZATION
+  NMONTHS          408
+  WYSTART         1991
+  NPOLY           2119
+  NSUBWS             8
+  NLANDCOVER         6
+  NAGWELLS         167
+  NSPECWELLS         0
+  NMFRWELLS         1163
+  # MODFLOW INFO
+  MFNAME         SVIHM
+  NROWS            440
+  NCOLS            210
+  NSFR_INFLOW_SEGS  12
+END DISCRETIZATION
+
+BEGIN OPTIONS
+  DAILY_SW
+  NEIGHBOR_RULE      250
+  ABSOLUTE_IRR_DATE 5 15
+  WRITE_MODFLOW
+  WRITE_UCODE
+END OPTIONS
+
+BEGIN INPUT_FILES
+  PRECIP             precip.txt
+  ET                 ref_et.txt
+  ET_EXT_DEPTH       ET_Cells_Extinction_Depth.txt
+  ETS_TEMPLATE       SVIHM_ETS_template.txt
+  KC_FRAC            kc_values.txt
+  SFR_TEMPLATE       SFR_network.txt
+  SFR_ROUTING        SFR_routing.txt
+  SFR_SEGMENTS       SFR_inflow_segments.txt
+  SFR_IRR_FLOWS      subwatershed_irrigation_inflows.txt
+  SFR_NONIRR_FLOWS   subwatershed_nonirrigation_inflows.txt
+  WEL_TEMPLATE       SVIHM_WEL_template.txt
+  RECHARGE_ZONES     recharge_zones.txt
+  POLY_LANDCOVER     polygon_landcover_ids.txt
+  POLY_AGWELL        ag_well_list_by_polygon.txt
+  AGWELL_LOCS        ag_well_summary.txt
+  MFRWELL_LOCS       modflow_cell_to_catchment.txt
+  MFRWELL_RATES      monthly_MFR_by_catchment.txt
+  ET_ZONE_CELLS      ET_Zone_Cells.txt
+  SFR_NETWORK_JTF    SFR_network_jtf.txt
+  IRR_DITCH          irr_ditch.txt
+  MAR_DEPTH          MAR_depth.txt
+  CURTAIL_FRAC       curtailment_fractions.txt
+  ET_CORRECTION      field_et_corrections.txt
+END INPUT_FILES

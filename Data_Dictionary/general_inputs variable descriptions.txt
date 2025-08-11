@@ -1,0 +1,22 @@
+variable_name, description
+modelName, Name of the Integrated Hydrologic Model
+WYstart, Starting Water Year according to California Water Year convention (i.e. WY 1950 runs from Oct. 1 1949 to Sept. 30 1950).
+npoly, Number of distinct agricultural fields or polygons
+nlandcover, Number of distinct land use types in the model
+nAgWells, Number of agricultural wells in the model
+nMuniWells, Number of municipal wells in the model
+nSubws, Number of subwatersheds (i.e. for tributary streams) in the model
+inflow_is_vol, TRUE or FALSE value for stream inflow units (TRUE = inflow is in volumetric units per stress period)
+nSFR_inflow_segs, Number of SFR segments where tributary inflow crosses the model domain boundary
+nmonths, Number of months or stress periods in the model period
+nrows, Number of rows in the MODFLOW grid
+ncols, Number of columns in the MODFLOW grid
+UCODE/PEST, Calibration software currently being used - used to write calibration files
+Basecase/MAR/ILR/MAR_ILR, Recharge scenario
+Basecase/Flow_Lims, Low-Flow Diversion Limit scenario
+Basecase/Major_NatVeg, Major land use change scenario
+Root_Depth_Mult, Rooting depth multiplier for alfalfa crop
+
+! Below: old arguments used in GSP version of SVIHM - now moved to curtailment input file
+! 11  31  AllYears  ! alf_irr_stop_mo  alf_irr_stop_day early_alf_cutoff_scenario
+!NoCurtail  11  15  ! curtailment_scenario curtail_start_mo curtail_start_day

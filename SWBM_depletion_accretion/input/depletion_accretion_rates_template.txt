@@ -1,1 +1,0 @@
-WELL_LAY  WELL_ROW  WELL_COL  PMP_RCH_RATE  #Cell Layer, Cell Row, Cell Column, Pumping/Recharge Rate

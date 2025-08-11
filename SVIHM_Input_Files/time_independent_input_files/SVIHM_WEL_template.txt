@@ -1,0 +1,3 @@
+# MODFLOW2000 Well Package
+3226        50   AUX IFACE
+SPECIFY    0.05    501
