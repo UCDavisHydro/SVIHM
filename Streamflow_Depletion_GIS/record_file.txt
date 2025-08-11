@@ -1,5 +1,0 @@
-Streamflow Depletion RasterAcc_May01.shp
-Dry Segments Raster Acc_May01.shp
-Flow Reduction Raster Acc_May01.shp
-Streamflow Depletion RasterDep_May01.shp
-Dry Segments Raster Dep_May01.shp

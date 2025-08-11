@@ -1,2 +1,0 @@
-1.05	 1.00 	1.05	 .60 !kc_alfalfa_mult, kc_grain_mult, kc_pasture_mult, kc_noirr
-0.95	0.90	0.95	 0.60 !kc_alfalfa_mult, kc_grain_mult, kc_pasture_mult, kc_noirr - Original Values From laura
