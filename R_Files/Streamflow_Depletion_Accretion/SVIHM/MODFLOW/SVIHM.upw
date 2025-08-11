@@ -1,0 +1,123 @@
+# MODFLOW-NWT UPW Package
+  50  -1.0e+030  36  0
+  1  1
+  0  0
+  1  1
+  1  1
+  0  0
+kx1  HK  40.000000  2
+  1  NONE  kxzone1  1
+  2  NONE  kxzone2  1
+kx2  HK  18.000000  2
+  1  NONE  kxzone1  2
+  2  NONE  kxzone2  2
+kx3  HK  10.000000  2
+  1  NONE  kxzone1  3
+  2  NONE  kxzone2  3
+kx4  HK  20.000000  2
+  1  NONE  kxzone1  4
+  2  NONE  kxzone2  4
+kx5  HK  10.000000  2
+  1  NONE  kxzone1  5
+  2  NONE  kxzone2  5
+kx6  HK  28.000000  2
+  1  NONE  kxzone1  6
+  2  NONE  kxzone2  6
+kx7  HK  1000.000000  2
+  1  NONE  kxzone1  7
+  2  NONE  kxzone2  7
+kx8  HK  25.000000  2
+  1  NONE  kxzone1  8
+  2  NONE  kxzone2  8
+kx9  HK  60.000000  2
+  1  NONE  kxzone1  9
+  2  NONE  kxzone2  9
+kvar1  VANI  10  2
+  1  NONE  kxzone1  1
+  2  NONE  kxzone2  1
+kvar2  VANI  10  2
+  1  NONE  kxzone1  2
+  2  NONE  kxzone2  2
+kvar3  VANI  10  2
+  1  NONE  kxzone1  3
+  2  NONE  kxzone2  3
+kvar4  VANI  10  2
+  1  NONE  kxzone1  4
+  2  NONE  kxzone2  4
+kvar5  VANI  10  2
+  1  NONE  kxzone1  5
+  2  NONE  kxzone2  5
+kvar6  VANI  10  2
+  1  NONE  kxzone1  6
+  2  NONE  kxzone2  6
+kvar7  VANI  10  2
+  1  NONE  kxzone1  7
+  2  NONE  kxzone2  7
+kvar8  VANI  10  2
+  1  NONE  kxzone1  8
+  2  NONE  kxzone2  8
+kvar9  VANI  10  2
+  1  NONE  kxzone1  9
+  2  NONE  kxzone2  9
+sy1  SY  6.000000e-002  2
+  1  NONE  szone1  1
+  2  NONE  szone2  1
+sy2  SY  1.000000e-001  2
+  1  NONE  szone1  2
+  2  NONE  szone2  2
+sy3  SY  1.000000e-001  2
+  1  NONE  szone1  3
+  2  NONE  szone2  3
+sy4  SY  3.000000e-002  2
+  1  NONE  szone1  4
+  2  NONE  szone2  4
+sy5  SY  1.500000e-001  2
+  1  NONE  szone1  5
+  2  NONE  szone2  5
+sy6  SY  1.000000e-001  2
+  1  NONE  szone1  6
+  2  NONE  szone2  6
+sy7  SY  3.000000e-001  2
+  1  NONE  szone1  7
+  2  NONE  szone2  7
+sy8  SY  1.000000e-001  2
+  1  NONE  szone1  8
+  2  NONE  szone2  8
+sy9  SY  1.000000e-001  2
+  1  NONE  szone1  9
+  2  NONE  szone2  9  
+ss1  SS  5.000000e-005  2
+  1  NONE  szone1  1
+  2  NONE  szone2  1
+ss2  SS  5.000000e-005  2
+  1  NONE  szone1  2
+  2  NONE  szone2  2
+ss3  SS  5.000000e-005  2
+  1  NONE  szone1  3
+  2  NONE  szone2  3
+ss4  SS  5.000000e-005  2
+  1  NONE  szone1  4
+  2  NONE  szone2  4
+ss5  SS  5.000000e-005  2
+  1  NONE  szone1  5
+  2  NONE  szone2  5
+ss6  SS  5.000000e-005  2
+  1  NONE  szone1  6
+  2  NONE  szone2  6
+ss7  SS  5.000000e-005  2
+  1  NONE  szone1  7
+  2  NONE  szone2  7
+ss8  SS  5.000000e-005  2
+  1  NONE  szone1  8
+  2  NONE  szone2  8
+ss9  SS  5.000000e-005  2
+  1  NONE  szone1  9
+  2  NONE  szone2  9
+   -1
+   -1
+   -1
+   -1
+   -1
+   -1
+   -1
+   -1

@@ -1,0 +1,13 @@
+BEGIN	Parameter_Groups	Table		
+	NROW=9	NCOL=4	COLUMNLABELS	
+	GroupName	Transform	MaxChange	SenMethod
+	Conductivity	Yes	2	1
+	Vert_Anisotropy	Yes	2	1
+	Sy	No	2	1
+	Ss	Yes	2	1
+	MFR	No	2	1
+	Ditches	No	2	1
+	Streambed_K	Yes	2	1
+	Channel_Roughness	No	2	1
+	SWBM	No	2	1
+END	Parameter_Groups			

@@ -1,0 +1,40 @@
+BEGIN Prediction_Groups Table
+  NROW=36  NCOL=5 COLUMNLABELS
+  GroupName  MeasStatistic  MeasStatFlag  PlotSymbol  UseFlag
+  Jan_basecase  1.00E-08  VAR  1  yes
+  Feb_basecase  1.00E-08  VAR  2  yes
+  Mar_basecase  1.00E-08  VAR  3  yes
+  Apr_basecase  1.00E-08  VAR  4  yes
+  May_basecase  1.00E-08  VAR  5  yes
+  Jun_basecase  1.00E-08  VAR  6  yes
+  Jul_basecase  1.00E-08  VAR  7  yes
+  Aug_basecase  1.00E-08  VAR  8  yes
+  Sep_basecase  1.00E-08  VAR  9  yes
+  Oct_basecase  1.00E-08  VAR  10  yes
+  Nov_basecase  1.00E-08  VAR  11  yes
+  Dec_basecase  1.00E-08  VAR  12  yes
+  Jan_scenario  1.00E-08  VAR  1  yes
+  Feb_scenario  1.00E-08  VAR  2  yes
+  Mar_scenario  1.00E-08  VAR  3  yes
+  Apr_scenario  1.00E-08  VAR  4  yes
+  May_scenario  1.00E-08  VAR  5  yes
+  Jun_scenario  1.00E-08  VAR  6  yes
+  Jul_scenario  1.00E-08  VAR  7  yes
+  Aug_scenario  1.00E-08  VAR  8  yes
+  Sep_scenario  1.00E-08  VAR  9  yes
+  Oct_scenario  1.00E-08  VAR  10  yes
+  Nov_scenario  1.00E-08  VAR  11  yes
+  Dec_scenario  1.00E-08  VAR  12  yes
+  Jan_diff  1.00E-08  VAR  1  yes
+  Feb_diff  1.00E-08  VAR  2  yes
+  Mar_diff  1.00E-08  VAR  3  yes
+  Apr_diff  1.00E-08  VAR  4  yes
+  May_diff  1.00E-08  VAR  5  yes
+  Jun_diff  1.00E-08  VAR  6  yes
+  Jul_diff  1.00E-08  VAR  7  yes
+  Aug_diff  1.00E-08  VAR  8  yes
+  Sep_diff  1.00E-08  VAR  9  yes
+  Oct_diff  1.00E-08  VAR  10  yes
+  Nov_diff  1.00E-08  VAR  11  yes
+  Dec_diff  1.00E-08  VAR  12  yes
+END Prediction_Groups

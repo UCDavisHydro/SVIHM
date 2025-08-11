@@ -1,0 +1,1 @@
+command in ArcMap python window to run script: execfile(r'C:\Users\dtolley\Scott_Valley\Github\SVIHM\Streamflow_Depletion_GIS\Interpolate_Depletion_Accretion.py')
