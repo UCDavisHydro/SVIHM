@@ -1,5 +1,5 @@
 # Summary
-The Scott Valley Integrated Hydrologic Model (SVIHM) simulates hydrologic conditions in the Scott Valley from October 1, 1990 through September 30th, 2024 (WY1991-WY2024). It is a combination of three models (streamflow regression model, soil-water budget model (SWBM), and MODFLOW model) that are run sequentially. The files contained within this repository allow the user to run the model, post-process results, perform sensitivity analyses, perform parameter estimation, and perform linear and non-linear uncertainty analysis.
+The Scott Valley Integrated Hydrologic Model (SVIHM) simulates hydrologic conditions in the Scott Valley from October 1, 1990 through September 30th, 2024 (WY1991-WY2024). It is a combination of three models (streamflow regression model, soil-water budget model [SWBM], and MODFLOW model) that are run sequentially. The files contained within this repository allow the user to run the model, post-process results, perform sensitivity analyses, perform parameter estimation, and perform linear and non-linear uncertainty analysis. The user can also use the scripts in this repository to generate input files for a limited range of alternative water and land management scenarios.
 
 The version in this repository contains additional capability through R scripts to update SVIHM through the last month. Input data for precipitation, stream gauges, and evapotranspiration data are all downloaded automatically and incorporated into the model input files.
 
@@ -15,12 +15,11 @@ EPSG:26910
 ## A Note on the Instructions Below
 The model is setup to be easily run on computers running Microsoft Windows. Other operating systems will be require additional compilation and assembly. If this becomes a persistent request, additional files could be added.
 
+## Active Development Notice
+New users should refer to the repository and branch `UCDavisHydro\SVIHM\master`. Active development will take place on the branch `UCDavisHydro\SVIHM\SVIHM_dev`. 
+
 # Running the Model
-The first step in running SVIHM is to run a Windows batch file that assembles a `Run` folder with the MODFLOW and SWBM model files. The batch file is in the main SVIHM folder and can be run from the command line using its name:
-`
-Prepare_Basecase_Run.bat
-`
-The operations of this batch file (copying a bunch of files!) can be seen by opening the batch file in a text editor like Notepad++. When the batch file finishes running, it will report:
+The first step in running SVIHM is to run a Windows batch file that assembles a `Run` folder with the MODFLOW and SWBM model files. The batch file is in the main SVIHM folder and can be run from the Windows command line using its name: `Prepare_Basecase_Run.bat`.The operations of this batch file (copying a bunch of files!) can be seen by opening the batch file in a text editor like Notepad++. When the batch file finishes running, it will report:
 
 > Run folder populated with basecase. Model can be run using Run\Run_SVIHM.bat
 
@@ -30,7 +29,7 @@ The model can then be run by calling the `Run_SVIHM.bat` batch file in the Windo
 Updating and visualizing the model requires [R](https://cran.r-project.org/) and [RStudio](https://www.rstudio.com/). Strictly speaking, R experience is not necessary for running the R scripts but will be valuable if anything goes awry. An R package has been developed specifically for this project, called the R Scott Valley Project (`RSVP`) package, which contains a large collection of R functions for processing data files, updating the model, and visualizing data & results. Additionally, four scripts exist for working with the model, which are intended to be able to run without modification:
 
 0. `00_InstallLibraries.R` Installs the R libraries necessary to build and use the `RSVP` package (optional, recommended). The dev version of the [RMODFLOW package](https://github.com/rogiersbart/RMODFLOW) is required, which is not available on CRAN. This script will install it from GitHub.
-1. `01_InputDataUpdate.R` Downloads the latest precipitation, stream gauge, and evapotranspiration data
+1. `01_InputDataUpdate.R` Downloads the latest precipitation, stream gauge, and evapotranspiration data from public data sources
 2. `02_BaseUpdate.R` uses the newly downloaded data to write SVIHM input files
 3. `03_UpdateVisualization.R` visualizes the newly downloaded data. *This script is under construction*
 4. `04_ModelOutputVisualization.R` creates a large number of graphs showcasing the model fitness and results
