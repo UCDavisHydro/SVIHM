@@ -12,7 +12,7 @@ scen <- list(
   'name'             = 'natveg_high',  # Scenario name, will be part of directory name
   'type'             = 'update',       # Basecase, Update, or PRMS - where to get meteorological inputs
   'natveg_kc'        = 1.0,            # Native vegetation daily ET coefficient, default = 0.6
-  'natveg_rd'        = 1.8288,         # Native vegetation rooting depth (m), default = 2.4384 (8 ft)
+  'natveg_rd'        = 2.0,         # Native vegetation rooting depth (m), default = 2.4384 (8 ft)
   'natveg_rd_mult'   = 1.0,
   'natveg_extD'      = 6.55            # Native vegetation extinction depth (m), default 0.5
 )
