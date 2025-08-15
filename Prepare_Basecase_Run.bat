@@ -12,7 +12,7 @@ if not exist "Run\MODFLOW" mkdir Run\MODFLOW
 :: Copy scenario independant MODFLOW model files
 xcopy SVIHM_Input_Files\time_independent_input_files\ET_Zone_Cells.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\ET_Cells_Extinction_Depth.txt Run\SWBM /Y /I
-xcopy SVIHM_Input_Files\time_independent_input_files\recharge_zones.txt Run\SWBM /Y /I
+xcopy SVIHM_Input_Files\time_independent_input_files\MF_Polygon_Overlaps.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\SFR_routing.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\SFR_inflow_segments.txt Run\SWBM /Y /I
 xcopy SVIHM_Input_Files\time_independent_input_files\ag_well_summary.txt Run\SWBM /Y /I

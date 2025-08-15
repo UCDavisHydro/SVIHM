@@ -16,6 +16,7 @@ BEGIN DISCRETIZATION
   NROWS            440
   NCOLS            210
   NSFR_INFLOW_SEGS  12
+  NMFOVERLAPS    41832
 END DISCRETIZATION
 
 BEGIN OPTIONS
@@ -38,7 +39,7 @@ BEGIN INPUT_FILES
   SFR_IRR_FLOWS      subwatershed_irrigation_inflows.txt
   SFR_NONIRR_FLOWS   subwatershed_nonirrigation_inflows.txt
   WEL_TEMPLATE       SVIHM_WEL_template.txt
-  RECHARGE_ZONES     recharge_zones.txt
+  MF_OVERLAP         MF_Polygon_Overlaps.txt
   POLY_LANDCOVER     polygon_landcover_ids.txt
   POLY_AGWELL        ag_well_list_by_polygon.txt
   AGWELL_LOCS        ag_well_summary.txt

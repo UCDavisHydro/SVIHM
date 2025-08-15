@@ -63,7 +63,10 @@ cell_et <- read_SWBM_ET_inputs(file_cells = file.path(data_dir["time_indep_dir",
                                       file_ext_depth = file.path(data_dir["time_indep_dir","loc"], "ET_Cells_Extinction_Depth.txt"))
 
 # Matrix mapping SWBM fields to MODFLOW cells
-cell_recharge  <- as.matrix(read.table(header = F,  file = file.path(data_dir["time_indep_dir","loc"], "recharge_zones.txt")))
+#cell_recharge  <- as.matrix(read.table(header = F,  file = file.path(data_dir["time_indep_dir","loc"], "recharge_zones.txt")))
+
+# Read Field-Cell (SWBM-MODFLOW) overlap file
+cell_overlap <- read.table(file.path(data_dir['time_indep_dir','loc'], 'MF_Polygon_Overlaps.txt'), header=T)
 
 # Update Native Vegetation Rooting Depth
 nat_id <- landcover_desc[landcover_desc['Landcover_Name']=='Native_Vegetation', 'id']
@@ -89,7 +92,7 @@ et_corr <- create_SWBM_ET_correction_df(scen$start_date, scen$end_date, scenario
 
 # Scenario-specific commands (please read documentation of commands) - Uncomment if desired
 # polygon_fields <- SWBM_no_pumping(polygon_fields)
-# cell_et <- apply_native_veg_ET_override(cell_et, cell_recharge, landcover_df, landcover_desc, scen$natveg_extD)
+# cell_et <- apply_native_veg_ET_override(cell_et, cell_overlap, landcover_df, landcover_desc, scen$natveg_extD)
 # curtail_df <- SWBM_monthly_curtailment(curtail_df, date_start, date_end)
 
 # Optional: Plots for QA/QC

@@ -6,70 +6,75 @@
 \usage{
 apply_native_veg_ET_override(
   et_list,
-  rech_cell_map,
+  cell_overlap,
   landcover_df,
   landcover_desc,
   natveg_ExtD,
-  fraction_cutoff = 0.5
+  fraction_cutoff = 0.5,
+  respect_existing_ext_depth = T
 )
 }
 \arguments{
 \item{et_list}{A list with two numeric matrices:
 \describe{
-\item{\code{ET_cells}}{0/1 mask of cells where ET from GW is active}
+\item{\code{ET_cells}}{fractional weight (0-1) applied to ET-from-GW per cell}
 \item{\code{ET_ext_depth}}{per-cell extinction depths (m)}
 }
 As returned by \code{\link{read_SWBM_ET_inputs}}.}
 
-\item{rech_cell_map}{Integer matrix mapping each model cell to a field ID
-(as in \code{recharge_zones.txt}).}
+\item{cell_overlap}{Data.frame linking fields to MODFLOW cells, with columns
+\code{Polygon_id}, \code{Row}, \code{Col}, \code{Overlap_Weight} (0-1 per field-cell overlap).
+Rows corresponding to the same cell are summed (capped at 1).}
 
 \item{landcover_df}{Data.frame of monthly field IDs, with columns
-\code{ID_<fieldID>}.  Each entry is the landcover code for that field
+\code{ID_<fieldID>}. Each entry is the landcover code for that field
 in that month.}
 
 \item{landcover_desc}{Data.frame with columns \code{id} and \code{Landcover_Name},
 used to find the numeric code for "Native" vegetation.}
 
-\item{natveg_ExtD}{Numeric. The new extinction depth (m) to assign
-in cells of predominantly native vegetation.}
+\item{natveg_ExtD}{Numeric. The new extinction depth (m) to assign.}
 
-\item{fraction_cutoff}{Numeric in (0,1].  Fields whose native-vegetation code
+\item{fraction_cutoff}{Numeric in (0,1]. Fields whose native-vegetation code
 occurs in at least this fraction of months are treated as "native-veg fields."
 Default: 0.5.}
+
+\item{respect_existing_ext_depth}{Logical. If \code{TRUE} (default), only assigns
+\code{natveg_ExtD} where a cell previously had \code{ET_cells == 0} and
+\code{ET_ext_depth == 0} but now receives ET (fraction > 0). If \code{FALSE},
+assigns \code{natveg_ExtD} to all cells with fraction > 0.}
 }
 \value{
 A list with the same structure as \code{et_list}, but with
 \code{ET_cells} and \code{ET_ext_depth} modified:
 \itemize{
-\item Cells in a native-vegetation field have \code{ET_cells=1}.
-\item Cells where \code{ET_cells} was 0 and belong to such a field
-get \code{ET_ext_depth = natveg_ExtD}.
+\item \code{ET_cells}: fractional values (0-1) equal to the summed overlap
+fraction of native-veg fields touching each cell (capped at 1).
+\item \code{ET_ext_depth}: updated according to \code{respect_existing_ext_depth}.
 }
 }
 \description{
 For any field that is native vegetation at least a given fraction of the
 simulation, activates ET-from-groundwater and sets a scenario-specific
 extinction depth in that field's cells.  Cells in the "discharge zone"
-(where ET_from_GW was already active) keep their original depth.
+(where ET_from_GW was already active) optionally can keep their original ext. depth.
 }
 \examples{
 \dontrun{
 et_inputs <- read_SWBM_ET_inputs("ET_Zone_Cells.txt",
                                  "ET_Cells_Extinction_Depth.txt")
-rech_cell_map <- as.matrix(
-  read.table("recharge_zones.txt", header = FALSE)
-)
-landcov_tbl <- read.table("polygon_landcover_ids.txt", header = TRUE)
+cell_overlap <- read.table("MF_Polygon_Overlaps.txt", header = TRUE)
+landcov_tbl  <- read.table("polygon_landcover_ids.txt", header = TRUE)
 landcov_desc <- read.table("landcover_table.txt", header = TRUE)
 
 updated <- apply_native_veg_ET_override(
-  et_list               = et_inputs,
-  rech_cell_map         = rech_cell_map,
-  landcover_df        = landcov_tbl,
-  landcover_desc        = landcov_desc,
-  natveg_ExtD           = 3.05,
-  fraction_cutoff        = 0.5
+  et_list                    = et_inputs,
+  cell_overlap               = cell_overlap,
+  landcover_df               = landcov_tbl,
+  landcover_desc             = landcov_desc,
+  natveg_ExtD                = 3.05,
+  fraction_cutoff            = 0.5,
+  respect_existing_ext_depth = TRUE
 )
 write_SWBM_ET_inputs(updated, output_dir = "model_outputs")
 }
