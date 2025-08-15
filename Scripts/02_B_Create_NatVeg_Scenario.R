@@ -9,7 +9,7 @@ library(sf)
 
 # Scenario Settings -----------------------------------------------------
 scen <- list(
-  'name'             = 'natveg',       # Scenario name, will be part of directory name
+  'name'             = 'nv_all',       # Scenario name, will be part of directory name
   'type'             = 'update',       # Basecase, Update, or PRMS - where to get meteorological inputs
   'natveg_kc'        = 0.6,            # Native vegetation daily ET coefficient, default = 0.6
   'natveg_rd'        = 2.4384,         # Native vegetation rooting depth (m), default = 2.4384 (8 ft)
@@ -52,7 +52,7 @@ subws_inflows <- streamflow_curtailment(subws_inflows, percent = 1, date_start =
 
 # Land use by field by month
 # Valid scenario_ids are basecase, nv_gw_mix, and nv_all
-landcover_df <- create_SWBM_landcover_df(scenario_id = 'nv_all',
+landcover_df <- create_SWBM_landcover_df(scenario_id = scen$name,
                                          scen$start_date,
                                          scen$end_date,
                                          polygon_fields,
