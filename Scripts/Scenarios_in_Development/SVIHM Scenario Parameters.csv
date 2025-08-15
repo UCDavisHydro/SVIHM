@@ -1,0 +1,5 @@
+Scenario ID,Status,natveg_kc,natveg_rd,natveg_rd_mult,natveg_extD,start_date,end_date
+basecase,Final,,,,,,
+nv_all,Final,,,,,,
+mar,In Development,,,,,,
+irr_eff_0.1,In Development,,,,,,
