@@ -21,6 +21,7 @@ write_SWBM_main_input_file(
   nSFR_inflow_segs = 12,
   nrows = 440,
   ncols = 210,
+  nmfoverlaps = 41832,
   neighborRuleYearDay = 250,
   absoluteIrrDate = c(5, 15),
   writeUCODE = TRUE,
@@ -36,7 +37,7 @@ write_SWBM_main_input_file(
   sfr_irr_flows_file = "subwatershed_irrigation_inflows.txt",
   sfr_nonirr_flows_file = "subwatershed_nonirrigation_inflows.txt",
   wel_template_file = "SVIHM_WEL_template.txt",
-  recharge_zones_file = "recharge_zones.txt",
+  mf_overlap_file = "MF_Polygon_Overlaps.txt",
   poly_landcover_file = "polygon_landcover_ids.txt",
   poly_agwell_file = "ag_well_list_by_polygon.txt",
   agwell_locs_file = "ag_well_summary.txt",
@@ -89,6 +90,8 @@ write_SWBM_main_input_file(
 
 \item{ncols}{Integer. Number of grid columns (\code{NCOLS}). Default: \code{210}.}
 
+\item{nmfoverlaps}{Integer. Number of cell-polygon overlaps in \code{mf_overlaps_file}. Default: \code{41832},}
+
 \item{neighborRuleYearDay}{Integer. Neighbor rule cutoff day (\code{NEIGHBOR_RULE}). Default: \code{250}.}
 
 \item{absoluteIrrDate}{Integer(2). Absolute irrigation cutoff date (\code{ABSOLUTE_IRR_DATE}) as \code{c(month, day)}. Default: \code{c(5, 15)}.}
@@ -119,7 +122,7 @@ write_SWBM_main_input_file(
 
 \item{wel_template_file}{Character. WEL_TEMPLATE file. Default: \code{"SVIHM_WEL_template.txt"}.}
 
-\item{recharge_zones_file}{Character. RECHARGE_ZONES file. Default: \code{"recharge_zones.txt"}.}
+\item{mf_overlap_file}{Character. MF_OVERLAP file. Default: \code{"MF_Polygon_Overlaps.txt"}.}
 
 \item{poly_landcover_file}{Character. POLY_LANDCOVER file. Default: \code{"polygon_landcover_ids.txt"}.}
 

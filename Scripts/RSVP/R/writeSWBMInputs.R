@@ -265,6 +265,7 @@ write_SWBM_sp_days_file <- function(num_days_df, output_dir, filename='stress_pe
 #' @param nSFR_inflow_segs Integer. Number of SFR inflow segments (`NSFR_INFLOW_SEGS`). Default: `12`.
 #' @param nrows Integer. Number of grid rows (`NROWS`). Default: `440`.
 #' @param ncols Integer. Number of grid columns (`NCOLS`). Default: `210`.
+#' @param nmfoverlaps Integer. Number of cell-polygon overlaps in `mf_overlaps_file`. Default: `41832`,
 #' @param neighborRuleYearDay Integer. Neighbor rule cutoff day (`NEIGHBOR_RULE`). Default: `250`.
 #' @param absoluteIrrDate Integer(2). Absolute irrigation cutoff date (`ABSOLUTE_IRR_DATE`) as `c(month, day)`. Default: `c(5, 15)`.
 #' @param writeUCODE Logical. Write UCODE block (`WRITE_UCODE`). Default: `TRUE`.
@@ -283,7 +284,7 @@ write_SWBM_sp_days_file <- function(num_days_df, output_dir, filename='stress_pe
 #' @param sfr_nonirr_flows_file Character. SFR_NONIRR_FLOWS file. Default: `"subwatershed_nonirrigation_inflows.txt"`.
 #' @param wel_template_file Character. WEL_TEMPLATE file. Default: `"SVIHM_WEL_template.txt"`.
 #'
-#' @param recharge_zones_file Character. RECHARGE_ZONES file. Default: `"recharge_zones.txt"`.
+#' @param mf_overlap_file Character. MF_OVERLAP file. Default: `"MF_Polygon_Overlaps.txt"`.
 #' @param poly_landcover_file Character. POLY_LANDCOVER file. Default: `"polygon_landcover_ids.txt"`.
 #' @param poly_agwell_file Character. POLY_AGWELL file. Default: `"ag_well_list_by_polygon.txt"`.
 #' @param agwell_locs_file Character. AGWELL_LOCS file. Default: `"ag_well_summary.txt"`.
@@ -333,6 +334,7 @@ write_SWBM_main_input_file <- function(
     nSFR_inflow_segs       = 12,
     nrows                  = 440,
     ncols                  = 210,
+    nmfoverlaps            = 41832,
     neighborRuleYearDay    = 250,
     absoluteIrrDate        = c(5, 15),
     writeUCODE             = TRUE,
@@ -348,7 +350,8 @@ write_SWBM_main_input_file <- function(
     sfr_irr_flows_file     = "subwatershed_irrigation_inflows.txt",
     sfr_nonirr_flows_file  = "subwatershed_nonirrigation_inflows.txt",
     wel_template_file      = "SVIHM_WEL_template.txt",
-    recharge_zones_file    = "recharge_zones.txt",
+#    recharge_zones_file    = "recharge_zones.txt",
+    mf_overlap_file        = "MF_Polygon_Overlaps.txt",
     poly_landcover_file    = "polygon_landcover_ids.txt",
     poly_agwell_file       = "ag_well_list_by_polygon.txt",
     agwell_locs_file       = "ag_well_summary.txt",
@@ -392,6 +395,7 @@ write_SWBM_main_input_file <- function(
   writeLines(sprintf("  MFNAME            %s", modelName), con)
   writeLines(sprintf("  NROWS             %d", nrows), con)
   writeLines(sprintf("  NCOLS             %d", ncols), con)
+  writeLines(sprintf("  NMFOVERLAPS       %d", nmfoverlaps),con)
   writeLines(sprintf("  NSFR_INFLOW_SEGS  %d", nSFR_inflow_segs), con)
   writeLines("END DISCRETIZATION", con)
 
@@ -420,7 +424,8 @@ write_SWBM_main_input_file <- function(
   writeLines(sprintf("  SFR_IRR_FLOWS      %s", sfr_irr_flows_file), con)
   writeLines(sprintf("  SFR_NONIRR_FLOWS   %s", sfr_nonirr_flows_file), con)
   writeLines(sprintf("  WEL_TEMPLATE       %s", wel_template_file), con)
-  writeLines(sprintf("  RECHARGE_ZONES     %s", recharge_zones_file), con)
+#  writeLines(sprintf("  RECHARGE_ZONES     %s", recharge_zones_file), con)
+  writeLines(sprintf("  MF_OVERLAP         %s", mf_overlap_file), con)
   writeLines(sprintf("  POLY_LANDCOVER     %s", poly_landcover_file), con)
   writeLines(sprintf("  POLY_AGWELL        %s", poly_agwell_file), con)
   writeLines(sprintf("  AGWELL_LOCS        %s", agwell_locs_file), con)
@@ -1227,33 +1232,37 @@ write_SWBM_ET_inputs <- function(et_list,
 #' For any field that is native vegetation at least a given fraction of the
 #' simulation, activates ET-from-groundwater and sets a scenario-specific
 #' extinction depth in that field's cells.  Cells in the "discharge zone"
-#' (where ET_from_GW was already active) keep their original depth.
+#' (where ET_from_GW was already active) optionally can keep their original ext. depth.
 #'
 #' @param et_list A list with two numeric matrices:
 #'   \describe{
-#'     \item{\code{ET_cells}}{0/1 mask of cells where ET from GW is active}
+#'     \item{\code{ET_cells}}{fractional weight (0-1) applied to ET-from-GW per cell}
 #'     \item{\code{ET_ext_depth}}{per-cell extinction depths (m)}
 #'   }
 #'   As returned by \code{\link{read_SWBM_ET_inputs}}.
-#' @param rech_cell_map Integer matrix mapping each model cell to a field ID
-#'   (as in \code{recharge_zones.txt}).
+#' @param cell_overlap Data.frame linking fields to MODFLOW cells, with columns
+#'   \code{Polygon_id}, \code{Row}, \code{Col}, \code{Overlap_Weight} (0-1 per field-cell overlap).
+#'   Rows corresponding to the same cell are summed (capped at 1).
 #' @param landcover_df Data.frame of monthly field IDs, with columns
-#'   \code{ID_<fieldID>}.  Each entry is the landcover code for that field
+#'   \code{ID_<fieldID>}. Each entry is the landcover code for that field
 #'   in that month.
 #' @param landcover_desc Data.frame with columns \code{id} and \code{Landcover_Name},
 #'   used to find the numeric code for "Native" vegetation.
-#' @param natveg_ExtD Numeric. The new extinction depth (m) to assign
-#'   in cells of predominantly native vegetation.
-#' @param fraction_cutoff Numeric in (0,1].  Fields whose native-vegetation code
+#' @param natveg_ExtD Numeric. The new extinction depth (m) to assign.
+#' @param fraction_cutoff Numeric in (0,1]. Fields whose native-vegetation code
 #'   occurs in at least this fraction of months are treated as "native-veg fields."
 #'   Default: 0.5.
+#' @param respect_existing_ext_depth Logical. If \code{TRUE} (default), only assigns
+#'   \code{natveg_ExtD} where a cell previously had \code{ET_cells == 0} and
+#'   \code{ET_ext_depth == 0} but now receives ET (fraction > 0). If \code{FALSE},
+#'   assigns \code{natveg_ExtD} to all cells with fraction > 0.
 #'
 #' @return A list with the same structure as \code{et_list}, but with
 #'   \code{ET_cells} and \code{ET_ext_depth} modified:
 #'   \itemize{
-#'     \item Cells in a native-vegetation field have \code{ET_cells=1}.
-#'     \item Cells where \code{ET_cells} was 0 and belong to such a field
-#'       get \code{ET_ext_depth = natveg_ExtD}.
+#'     \item \code{ET_cells}: fractional values (0-1) equal to the summed overlap
+#'           fraction of native-veg fields touching each cell (capped at 1).
+#'     \item \code{ET_ext_depth}: updated according to \code{respect_existing_ext_depth}.
 #'   }
 #'
 #' @export
@@ -1262,35 +1271,34 @@ write_SWBM_ET_inputs <- function(et_list,
 #' \dontrun{
 #' et_inputs <- read_SWBM_ET_inputs("ET_Zone_Cells.txt",
 #'                                  "ET_Cells_Extinction_Depth.txt")
-#' rech_cell_map <- as.matrix(
-#'   read.table("recharge_zones.txt", header = FALSE)
-#' )
-#' landcov_tbl <- read.table("polygon_landcover_ids.txt", header = TRUE)
+#' cell_overlap <- read.table("MF_Polygon_Overlaps.txt", header = TRUE)
+#' landcov_tbl  <- read.table("polygon_landcover_ids.txt", header = TRUE)
 #' landcov_desc <- read.table("landcover_table.txt", header = TRUE)
 #'
 #' updated <- apply_native_veg_ET_override(
-#'   et_list               = et_inputs,
-#'   rech_cell_map         = rech_cell_map,
-#'   landcover_df        = landcov_tbl,
-#'   landcover_desc        = landcov_desc,
-#'   natveg_ExtD           = 3.05,
-#'   fraction_cutoff        = 0.5
+#'   et_list                    = et_inputs,
+#'   cell_overlap               = cell_overlap,
+#'   landcover_df               = landcov_tbl,
+#'   landcover_desc             = landcov_desc,
+#'   natveg_ExtD                = 3.05,
+#'   fraction_cutoff            = 0.5,
+#'   respect_existing_ext_depth = TRUE
 #' )
 #' write_SWBM_ET_inputs(updated, output_dir = "model_outputs")
 #' }
 apply_native_veg_ET_override <- function(et_list,
-                                         rech_cell_map,
+                                         cell_overlap,
                                          landcover_df,
                                          landcover_desc,
                                          natveg_ExtD,
-                                         fraction_cutoff = 0.5) {
+                                         fraction_cutoff = 0.5,
+                                         respect_existing_ext_depth = T) {
   # find native-vegetation code
   natveg_code <- landcover_desc$id[grep("Native", landcover_desc$Landcover_Name)]
   # identify field columns (ID_<fieldID>)
   field_cols <- grep("^ID_", names(landcover_df), value = TRUE)
   # compute fraction of months native-veg per field
-  frac_natveg <- vapply(landcover_df[field_cols], function(col) mean(col == natveg_code),numeric(1)
-  )
+  frac_natveg <- vapply(landcover_df[field_cols], function(col) mean(col == natveg_code),numeric(1))
   # fields meeting or exceeding cutoff
   natveg_cols <- field_cols[frac_natveg >= fraction_cutoff]
   # extract numeric field IDs
@@ -1300,13 +1308,32 @@ apply_native_veg_ET_override <- function(et_list,
   ET_cells     <- et_list$ET_cells
   ET_ext_depth <- et_list$ET_ext_depth
 
-  # mask of cells belonging to native-veg fields
-  mask <- rech_cell_map %in% natveg_field_ids
+  # # mask of cells belonging to native-veg fields
+  # mask <- rech_cell_map %in% natveg_field_ids
+  #
+  # # update extinction depth where ET was originally off
+  # ET_ext_depth[mask & ET_cells == 0] <- natveg_ExtD
+  # # activate ET from GW in all native-veg cells
+  # ET_cells[mask] <- 1
 
-  # update extinction depth where ET was originally off
-  ET_ext_depth[mask & ET_cells == 0] <- natveg_ExtD
-  # activate ET from GW in all native-veg cells
-  ET_cells[mask] <- 1
+  # build ET_cells with fractional values from overlaps
+  sel <- cell_overlap$Polygon_id %in% natveg_field_ids
+  if (any(sel)) {
+    sums <- aggregate(Overlap_Weight ~ Row + Col, data = cell_overlap[sel,], sum, na.rm = TRUE)
+    vals <- pmin(1.0, sums$Overlap_Weight)
+    ET_cells[cbind(sums$Row, sums$Col)] <- vals
+  }
+
+  # update extinction depth
+  if (respect_existing_ext_depth) {
+    # Only update if had no existing ET or ext. depth AND now should have ET
+    to_set <- (et_list$ET_cells == 0) & (ET_ext_depth == 0) & (ET_cells > 0)
+    ET_ext_depth[to_set] <- natveg_ExtD
+  } else {
+    # Will update regardless of existing values
+    to_set <- (ET_cells > 0)
+    ET_ext_depth[to_set] <- natveg_ExtD
+  }
 
   # return updated list
   list(
