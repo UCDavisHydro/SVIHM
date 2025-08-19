@@ -118,8 +118,6 @@ Stream_Regression_dir = file.path(svihm_dir, "Streamflow_Regression_Model")
 input_files_dir = file.path(svihm_dir, "SVIHM_Input_Files")
 time_indep_dir = file.path(svihm_dir, "SVIHM_Input_Files", "time_independent_input_files")
 ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
-## Directory used to archive the precip and ET files for different scenarios
-scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
 # Directory for connecting to the database
 dms_dir = file.path(dirname(svihm_dir), "SiskiyouGSP2022", "Data_Management_System")
 # Folder for collecting outputs from various scenarios for comparison plots
@@ -1026,7 +1024,7 @@ if(tolower(recharge_scenario) == "mar_ilr_max"){
 
 #  precip.txt ----------------------------------------------------
 
-ppt_filename1=file.path(scenario_dev_dir,"precip_regressed.txt")
+ppt_filename1=file.path(data_dir['scenario_dev_dir_old','loc'],"precip_regressed.txt")
 ppt_filename2=file.path(SWBM_file_dir,"precip.txt")
 
 if(!file.exists(ppt_filename1)){
@@ -1076,7 +1074,7 @@ write.table(precip, file = ppt_filename2,
 
 #  ref_et.txt ----------------------------------------------------
 
-et_filename1=file.path(scenario_dev_dir,"ref_et_monthly.txt")
+et_filename1=file.path(data_dir['scenario_dev_dir_old','loc'],"ref_et_monthly.txt")
 et_filename2=file.path(SWBM_file_dir,"ref_et.txt")
 
 if(!file.exists(et_filename1)){

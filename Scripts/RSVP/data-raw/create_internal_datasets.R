@@ -11,15 +11,16 @@ svihm_dir <- file.path('../../')
 data_dir <- read.table(text=
                          'key              rel_loc
                     svihm_dir        .
-                    input_files_dir  SVIHM_Input_Files
-                    time_indep_dir   SVIHM_Input_Files/time_independent_input_files
-                    ref_data_dir     SVIHM_Input_Files/reference_data
-                    ref_plot_dir     SVIHM_Input_Files/reference_data_for_plots
-                    scenario_dir     Scenarios
-                    scenario_dev_dir SVIHM_Input_Files/Scenario_Development
-                    update_dir       SVIHM_Input_Files/Updates
-                    sf_reg_dir       Streamflow_Regression_Model/
-                    key_dir          Scripts/API_keys
+                    input_files_dir       SVIHM_Input_Files
+                    time_indep_dir        SVIHM_Input_Files/time_independent_input_files
+                    ref_data_dir          SVIHM_Input_Files/reference_data
+                    ref_plot_dir          SVIHM_Input_Files/reference_data_for_plots
+                    scenario_dir          Scenarios
+                    scenario_dev_dir_old  SVIHM_Input_Files/Scenario_Development
+                    update_dir            SVIHM_Input_Files/Updates
+                    sf_reg_dir            Streamflow_Regression_Model/
+                    key_dir               Scripts/API_keys
+                    scenario_dev_dir      Scripts/Scenarios
                    ', header=T, row.names=1)
 
 # Add relative path to create "exact" location column

@@ -81,8 +81,6 @@ Stream_Regression_dir = file.path(svihm_dir, "Streamflow_Regression_Model")
 input_files_dir = file.path(svihm_dir, "SVIHM_Input_Files")
 time_indep_dir = file.path(svihm_dir, "SVIHM_Input_Files", "time_independent_input_files")
 ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
-## Directory used to archive the precip and ET files for different scenarios
-scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
 # Directory for connecting to the database
 dms_dir = file.path(dirname(svihm_dir), "SiskiyouGSP2022", "Data_Management_System")
 # Folder for collecting outputs from various scenarios for comparison plots
@@ -766,7 +764,7 @@ write.table(kc_grain_df, file = file.path(SWBM_file_dir, "kc_grain.txt"),
 
 #BEFORE USE: check to see that updated end model year propogates to analyses script (?)
 
-file1=file.path(scenario_dev_dir,"precip_regressed.txt")
+file1=file.path(data_dir['scenario_dev_dir_old','loc'],"precip_regressed.txt")
 file2=file.path(SWBM_file_dir,"precip.txt")
 
 if(!file.exists(file1)){
@@ -786,7 +784,7 @@ file.copy(from=file1, to = file2, overwrite=T)
 # declare_dir_in_analyses_script = FALSE #Prevents the input_analyses script from overwriting directories
 # source(file.path(input_files_dir,'SVIHM_input_analyses.R'))
 
-file1=file.path(scenario_dev_dir,"ref_et_monthly.txt")
+file1=file.path(data_dir['scenario_dev_dir_old','loc'],"ref_et_monthly.txt")
 file2=file.path(SWBM_file_dir,"ref_et.txt")
 
 if(!file.exists(file1)){
