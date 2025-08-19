@@ -97,3 +97,37 @@ scenario_setup <- function(scen, start_year=1991) {
 
   return(scen)
 }
+
+
+#' Save Selected Scenario Parameters in a CSV
+#'
+#' Stores parameters in a consistent CSV format to facilitate tabular inter-
+#' scenario comparisons. Writes the CSV file to the location specified
+#' in `working_directory`.
+#'
+#' @param scen A named list representing the scenario to be configured. Must include:
+#'   \itemize{
+#'     \item `name` - character; scenario name (used for output directory naming).
+#'     \item `type` - character; scenario type: one of `"BASECASE"`, `"UPDATE"`, or `"PRMS"` (case-insensitive).
+#'   }
+#'
+#' @working_dir Directory in which to save the CSV file.
+#'
+#'
+#' @return None. Saves a .csv file in the working directory.
+#'
+#' @export
+#' @examples
+#' save_scen_param_file(scen, working_dir)
+
+
+save_scen_param_file = function(scen, #list containing scenario parameters
+                                working_dir){
+  leave_out_info = names(scen)[grepl(pattern = "dir", x=names(scen)) |
+                                 grepl(pattern = "file", x = names(scen)) |
+                                 grepl(pattern = "num_days", x = names(scen))]
+  keep_info = names(scen)[!(names(scen) %in% leave_out_info)]
+  params_tab = as.data.frame(scen[keep_info])
+  scen_csv_name = paste0(scen$full_name, "_parameter_summary.csv")
+  write.csv(x = params_tab, file =file.path(working_dir, scen_csv_name), row.names = F)
+}
