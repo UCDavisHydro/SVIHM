@@ -35,7 +35,6 @@ if(dev_mode){
   ref_data_dir = file.path(svihm_dir, "SVIHM_Input_Files", "reference_data")
   ## Directory used to archive the input files for each scenario
   model_inputs_dir = file.path(svihm_dir, "SVIHM_Input_Files","Historical_WY1991_2018")
-  scenario_dev_dir = file.path(svihm_dir, "SVIHM_Input_Files", "Scenario_Development")
   ## Directories for running the scenarios (files copied at end of script)
   SWBM_file_dir = file.path(svihm_dir, "SWBM", "up2018")
   MF_file_dir = file.path(svihm_dir, "MODFLOW","up2018")
@@ -481,7 +480,7 @@ write_swbm_precip_input_file=function(){
                                     year(daily_precip_updated$Date), sep = "/")
   daily_precip_updated$PRCP = as.character(daily_precip_updated$PRCP / 1000) #convert to meters
 
-  write.table(daily_precip_updated, file = file.path(scenario_dev_dir, "precip_regressed.txt"),
+  write.table(daily_precip_updated, file = file.path(data_dir['scenario_dev_dir_old','loc'], "precip_regressed.txt"),
               sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 }
@@ -598,7 +597,7 @@ write_swbm_et_input_file=function(){
   et_input_2$Date = paste(str_pad(day(et_input_2$Date), 2, pad="0"),
                           str_pad(month(et_input_2$Date), 2, pad="0"),
                           year(et_input_2$Date), sep = "/")
-  write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt"),
+  write.table(et_input_2, file = file.path(data_dir['scenario_dev_dir_old','loc'], "ref_et_monthly.txt"),
               sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 }
@@ -1781,7 +1780,7 @@ grid()
 # et_input_1$Date = paste(str_pad(day(et_input_1$Date), 2, pad="0"),
 #                                                str_pad(month(et_input_1$Date), 2, pad="0"),
 #                                                year(et_input_1$Date), sep = "/")
-# write.table(et_input_1, file = file.path(scenario_dev_dir, "ref_et_daily.txt"),
+# write.table(et_input_1, file = file.path(data_dir['scenario_dev_dir_old','loc'], "ref_et_daily.txt"),
 #             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 # et_input_2 = data.frame(ETo_m = et_stitched_2$ETo_mm /1000,
@@ -1790,7 +1789,7 @@ grid()
 # et_input_2$Date = paste(str_pad(day(et_input_2$Date), 2, pad="0"),
 #                         str_pad(month(et_input_2$Date), 2, pad="0"),
 #                         year(et_input_2$Date), sep = "/")
-# write.table(et_input_2, file = file.path(scenario_dev_dir, "ref_et_monthly.txt"),
+# write.table(et_input_2, file = file.path(data_dir['scenario_dev_dir_old','loc'], "ref_et_monthly.txt"),
 #             sep = " ", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 

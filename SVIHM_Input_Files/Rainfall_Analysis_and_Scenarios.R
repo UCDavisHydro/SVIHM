@@ -17,19 +17,17 @@ if(dev_mode){
   pdf_dir = file.path(svihm_dir,"SVIHM_Input_Files","Scenario_Development")#,"comparison_pdfs")
   swbm_dir = file.path(svihm_dir, "SWBM")
 }
-# declare this directory - location for historical precip - regardless
-scenario_dev_dir = file.path(svihm_dir,"SVIHM_Input_Files", "Scenario_Development")
 
 #Read in water year type table (Sacramento Valley Water Index)
 # See also Deas analysis saying that Scott Valley water year type tracks sac valley
 wy_type = read.csv(file.path(ref_data_dir,"sac_valley_wyi.csv"), fileEncoding="UTF-8-BOM")
 
 #Read in precip data
-ppt_hist = as.data.frame(read.table(file.path(scenario_dev_dir,"precip_regressed_2019.08.19.txt")))
+ppt_hist = as.data.frame(read.table(file.path(data_dir['scenario_dev_dir_old','loc'],"precip_regressed_2019.08.19.txt")))
 colnames(ppt_hist) = c("precip_m", "date")
 ppt_hist$date = as.Date(ppt_hist$date, format = "%d/%m/%Y")
 
-stm_hist = as.data.frame(read.table(file.path(scenario_dev_dir,"streamflow_input_hist.txt"), header = TRUE))
+stm_hist = as.data.frame(read.table(file.path(data_dir['scenario_dev_dir_old','loc'],"streamflow_input_hist.txt"), header = TRUE))
 colnames(stm_hist)[colnames(stm_hist) == "Month"] = "date"
 stm_hist$date = as.Date(as.character(stm_hist$date), format = "%Y-%m-%d")
 

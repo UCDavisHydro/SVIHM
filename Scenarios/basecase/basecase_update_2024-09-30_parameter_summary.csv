@@ -1,0 +1,2 @@
+name,type,natveg_kc,natveg_rd,natveg_rd_mult,natveg_extD,nSubws,nSFR_inflow_segs,start_date,end_date,num_stress_periods,full_name
+basecase,basecase,0.6,2.4384,1.4,0.5,8,12,10/1/1990,9/30/2024,408,basecase

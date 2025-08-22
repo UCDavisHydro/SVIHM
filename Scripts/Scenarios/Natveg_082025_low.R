@@ -27,6 +27,8 @@ scen <- scenario_setup(scen)
 # Create working directory
 working_dir <- create_scenario_dir(scen$scen_dir)
 
+# Store scenario settings in table
+save_scen_param_file(scen, working_dir)
 
 # Read in basecase SWBM time-invariant files ------------------------------
 

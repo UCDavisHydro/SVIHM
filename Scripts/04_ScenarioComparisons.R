@@ -20,12 +20,12 @@ scen_dirs <- file.path(rel_dir, c('Run_baseupdate', 'Run_natveg', 'Run_prms'))
 update_dir <- latest_dir(data_dir['update_dir','loc'])
 plot_data_dir <- file.path('../../SVIHM_Input_Files/reference_data_for_plots/')
 
-out_dir = file.path("../../")
+out_dir = data_dir["scenario_dir","loc"] #file.path("../../")
 
 if (!dir.exists(out_dir)) {dir.create(out_dir, recursive = T)}
 
 # info from svihm.swbm
-rep_swbm_file <- file.path(scen_dirs[3],'SWBM',"svihm.swbm")
+rep_swbm_file <- file.path(scen_dirs[1],'SWBM',"svihm.swbm")
 
 discretization_settings <- read_swbm_block(rep_swbm_file, block_name = "DISCRETIZATION")
 wy_start = discretization_settings[['WYSTART']]
