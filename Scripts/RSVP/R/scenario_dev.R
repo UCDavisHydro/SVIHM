@@ -96,10 +96,12 @@ scenario_setup <- function(scen, start_year=1991) {
   scen$scen_dir <- file.path(data_dir['scenario_dir','loc'], scen$full_name)
 
   # Default inputs to account for scenario differences
+  # if not already declared in scenario .R script
 
   # Crop change scenarios - convert acreage to permanent grain
-  scen$grain_from_alf_acres = 0
-  scen$grain_from_pas_acres = 0
+  if(!("grain_from_alf_acres" %in% names(scen))){scen$grain_from_alf_acres = NA}
+  if(!("grain_from_pas_acres" %in% names(scen))){scen$grain_from_pas_acres = NA}
+  if(!("irr_eff_change" %in% names(scen))){scen$irr_eff_change = NA}
 
   return(scen)
 }

@@ -917,7 +917,8 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
 {
 
   recognized_scenarios=c('basecase','nv_gw_mix', 'nv_all',
-                         'grain_6k','grain_12k', 'grain_14k')
+                         'grain_6k','grain_12k', 'grain_14k',
+                         'irr_eff_0.1', 'irr_eff_0.2', 'irr_eff_minus_0.1')
   if(!(tolower(scenario_id) %in% tolower(recognized_scenarios))){
     stop("Warning: specified landuse scenario not recognized.")
   }
@@ -944,7 +945,8 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
 
   # Write land cover file for scenarios with basecase land use
   # i.e., no major crop changes or native vegetation coverage changes
-  if(scenario_id == "basecase"){
+  if(scenario_id %in% c("basecase",
+                        'irr_eff_0.1', 'irr_eff_0.2', 'irr_eff_minus_0.1')){
 
     # Basecase scenario -------------------------------------------------------
 
@@ -1207,9 +1209,22 @@ write_SWBM_landcover_file <- function(landcover_df, output_dir, filename="polygo
 #' )
 #' }
 write_SWBM_landcover_desc_file <- function(landcover_desc,
-                                              output_dir,
-                                              filename = "landcover_table.txt",
-                                              verbose  = TRUE) {
+                                           output_dir,
+                                           filename = "landcover_table.txt",
+                                           verbose  = TRUE,
+                                           irr_eff_change = NA
+) {
+
+  if(!is.na(irr_eff_change)){
+    landcover_desc$IrrEff_Flood[landcover_desc$IrrEff_Flood>0] = # add irrigation change to all non-0 efficiencies
+      landcover_desc$IrrEff_Flood[landcover_desc$IrrEff_Flood>0] + irr_eff_change
+    landcover_desc$IrrEff_WL[landcover_desc$IrrEff_WL>0] = # add irrigation change to all non-0 efficiencies
+      landcover_desc$IrrEff_WL[landcover_desc$IrrEff_WL>0] + irr_eff_change
+    landcover_desc$IrrEff_CP[landcover_desc$IrrEff_CP>0] = # add irrigation change to all non-0 efficiencies
+      landcover_desc$IrrEff_CP[landcover_desc$IrrEff_CP>0] + irr_eff_change
+  }
+
+
   col_names <- names(landcover_desc)
   as_chr    <- function(x) if (is.factor(x)) as.character(x) else as.character(x)
   widths <- vapply(col_names, function(nm) {
