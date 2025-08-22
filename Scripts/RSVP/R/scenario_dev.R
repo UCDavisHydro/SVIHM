@@ -95,6 +95,12 @@ scenario_setup <- function(scen, start_year=1991) {
   scen$full_name <- paste(scen$name,scen$type,scen$end_date,sep="_")
   scen$scen_dir <- file.path(data_dir['scenario_dir','loc'], scen$full_name)
 
+  # Default inputs to account for scenario differences
+
+  # Crop change scenarios - convert acreage to permanent grain
+  scen$grain_from_alf_acres = 0
+  scen$grain_from_pas_acres = 0
+
   return(scen)
 }
 
