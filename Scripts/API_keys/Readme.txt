@@ -1,4 +1,4 @@
-To be able to update SVIHM with new hydrogeological data, please obtain the following API keys:
+To be able to update SVIHM with new hydrogeological data, please visit the websites below and obtain the following API keys:
 
 -	NOAA CDO token: https://www.ncdc.noaa.gov/cdo-web/webservices/v2
 -	CIMIS API token: https://cimis.water.ca.gov/

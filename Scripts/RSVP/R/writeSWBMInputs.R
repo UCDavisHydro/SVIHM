@@ -911,11 +911,14 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
                                      end_date,
                                      poly_df,
                                      landcover_df,
-                                     alfalfa_grain_rotate_years = 8
-                                     )
+                                     alfalfa_grain_rotate_years = 8,
+                                     grain_from_alf_acres = NA, grain_from_pas_acres = NA
+)
 {
 
-  recognized_scenarios=c('basecase','nv_gw_mix', 'nv_all')
+  recognized_scenarios=c('basecase','nv_gw_mix', 'nv_all',
+                         'grain_6k','grain_12k', 'grain_14k',
+                         'irr_eff_0.1', 'irr_eff_0.2', 'irr_eff_minus_0.1')
   if(!(tolower(scenario_id) %in% tolower(recognized_scenarios))){
     stop("Warning: specified landuse scenario not recognized.")
   }
@@ -942,7 +945,11 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
 
   # Write land cover file for scenarios with basecase land use
   # i.e., no major crop changes or native vegetation coverage changes
-  if(scenario_id == "basecase"){
+  if(scenario_id %in% c("basecase",
+                        'irr_eff_0.1', 'irr_eff_0.2', 'irr_eff_minus_0.1')){
+
+    # Basecase scenario -------------------------------------------------------
+
     #Set fields equal to unchanging default
     landcover_output = field_df
     # Then, Implement alfalfa-grain rotation
@@ -977,7 +984,119 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
 
       }
     }
+  } else if(scenario_id %in% c("grain_6k", "grain_12k", 'grain_14k')){
+
+    # Increased Grain Acreage Scenarios ---------------------------------------------------------
+
+
+    #Set fields equal to unchanging default
+    landcover_output = field_df
+    # randomly select 6k acres from current alfalfa and 4k acres from current
+    # Acreage targets assumes some grain acreage comes from the alfalfa-grain rotation
+    # Planned acreage
+    # if(scenario_id == "grain_14k"){grain_from_alf_acres = 7500; grain_from_pas_acres = 5500}
+    # if(scenario_id == "grain_12k"){grain_from_alf_acres = 6000; grain_from_pas_acres = 4000}
+    # if(scenario_id == "grain_6k"){grain_from_alf_acres = 3000; grain_from_pas_acres = 2000}
+
+    # Convert basecase alfalfa acres to permanent grain
+    set.seed(1)
+    basecase_acre_check = aggregate(poly_df$MF_Area_m2/4046.86, by=list(poly_df$SWBM_LU), FUN = sum)  # convert m2 to acres
+    grain_from_alf_target = grain_from_alf_acres * 4046.86 # convert from acres to m2
+    grain_ac_from_alf = 0
+    alf_poly_list = poly_df$SWBM_id[poly_df$SWBM_LU == 1] # polygon IDs covered by alfalfa in the basecase land use
+    while(grain_ac_from_alf < grain_from_alf_target){
+      random_i = sample(1:length(alf_poly_list), size = 1)
+      random_poly_id = alf_poly_list[random_i]
+      #assign output land use to grain for this field
+      landcover_output[,paste0("ID_",random_poly_id)] = 2 # assign grain
+      # add acreage to acreage counter
+      grain_ac_from_alf = grain_ac_from_alf + poly_df$MF_Area_m2[poly_df$SWBM_id==random_poly_id]
+      # remove polygon from list of available alfalfa polygons
+      alf_poly_list = alf_poly_list[alf_poly_list != random_poly_id]
+    }
+
+    # Convert basecase pasture acres to permanent grain
+    set.seed(1)
+    acre_check = aggregate(poly_df$MF_Area_m2/4046.86, by=list(poly_df$SWBM_LU), FUN = sum)  # convert m2 to acres
+    grain_from_pas_target = grain_from_pas_acres * 4046.86 # convert from acres to m2
+    grain_ac_from_pas = 0
+    pas_poly_list = poly_df$SWBM_id[poly_df$SWBM_LU == 3] # polygon IDs covered by alfalfa in the basecase land use
+    while(grain_ac_from_pas < grain_from_pas_target){
+      random_i = sample(1:length(pas_poly_list), size = 1)
+      random_poly_id = pas_poly_list[random_i]
+      #assign output land use to grain for this field
+      landcover_output[,paste0("ID_",random_poly_id)] = 2 # assign grain
+      # add acreage to acreage counter
+      grain_ac_from_pas = grain_ac_from_pas + poly_df$MF_Area_m2[poly_df$SWBM_id==random_poly_id]
+      # remove polygon from list of available alfalfa polygons
+      pas_poly_list = pas_poly_list[pas_poly_list != random_poly_id]
+    }
+
+    # Run diagnostics - map permanent acreage (not yet with grain in the 8-yr alfalfa rotation)
+    run_diagnostics = F
+    if(run_diagnostics == T){
+      svihm_polys = st_read(file.path(data_dir["ref_data_dir","loc"],"Landuse_20190219.shp"))
+      svihm_polys$area_m2 = st_area(svihm_polys)
+      # assign land uses
+      scen_lu = data.frame(field_id = poly_df$SWBM_id,
+                           lu = landcover_output[1,2:ncol(landcover_output)])
+      svihm_polys$lu_bc = poly_df$SWBM_LU[match(svihm_polys$Polynmbr, poly_df$SWBM_id)]
+      svihm_polys$scen_lu = as.numeric(landcover_output[1, match(svihm_polys$Polynmbr,
+                                                                 as.numeric(gsub(pattern = "ID_",
+                                                                                 replacement = "",
+                                                                                 x = colnames(landcover_output))))])
+      plot(svihm_polys$geometry, col = svihm_polys$lu_bc, border = NA)
+      plot(svihm_polys$geometry, col = svihm_polys$scen_lu, border = NA)
+    }
+
+    # Implement alfalfa-grain rotation for remaining alfalfa acreage
+    n_stress = length(seq.Date(from = start_date, to = end_date, by = "month"))
+    # Initialize a grain_months dataframe for allocating alfalfa-grain attributes in the for loop
+    grain_months = data.frame(month = field_df$Stress_Period)
+    grain_months$water_year = lubridate::year(grain_months$month)
+    next_wy_indices = lubridate::month(grain_months$month)>9
+    grain_months$water_year[next_wy_indices] = 1 + grain_months$water_year[next_wy_indices]
+    grain_months$grain_year = grain_months$water_year - lubridate::year(start_date)
+    grain_months$alf_1_grain_2 = 1
+
+    # n_rotating = sum(poly_df$SWBM_LU==1) # how many fields are using alfalfa-grain rotation? Assume all alfalfa
+    # n_grain = n_rotating / 8 # 1 out of every 8 fields is grain at any given time. 8-yr schedule
+    field_rotator = 1 # initialize the eenie-meenie-miney-mo counter
+    rot_yrs <- alfalfa_grain_rotate_years
+    alf_poly_list = as.numeric(gsub(x = colnames(landcover_output)[landcover_output[1,]  == 1], # polygon IDs covered by alfalfa in the in-progress output landuse table
+                                    pattern = "ID_", replacement = ""))
+    for(i in 1:length(alf_poly_list)){
+      field_id = alf_poly_list[i]
+      first_grain_year = field_rotator %% rot_yrs + 1 # designate first year of grain rotation
+      # print(first_grain_year)
+      grain_years = seq(from = first_grain_year, by = rot_yrs, to = n_stress)
+      grain_sp_indices = which(grain_months$grain_year %in% grain_years)
+      # print(grain_sp_indices)
+      grain_months$alf_1_grain_2[grain_sp_indices] = 2 # Assign grain to those stress periods
+      # Assign the monthly alfalfa-grain vector to the output file
+      landcover_output[,paste0("ID_",field_id)] = grain_months$alf_1_grain_2
+      field_rotator = field_rotator + 1 # increment the counter
+      # reset alfalfa vector
+      grain_months$alf_1_grain_2 = 1
+    }
+
+    # Additional diagnostic: check acreages by year to assure average 12k acres of grain each year
+    if(run_diagnostics == T){
+      n_years = 2025-1991
+      for(i in 1:n_years){
+        row_i = 1+12*i
+        grain_fields = as.numeric(gsub(x = colnames(landcover_output)[landcover_output[row_i,] == 2], # polygon IDs covered by grain
+                                       pattern = "ID_", replacement = ""))
+        print(paste("Acreage from poly_df: ", round(sum(poly_df$MF_Area_m2[poly_df$SWBM_id %in% grain_fields])/4046.86),
+                    #"; Acreage from svihm_fields: ", round(sum(svihm_polys$Acres[svihm_polys$Polynmbr %in% grain_fields]))
+                    "; Acreage from svihm_fields: ", round(1/4046.85*sum(svihm_polys$area_m2[svihm_polys$Polynmbr %in% grain_fields]))))
+      }
+      # For grain_12k, seems like we're getting closer to 11.5k acres
+    }
+
   } else if(scenario_id == "nv_all"){
+
+    # All Nat Veg (No Irrigated Ag) Scenario -----------------------------------
 
     codes_to_replace = landcover_df$id[grep(pattern = "Irrigated", landcover_df$Landcover_Name)]
     natveg_code = landcover_df$id[grep(pattern = "Native", landcover_df$Landcover_Name)]
@@ -990,6 +1109,9 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
 
     landcover_output = field_df
   } else if(scenario_id == "nv_gw_mix"){
+
+    # Nat Veg on GW or Mixed-water-source fields (Only Surface Water-Irrigated Ag) Scenario -----------------------------------
+
     field_nv_gw_mix = field_df
     # table indicating which numeric code corresponds to which crop
 
@@ -998,13 +1120,14 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
     # Build new time-invarying fields table
     for(i in 1:num_unique_fields){
       field_id = poly_df$SWBM_id[i]
-      if(poly_df$WATERSOURC[i] %in% c(2,3,999)){ # GW or MIX or unkown source (unknown assumed to be GW in SWBM)
+      if(poly_df$WATERSOURC[i] %in% c(2,3,999)){ # GW or MIX or unknown source (unknown assumed to be GW in SWBM)
         # set entire model period to native vegetation land use
         field_nv_gw_mix[,paste0("ID_",field_id)] = natveg_code
       }
     }
     landcover_output = field_nv_gw_mix
   }
+
   return(landcover_output)
 }
 
@@ -1086,9 +1209,22 @@ write_SWBM_landcover_file <- function(landcover_df, output_dir, filename="polygo
 #' )
 #' }
 write_SWBM_landcover_desc_file <- function(landcover_desc,
-                                              output_dir,
-                                              filename = "landcover_table.txt",
-                                              verbose  = TRUE) {
+                                           output_dir,
+                                           filename = "landcover_table.txt",
+                                           verbose  = TRUE,
+                                           irr_eff_change = NA
+) {
+
+  if(!is.na(irr_eff_change)){
+    landcover_desc$IrrEff_Flood[landcover_desc$IrrEff_Flood>0] = # add irrigation change to all non-0 efficiencies
+      landcover_desc$IrrEff_Flood[landcover_desc$IrrEff_Flood>0] + irr_eff_change
+    landcover_desc$IrrEff_WL[landcover_desc$IrrEff_WL>0] = # add irrigation change to all non-0 efficiencies
+      landcover_desc$IrrEff_WL[landcover_desc$IrrEff_WL>0] + irr_eff_change
+    landcover_desc$IrrEff_CP[landcover_desc$IrrEff_CP>0] = # add irrigation change to all non-0 efficiencies
+      landcover_desc$IrrEff_CP[landcover_desc$IrrEff_CP>0] + irr_eff_change
+  }
+
+
   col_names <- names(landcover_desc)
   as_chr    <- function(x) if (is.factor(x)) as.character(x) else as.character(x)
   widths <- vapply(col_names, function(nm) {

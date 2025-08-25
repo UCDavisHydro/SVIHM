@@ -18,7 +18,7 @@ origin_date <- as.Date('1990-09-30')  # Day zero
 create_sp_charts = FALSE  # Many SPs, very slow
 
 # Directories
-run_dir       <- file.path('../../Run/')
+run_dir       <- file.path('../../Run_basecase 2025-07-31/')
 swbm_dir      <- file.path(run_dir, 'SWBM')
 mf_dir        <- file.path(run_dir, 'MODFLOW')
 update_dir    <- latest_dir(data_dir['update_dir','loc'])
@@ -74,8 +74,11 @@ hob <- import_HOB(hob_input = file.path(mf_dir, 'SVIHM.hob'),
                   hob_output = file.path(mf_dir, 'HobData_SVIHM.dat'),
                   origin_date = origin_date)
 
-hob_key <- read.csv(file.path(data_dir['ref_plot_dir','loc'], '_hob_key.csv'), stringsAsFactors = F)
-hob_key <- unique(hob_key[,c("well_id","well_code","x_proj","y_proj")])
+hob_key_path = file.path(data_dir['ref_plot_dir','loc'], '_hob_key.csv')
+if(file.exists(hob_key_path)){
+  hob_key <- read.csv(hob_key_path, stringsAsFactors = F)
+  hob_key <- unique(hob_key[,c("well_id","well_code","x_proj","y_proj")])
+}
 
 #-- SFR Data (Turn into function?)
 sfr_locs <- read.csv(file.path(data_dir['ref_data_dir','loc'], 'sfr_gages.csv'),
@@ -115,33 +118,35 @@ write.csv(sfrcompare, file.path(out_dir, 'sfr_compare.csv'))
 #-------------------------------------------------------------------------------------------------#
 # Groundwater Level Plots -------------------------------------------------
 
-#-- Loop over wells & Plot
-pdf(file.path(out_dir,'hobs_plots.pdf'), width=11, height=8.5)
-for (well in unique(hob$well_id)) {
-  # Report
-  message('Plotting ', well)
-  # Set up
-  wsub <- hob[hob$well_id == well,]
-  well_title <- paste('Well: ', well,
-                      '\nRow: ', wsub$row[1],
-                      '  |  Col: ', wsub$column[1],
-                      '  |  Lay: ', wsub$layer[[1]])
-  # Plot
-  plot.gw.hydrograph_wMap(wsub$date,
-                       wsub$obs,
-                       wsub$sim,
-                       xloc = hob_key[hob_key$well_id==well,'x_proj'],
-                       yloc = hob_key[hob_key$well_id==well,'y_proj'],
-                       map_xs = hob_key[,'x_proj'],
-                       map_ys = hob_key[,'y_proj'],
-                       ylabel = 'Groundwater Elevation (m)',
-                       title = well_title, map_x_offset = 0, map_y_offset = 0)
-}
-# Scatterplots
-plot.scatterbox(obs = hob$obs, sim = hob$sim, groups = rep('Wells', nrow(hob)),
-                xlab = 'Observed GW Elevation (m)', ylab = 'Simulated GW Elevation (m)', log = F)
+#-- Loop over wells & Plot\
+if(file.exists(hob_key_path)){
+  pdf(file.path(out_dir,'hobs_plots.pdf'), width=11, height=8.5)
+  for (well in unique(hob$well_id)) {
+    # Report
+    message('Plotting ', well)
+    # Set up
+    wsub <- hob[hob$well_id == well,]
+    well_title <- paste('Well: ', well,
+                        '\nRow: ', wsub$row[1],
+                        '  |  Col: ', wsub$column[1],
+                        '  |  Lay: ', wsub$layer[[1]])
+    # Plot
+    plot.gw.hydrograph_wMap(wsub$date,
+                            wsub$obs,
+                            wsub$sim,
+                            xloc = hob_key[hob_key$well_id==well,'x_proj'],
+                            yloc = hob_key[hob_key$well_id==well,'y_proj'],
+                            map_xs = hob_key[,'x_proj'],
+                            map_ys = hob_key[,'y_proj'],
+                            ylabel = 'Groundwater Elevation (m)',
+                            title = well_title, map_x_offset = 0, map_y_offset = 0)
+  }
+  # Scatterplots
+  plot.scatterbox(obs = hob$obs, sim = hob$sim, groups = rep('Wells', nrow(hob)),
+                  xlab = 'Observed GW Elevation (m)', ylab = 'Simulated GW Elevation (m)', log = F)
 
-dev.off()
+  dev.off()
+}
 #-------------------------------------------------------------------------------------------------#
 
 #-------------------------------------------------------------------------------------------------#

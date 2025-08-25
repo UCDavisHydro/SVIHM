@@ -95,5 +95,47 @@ scenario_setup <- function(scen, start_year=1991) {
   scen$full_name <- paste(scen$name,scen$type,scen$end_date,sep="_")
   scen$scen_dir <- file.path(data_dir['scenario_dir','loc'], scen$full_name)
 
+  # Default inputs to account for scenario differences
+  # if not already declared in scenario .R script
+
+  # Crop change scenarios - convert acreage to permanent grain
+  if(!("grain_from_alf_acres" %in% names(scen))){scen$grain_from_alf_acres = NA}
+  if(!("grain_from_pas_acres" %in% names(scen))){scen$grain_from_pas_acres = NA}
+  if(!("irr_eff_change" %in% names(scen))){scen$irr_eff_change = NA}
+
   return(scen)
+}
+
+
+#' Save Selected Scenario Parameters in a CSV
+#'
+#' Stores parameters in a consistent CSV format to facilitate tabular inter-
+#' scenario comparisons. Writes the CSV file to the location specified
+#' in `working_directory`.
+#'
+#' @param scen A named list representing the scenario to be configured. Must include:
+#'   \itemize{
+#'     \item `name` - character; scenario name (used for output directory naming).
+#'     \item `type` - character; scenario type: one of `"BASECASE"`, `"UPDATE"`, or `"PRMS"` (case-insensitive).
+#'   }
+#'
+#' @working_dir Directory in which to save the CSV file.
+#'
+#'
+#' @return None. Saves a .csv file in the working directory.
+#'
+#' @export
+#' @examples
+#' save_scen_param_file(scen, working_dir)
+
+
+save_scen_param_file = function(scen, #list containing scenario parameters
+                                working_dir){
+  leave_out_info = names(scen)[grepl(pattern = "dir", x=names(scen)) |
+                                 grepl(pattern = "file", x = names(scen)) |
+                                 grepl(pattern = "num_days", x = names(scen))]
+  keep_info = names(scen)[!(names(scen) %in% leave_out_info)]
+  params_tab = as.data.frame(scen[keep_info])
+  scen_csv_name = paste0(scen$full_name, "_parameter_summary.csv")
+  write.csv(x = params_tab, file =file.path(working_dir, scen_csv_name), row.names = F)
 }
