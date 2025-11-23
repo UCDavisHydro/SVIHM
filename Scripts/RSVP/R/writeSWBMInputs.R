@@ -1187,7 +1187,7 @@ write_muni_pumping_file <- function(start_date, n_stress, output_dir,
 #'      * Identify all \code{Landcover_Name}s matching `"Irrigated"` and replace their codes
 #'      with the native vegetation code using a set of rules based on existing crop type,
 #'      random number of irrigated acres to replace, or water source (options are groundwater (2),
-#'       mixed (3), or unknown (999)). Set of rules used determined by \code[scenario_id]
+#'       mixed (3), or unknown (999)). Set of rules used determined by \code{scenario_id}
 #'    - **crop_change**:
 #'      * For fields whose water source is groundwater (2), mixed (3), or unknown (999),
 #'        set their landcover code to the native vegetation code for the entire period

@@ -4,7 +4,12 @@
 \alias{alter_SWBM_sfr_inflows}
 \title{Alter subwatershed inflow time series according to scenario name}
 \usage{
-alter_SWBM_sfr_inflows(subws_inflows, scenario_id, min_flow_file_name = NA)
+alter_SWBM_sfr_inflows(
+  subws_inflows,
+  scenario_id,
+  min_flow_file_name = NA,
+  rerun_FJ_trib_corr = F
+)
 }
 \arguments{
 \item{subws_inflows}{Wide data table of inflow data for each day (rows) for each tributary (column)}

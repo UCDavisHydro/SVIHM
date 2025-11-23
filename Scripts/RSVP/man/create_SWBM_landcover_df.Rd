@@ -13,7 +13,8 @@ create_SWBM_landcover_df(
   landcover_df,
   alfalfa_grain_rotate_years = 8,
   grain_from_alf_acres = NA,
-  grain_from_pas_acres = NA
+  grain_from_pas_acres = NA,
+  irr_to_natveg_acres = NA
 )
 }
 \arguments{
@@ -87,7 +88,7 @@ with the native vegetation code.
 \item Identify all \code{Landcover_Name}s matching \code{"Irrigated"} and replace their codes
 with the native vegetation code using a set of rules based on existing crop type,
 random number of irrigated acres to replace, or water source (options are groundwater (2),
-mixed (3), or unknown (999)). Set of rules used determined by \code\link{scenario_id}
+mixed (3), or unknown (999)). Set of rules used determined by \code{scenario_id}
 }
 \item \strong{crop_change}:
 \itemize{

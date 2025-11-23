@@ -6,8 +6,8 @@
 \usage{
 streamflow_curtailment(
   flows,
-  percent = NA,
-  min_flow_regime = NA,
+  percent = NULL,
+  min_flow_regime = NULL,
   date_start,
   date_end,
   streams = "ALL"

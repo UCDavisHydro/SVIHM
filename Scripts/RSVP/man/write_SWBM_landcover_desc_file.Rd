@@ -8,8 +8,7 @@ write_SWBM_landcover_desc_file(
   landcover_desc,
   output_dir,
   filename = "landcover_table.txt",
-  verbose = TRUE,
-  irr_eff_change = NA
+  verbose = TRUE
 )
 }
 \arguments{
