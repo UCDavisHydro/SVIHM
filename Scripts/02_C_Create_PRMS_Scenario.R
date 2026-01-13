@@ -16,7 +16,7 @@ scen <- list(
   'mar_id'           = 'basecase',     # MAR scenario identifier
   'natveg_kc'        = 0.6,            # Native vegetation daily ET coefficient, default = 0.6
   'natveg_rd'        = 2.4384,         # Native vegetation rooting depth (m), default = 2.4384 (8 ft)
-  'natveg_rd_mult'   = 1.4,
+  'natveg_rd_mult'   = 1.150622316705, # Calibrated value
   'natveg_extD'      = 0.5             # Native vegetation extinction depth (m), default 0.5
 )
 
