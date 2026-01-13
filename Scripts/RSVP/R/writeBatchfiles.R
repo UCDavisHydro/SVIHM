@@ -94,10 +94,11 @@ write_scenario_prep_batchfile <- function(scenario_name='basecase',
   }
   if (tabfiles) {
     # Overwrite NAM file
-    write('xcopy SVIHM_Input_Files\\time_independent_input_files\\SVIHM_tabfiles.nam Run\\MODFLOW\\SVIHM.nam /Y /I', file = f, append=T)
+    write('copy /Y SVIHM_Input_Files\\time_independent_input_files\\SVIHM_tabfiles.nam Run\\MODFLOW\\SVIHM.nam', file = f, append=T)
   }
   write('xcopy SVIHM_Input_Files\\time_independent_input_files\\Starting_Heads_L*.txt Run\\MODFLOW /Y /I', file = f, append=T)
   write('xcopy SVIHM_Input_Files\\time_independent_input_files\\SVIHM_*_template.txt Run\\SWBM /Y /I', file = f, append=T)
+  write('xcopy SVIHM_Input_Files\\time_independent_input_files\\SFR_network_jtf.txt Run\\SWBM /Y /I', file = f, append=T)
 # TODO create plan/infrustructure/folders for handling scenarios
 #  write('', file = f, append=T)
 #  write(':: Copy files from scenario folder to run folder', file = f, append=T)
@@ -110,9 +111,6 @@ write_scenario_prep_batchfile <- function(scenario_name='basecase',
   write('', file = f, append=T)
 #  write(':: Copy in Update_Drain_Inflows input file', file = f, append=T)
 #  write('xcopy SVIHM_Input_Files\\Update_Drain_Inflows.in Run\\MODFLOW /Y /I', file = f, append=T)
-  write('', file = f, append=T)
-  write(':: Copy SFR Template File', file = f, append=T)
-  write('xcopy Calib_Sens_Files\\UCODE\\UCODE_Template_Files\\SFR_network_jtf.txt Run\\SWBM /Y /I', file = f, append=T)
   write('', file = f, append=T)
   if (write_end) {
     write(':: Report', file = f, append=T)

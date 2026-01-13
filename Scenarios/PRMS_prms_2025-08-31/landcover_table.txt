@@ -1,0 +1,7 @@
+id Landcover_Name IrrFlag ET_Flag IrrSWC IrrMonStart IrrDayStart IrrMonEnd IrrDayEnd RootDepth RD_Mult IrrEff_Flood IrrEff_WL IrrEff_CP Kc_Mult
+ 1 Alfalfa_Irrigated    TRUE    TRUE 0.6250           3          25         8        31    2.4384       1.435935      0.7809519      1.0199913      1.0818223    0.9022164
+ 2   Grain_Irrigated    TRUE    TRUE 0.3125           3          16         7        10    2.4384       1.435935      0.7809519      1.0199913      1.0818223    0.9951264
+ 3 Pasture_Irrigated    TRUE    TRUE 0.4500           4          15        10        15    1.2192       1.535034      0.7809519      0.8502093      0.9714535    1.0098846
+ 4 Native_Vegetation   FALSE    TRUE 0.0000           0           0         0         0    2.4384       1.150622      0.0000000      0.0000000      0.0000000    1.0166628
+ 5      Urban_Barren   FALSE   FALSE 0.0000           0           0         0         0    0.0000       1.000000      0.0000000      0.0000000      0.0000000    1.0000000
+ 6             Water   FALSE    TRUE 0.0000           0           0         0         0    2.0000       1.000000      0.0000000      0.0000000      0.0000000    1.0000000

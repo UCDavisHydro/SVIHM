@@ -1,0 +1,2 @@
+"name","type","landcover_id","curtail_id","mar_id","natveg_kc","natveg_rd","natveg_rd_mult","natveg_extD","nSubws","nSFR_inflow_segs","start_date","end_date","num_stress_periods","full_name","irr_to_natveg_acres","grain_from_alf_acres","grain_from_pas_acres","irr_eff_change","stream_inflow_id"
+"PRMS","prms","basecase","basecase","basecase",0.6,2.4384,1.4,0.5,11,25,1990-10-01,2025-08-31,419,"PRMS_prms_2025-08-31",NA,NA,NA,NA,"basecase"

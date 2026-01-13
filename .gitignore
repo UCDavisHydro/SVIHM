@@ -29,6 +29,7 @@ R_Files/Post-Processing/Results_2020
 _scratchwork_and_figure_tests
 Scenarios/*
 !Scenarios/basecase/
+!Scenarios/PRMS_prms_2025-08-31/
 SWBM/scenario_archive
 MODFLOW/scenario_archive
 
