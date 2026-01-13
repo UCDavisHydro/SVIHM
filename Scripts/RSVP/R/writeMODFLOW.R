@@ -153,13 +153,13 @@ update_DRNO_stress_periods <- function(num_stress_periods,
   #-- Write DRNO Header
   if (verbose) {message(paste('Writing SVIHM DRNO file: ', filename))}
   write('# MODFLOW Drain Overland Flow (DRNO) Package - written by RSVP', file = f, append = F)
-  write('          2869        50   NOPRINT', file = f, append = T)
+  write('          3068        50   NOPRINT', file = f, append = T)
 
   #Specify DZ for each stress period
   for (i in 1:num_stress_periods){
     if (i==1) {
       # Write SP line
-      write(paste('     2869       0          Stress Period', i), file = f, append=T)
+      write(paste('     3068       0          Stress Period', i), file = f, append=T)
       #Define DZ - layer, row, column, elevation, and conductance for each cell with a drain in it
       cat(sprintf("%4i%6i%6i%10.2f%12.3e%6i%6i\n",
                   cells[,1],cells[,2],cells[,3],cells[,4],cells[,5],cells[,6],cells[,7]),
