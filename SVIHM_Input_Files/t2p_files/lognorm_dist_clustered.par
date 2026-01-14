@@ -1,0 +1,7 @@
+5    # Number of texture classes
+        Texture       Shape    Location       Scale
+Fine               0.284487    0.000000   31.790578
+Mixed_Fine         0.129485    0.000000   76.562445
+Sand               0.082697    0.000000  120.040911
+Mixed_Coarse       0.100896    0.000000  147.877083
+Very_Coarse        0.325324    0.000000  320.761456

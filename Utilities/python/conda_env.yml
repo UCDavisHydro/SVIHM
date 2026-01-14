@@ -1,0 +1,30 @@
+name: SV_AEM_T2P
+channels:
+  - conda
+  - conda-forge
+dependencies:
+  - python=3.11
+  - matplotlib
+  - tk
+  - numpy
+  - pandas
+  - ipywidgets
+  - jupyter
+  - jupyterlab
+  - seaborn
+  - geopandas
+  - pathlib
+  - tqdm
+  - pykrige
+  - scipy
+  - scikit-learn
+  - statsmodels >= 0.14
+  - pyshp
+  - flopy
+  - pyemu
+  - kmodes
+  - gstools
+  - pip
+  - pip:
+      - hydroeval
+      - git+https://github.com/scantle/t2py.git@main
