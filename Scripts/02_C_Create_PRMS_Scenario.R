@@ -68,8 +68,7 @@ subws_inflows_adj <- streamflow_curtailment(subws_inflows_adj, percent = 1, date
 
 # Land use by field by month
 # Valid scenario_ids are basecase, nv_gw_mix, and nv_all
-landcover_df <- create_SWBM_landcover_df(scenario_id = scen$name,
-                                         landcover_id = scen$landcover_id,
+landcover_df <- create_SWBM_landcover_df(landcover_id = scen$landcover_id,
                                          scen$start_date,
                                          scen$end_date,
                                          polygon_fields,

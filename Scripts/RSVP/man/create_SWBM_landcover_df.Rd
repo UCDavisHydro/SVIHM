@@ -5,7 +5,6 @@
 \title{Create SWBM Landcover Data Frame}
 \usage{
 create_SWBM_landcover_df(
-  scenario_id = "basecase",
   landcover_id = "basecase",
   start_date,
   end_date,
@@ -18,8 +17,6 @@ create_SWBM_landcover_df(
 )
 }
 \arguments{
-\item{scenario_id}{Character. Scenario identifier; one of a list of recognized scenarios (case-insensitive).}
-
 \item{landcover_id}{Character. Scenario category, pertaining to land use type.
 \itemize{
 \item \code{"basecase"}: start from each polygon's default SWBM_LU code and apply an
@@ -70,7 +67,7 @@ according to a chosen land-use scenario.
 \item Calls \code{swbm_build_field_value_df(nfields, start_date, end_date)} to create a
 wide table with one column per field (named \code{ID_<SWBM_id>}) and a
 \code{Stress_Period} column.
-\item Scenario logic:
+\item Landcover scenario logic:
 \itemize{
 \item \strong{basecase}:
 \itemize{

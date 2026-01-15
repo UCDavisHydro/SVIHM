@@ -164,9 +164,9 @@ write_scenario_prep_batchfile <- function(scenario_name='basecase',
 #' )
 #' }
 write_scen_prep_batchfile <- function(scen_dir,
-                                        output_dir=data_dir['svihm_dir','loc'],
-                                        tabfiles=TRUE,
-                                        scenario_name = "basecase") {
+                                      output_dir=data_dir['svihm_dir','loc'],
+                                      tabfiles=TRUE,
+                                      scenario_name = "basecase") {
 
   # Get new filename
   update_name <- basename(scen_dir)

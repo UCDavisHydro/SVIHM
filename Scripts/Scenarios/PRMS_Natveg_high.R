@@ -1,4 +1,4 @@
-# 02_BaseUpdate.R
+# PRMS_Natveg_high.R
 #
 #
 library(RSVP)
@@ -10,10 +10,12 @@ library(sf)
 # Scenario Settings -----------------------------------------------------
 scen <- list(
   'name'             = 'natveg_high',  # Scenario name, will be part of directory name
-  'type'             = 'prms',       # Basecase, Update, or PRMS - where to get meteorological inputs
+  'type'             = 'prms',         # Basecase, Update, or PRMS - where to get meteorological inputs
+  'landcover_id'     = 'natveg_all',   # Landcover scenario identifier
+  'curtail_id'       = 'none',         # curtailment scenario identifier
+  'mar_id'           = 'none',         # MAR scenario identifier
   'natveg_kc'        = 1.0,            # Native vegetation daily ET coefficient, default = 0.6
-  'natveg_rd'        = 2.0,         # Native vegetation rooting depth (m), default = 2.4384 (8 ft)
-  'natveg_rd_mult'   = 1.0,
+  'natveg_rd'        = 2.0,            # Native vegetation rooting depth (m), default = 2.4384 (8 ft)
   'natveg_extD'      = 6.55            # Native vegetation extinction depth (m), default 0.5
 )
 
@@ -48,19 +50,28 @@ num_days_df <-  data.frame("stress_period" = 1:scen$num_stress_periods, ndays = 
 subws_inflow_filename <- file.path(scen$input_dir,"daily_tributary_streamflow_prms.txt")
 subws_inflows <- process_sfr_inflows(scen, subws_inflow_filename)
 
-# Historical Streamflow Curtailments for 2021, 2022
-subws_inflows <- streamflow_curtailment(subws_inflows, percent = 1, date_start = "2021-09-10", date_end = "2021-10-25")
-subws_inflows <- streamflow_curtailment(subws_inflows, percent = 1, date_start = "2022-07-01", date_end = "2022-12-27")
+# Correct PRMS flows using calibrated streamflow multiplier file
+str_mult <- read.table(file.path(scen$input_dir,'streamflow_multipliers.txt'), header=T)
+mult_vec <- setNames(str_mult$multiplier, str_mult$stream)
+
+# Apply the multipliers
+subws_inflows_adj <- lapply(subws_inflows, function(df) {
+  cols_to_mult <- intersect(names(df), names(mult_vec))
+  current_mults <- mult_vec[cols_to_mult]
+  df[cols_to_mult] <- sweep(df[cols_to_mult], MARGIN = 2, STATS = current_mults, FUN = "*")
+  return(df)
+})
+
+# No Curtailment in Nat Veg
 
 # Land use by field by month
-# Valid scenario_ids are basecase, nv_gw_mix, and nv_all
-landcover_df <- create_SWBM_landcover_df(scenario_id = 'nv_all',
+landcover_df <- create_SWBM_landcover_df(landcover_id = scen$landcover_id,
                                          scen$start_date,
                                          scen$end_date,
                                          polygon_fields,
                                          landcover_desc)
 
-# ET (both which cells have ET, and the extinction depths) Returns a list of matrices (by MODFLOW cell)
+# ET (stores which cells have ET and the extinction depths) Returns a list of matrices (by MODFLOW cell)
 cell_et <- read_SWBM_ET_inputs(file_cells = file.path(data_dir["time_indep_dir","loc"], "ET_Zone_Cells.txt"),
                                       file_ext_depth = file.path(data_dir["time_indep_dir","loc"], "ET_Cells_Extinction_Depth.txt"))
 
@@ -73,7 +84,7 @@ cell_overlap <- read.table(file.path(data_dir['time_indep_dir','loc'], 'MF_Polyg
 # Update Native Vegetation Rooting Depth
 nat_id <- landcover_desc[landcover_desc['Landcover_Name']=='Native_Vegetation', 'id']
 landcover_desc[nat_id, 'RootDepth'] <- scen$natveg_rd
-landcover_desc[nat_id, 'RD_Mult'] <- scen$natveg_rd_mult
+#landcover_desc[nat_id, 'RD_Mult'] <- scen$natveg_rd_mult
 
 #-- Crop coefficients (specified daily, change seaonally for some crops)
 daily_kc_df <- create_daily_crop_coeff_df(scen$start_date, scen$end_date, natveg_kc=scen$natveg_kc)
@@ -86,7 +97,7 @@ mfr_df <- create_SWBM_MFR_df(num_days_df, use_PRMS = TRUE, input_dir = scen$inpu
 
 # Irrigation curtailment fractions (as fraction of calculated demand) by field by month
 # Also includes Local Cooperative Solutions (LCSs) that reduce water use (implemented as curtailment)
-curtail_df <- create_SWBM_curtailment_df(scen$start_date, scen$end_date, scenario_id='none')
+curtail_df <- create_SWBM_curtailment_df(scen$start_date, scen$end_date, curtail_id='none')
 
 # ET Correction file
 # Includes LCSs that essentially reduce evaporated water losses
@@ -108,8 +119,8 @@ cell_et <- apply_native_veg_ET_override(cell_et, cell_overlap, landcover_df, lan
 # Write SWBM Inputs to Working Dir -------------------------------------------------------
 write_SWBM_sp_days_file(num_days_df, working_dir)
 write_SWBM_daily_kc_file(daily_kc_df, working_dir)
-write_SWBM_SFR_inflow_files(subws_inflows$irr,     working_dir, "subwatershed_irrigation_inflows.txt")
-write_SWBM_SFR_inflow_files(subws_inflows$non_irr, working_dir, "subwatershed_nonirrigation_inflows.txt")
+write_SWBM_SFR_inflow_files(subws_inflows_adj$irr,     working_dir, "subwatershed_irrigation_inflows.txt")
+write_SWBM_SFR_inflow_files(subws_inflows_adj$non_irr, working_dir, "subwatershed_nonirrigation_inflows.txt")
 write_SWBM_landcover_file(landcover_df, working_dir)
 write_SWBM_MAR_depth_file(mar_depth_df, working_dir)
 write_SWBM_MFR_file(mfr_df, working_dir)
@@ -128,17 +139,21 @@ write_SWBM_main_input_file(output_dir = working_dir,
                            nSubws = scen$nSubws,
                            nMfrWells = 2444,
                            mfrwell_mult_file='catchment_mult.txt',
+                           et_segments_file='et_segments_high.txt',
                            nSFR_inflow_segs = scen$nSFR_inflow_segs)
 
 # Copy meteorological files from the input_dir to the working_dir
-file.copy(from=file.path(scen$input_dir, 'precip.txt'), to = working_dir)
-file.copy(from=file.path(scen$input_dir, 'ref_et.txt'), to = working_dir)
+file.copy(from=file.path(scen$input_dir, 'precip.txt'), to = working_dir, overwrite = T)
+file.copy(from=file.path(scen$input_dir, 'ref_et.txt'), to = working_dir, overwrite = T)
 
 # Additional file updates for PRMS
-file.copy(from=file.path(scen$input, 'SFR_inflow_segments.txt'), to = working_dir)
-file.copy(from=file.path(scen$input, 'modflow_cell_to_catchment.txt'), to = working_dir)
-file.copy(from=file.path(scen$input, 'catchment_mult.txt'), to = working_dir)
-file.copy(from=file.path(scen$input, 'monthly_MFR_by_catchment.txt'), to = working_dir)
+file.copy(from=file.path(scen$input, 'SFR_inflow_segments.txt'), to = working_dir, overwrite = T)
+file.copy(from=file.path(scen$input, 'modflow_cell_to_catchment.txt'), to = working_dir, overwrite = T)
+file.copy(from=file.path(scen$input, 'catchment_mult.txt'), to = working_dir, overwrite = T)
+file.copy(from=file.path(scen$input, 'monthly_MFR_by_catchment.txt'), to = working_dir, overwrite = T)
+
+# Copy SWBM ET segments for scenario
+file.copy(from=file.path(data_dir['ref_data_dir','loc'],'et_segments_high.txt'), to=working_dir, overwrite=T)
 
 # Write MODFLOW Inputs ----------------------------------------------------
 
@@ -164,6 +179,6 @@ update_OC_stress_periods(scen$num_days,
 # Batch File --------------------------------------------------------------
 
 # Create new batchfile for assembling the updated model
-write_scen_prep_batchfile(scen_dir = working_dir, scenario_name = scen$name)
+write_scen_prep_batchfile(scen_dir = working_dir, scenario_name = scen$name, et_seg_file='et_segments_high.txt')
 
 message('Done!')

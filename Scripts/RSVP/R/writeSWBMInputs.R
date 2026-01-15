@@ -297,6 +297,7 @@ write_SWBM_sp_days_file <- function(num_days_df, output_dir, filename='stress_pe
 #' @param mfrwell_mult_file Character or NULL. MFRWELL_MULT file. Default: `NULL`.
 #'
 #' @param et_zone_cells_file Character or NULL. ET_ZONE_CELLS file. Default: `"ET_Zone_Cells.txt"`.
+#' @param et_segments_file  Character or NULL. ET_SEGMENTS file. Default: `NULL`.
 #' @param sfr_jtf_file Character or NULL. SFR_NETWORK_JTF file. Default: `"SFR_network_jtf.txt"`.
 #' @param irr_ditch_file Character or NULL. IRR_DITCH file. Default: `"irr_ditch.txt"`.
 #' @param mar_depth_file Character or NULL. MAR_DEPTH file. Default: `"MAR_depth.txt"`.
@@ -361,6 +362,7 @@ write_SWBM_main_input_file <- function(
     mfrwell_rates_file     = "monthly_MFR_by_catchment.txt",
     mfrwell_mult_file      = NULL,
     et_zone_cells_file     = "ET_Zone_Cells.txt",
+    et_segments_file       = NULL,
     sfr_jtf_file           = "SFR_network_jtf.txt",
     irr_ditch_file         = "irr_ditch.txt",
     mar_depth_file         = "MAR_depth.txt",
@@ -447,6 +449,9 @@ write_SWBM_main_input_file <- function(
   }
   if (!is.null(et_zone_cells_file)) {
     writeLines(sprintf("  ET_ZONE_CELLS      %s", et_zone_cells_file), con)
+  }
+  if (!is.null(et_segments_file)) {
+    writeLines(sprintf("  ET_SEGMENTS        %s", et_segments_file), con)
   }
   if (!is.null(sfr_jtf_file)) {
     writeLines(sprintf("  SFR_NETWORK_JTF    %s", sfr_jtf_file), con)
@@ -1146,7 +1151,6 @@ write_muni_pumping_file <- function(start_date, n_stress, output_dir,
 #' Builds a stress-period-by-field landcover assignment table for the Soil Water Budget Model (SWBM),
 #' according to a chosen land-use scenario.
 #'
-#' @param scenario_id Character. Scenario identifier; one of a list of recognized scenarios (case-insensitive).
 #' @param landcover_id Character. Scenario category, pertaining to land use type.
 #'   - `"basecase"`: start from each polygon's default SWBM_LU code and apply an
 #'     alfalfa to grain rotation on alfalfa-coded fields every \code{alfalfa_grain_rotate_years}.
@@ -1175,7 +1179,7 @@ write_muni_pumping_file <- function(start_date, n_stress, output_dir,
 #' 3. Calls \code{swbm_build_field_value_df(nfields, start_date, end_date)} to create a
 #'    wide table with one column per field (named \code{ID_<SWBM_id>}) and a
 #'    \code{Stress_Period} column.
-#' 4. Scenario logic:
+#' 4. Landcover scenario logic:
 #'    - **basecase**:
 #'      * Start with each field's baseline \code{SWBM_LU} from \code{polygon_table_file}.
 #'      * For fields with \code{SWBM_LU == 1} (alfalfa), apply an 8-year (by default)
@@ -1222,8 +1226,7 @@ write_muni_pumping_file <- function(start_date, n_stress, output_dir,
 #'   as.Date("2005-01-01"), as.Date("2005-12-31")
 #' )
 #' }
-create_SWBM_landcover_df <- function(scenario_id = "basecase",
-                                     landcover_id = "basecase",
+create_SWBM_landcover_df <- function(landcover_id = "basecase",
                                      start_date,
                                      end_date,
                                      poly_df,
@@ -1237,11 +1240,12 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
   if(landcover_id != "basecase"){
     recognized_scenarios=c('nv_gw_mix',
                            'natveg_low_all', 'natveg_high_all',
+                           'natveg_all',
                            'grain_6k','grain_12k', 'grain_14k',
                            'natveg_low_4k', 'natveg_high_4k',
                            'natveg_low_8k', 'natveg_high_8k',
                            'natveg_low_12k', 'natveg_high_12k')
-    if(!(tolower(scenario_id) %in% tolower(recognized_scenarios))){
+    if(!(tolower(landcover_id) %in% tolower(recognized_scenarios))){
       stop("Warning: specified landuse scenario not recognized.")
     }
   }
@@ -1306,7 +1310,7 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
 
       }
     }
-  } else if(scenario_id %in% c("grain_6k", "grain_12k", 'grain_14k')){
+  } else if(landcover_id %in% c("grain_6k", "grain_12k", 'grain_14k')){
 
     # Increased Grain Acreage Scenarios ---------------------------------------------------------
 
@@ -1416,7 +1420,7 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
       # For grain_12k, seems like we're getting closer to 11.5k acres
     }
 
-  } else if(scenario_id %in% c("natveg_low_all","natveg_high_all")){
+  } else if(landcover_id %in% c("natveg_low_all","natveg_high_all", "natveg_all")){
 
     # All Nat Veg (No Irrigated Ag) Scenario -----------------------------------
 
@@ -1466,7 +1470,7 @@ create_SWBM_landcover_df <- function(scenario_id = "basecase",
     # }
 
     # landcover_output = field_df
-  } else if(scenario_id == "nv_gw_mix"){
+  } else if(landcover_id == "nv_gw_mix"){
 
     # Nat Veg on GW or Mixed-water-source fields (Only Surface Water-Irrigated Ag) Scenario -----------------------------------
 

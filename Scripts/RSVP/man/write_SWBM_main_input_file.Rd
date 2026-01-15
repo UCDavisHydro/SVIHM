@@ -47,6 +47,7 @@ write_SWBM_main_input_file(
   mfrwell_rates_file = "monthly_MFR_by_catchment.txt",
   mfrwell_mult_file = NULL,
   et_zone_cells_file = "ET_Zone_Cells.txt",
+  et_segments_file = NULL,
   sfr_jtf_file = "SFR_network_jtf.txt",
   irr_ditch_file = "irr_ditch.txt",
   mar_depth_file = "MAR_depth.txt",
@@ -141,6 +142,8 @@ write_SWBM_main_input_file(
 \item{mfrwell_mult_file}{Character or NULL. MFRWELL_MULT file. Default: \code{NULL}.}
 
 \item{et_zone_cells_file}{Character or NULL. ET_ZONE_CELLS file. Default: \code{"ET_Zone_Cells.txt"}.}
+
+\item{et_segments_file}{Character or NULL. ET_SEGMENTS file. Default: \code{NULL}.}
 
 \item{sfr_jtf_file}{Character or NULL. SFR_NETWORK_JTF file. Default: \code{"SFR_network_jtf.txt"}.}
 
