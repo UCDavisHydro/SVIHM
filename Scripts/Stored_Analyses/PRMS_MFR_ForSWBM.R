@@ -6,10 +6,8 @@ library(RSVP)
 library(sf)
 
 # Settings // Paths
-model_output_dir <- "C:/Users/lelan/Box/Research/Scott Valley/Models/PRMS/2025-09-25/output/"
+model_output_dir <- "C:/Users/lelan/Documents/ModelRuns/SVPRMS/PRMS_2026-02-27/output/"
 out_dir <- file.path(data_dir['input_files_dir','loc'],'PRMS')
-ref_dir <- "C:/Users/lelan/Box/Research/Scott Valley/Files Recieved/LWA_MFR_2025-04-11/"
-gis_dir <- 'C:/Users/lelan/Box/Research/Scott Valley/GIS'
 
 dir.create(out_dir)
 
@@ -57,9 +55,9 @@ read_prms_file <- function(file_path, hru_ids_char, skip = 1, sep = ",") {
 # Assemble HRU list -------------------------------------------------------
 
 # Load required files
-border_df <- read_csv(file.path(ref_dir, "SVIHM_HRUID_border.csv"), show_col_types = FALSE)
-cascade_tab <- read_csv(file.path(ref_dir, "cascade_tab.csv"), show_col_types = FALSE)
-touching_df <- read_csv(file.path(ref_dir, "touching_svihm_border.csv"), show_col_types = FALSE)
+border_df <- read_csv(file.path(data_dir['ref_data_dir','loc'], "SVIHM_HRUID_border.csv"), show_col_types = FALSE)
+cascade_tab <- read_csv(file.path(data_dir['ref_data_dir','loc'], "cascade_tab.csv"), show_col_types = FALSE)
+touching_df <- read_csv(file.path(data_dir['ref_data_dir','loc'], "touching_svihm_border.csv"), show_col_types = FALSE)
 
 # Mark SVIHM boundary HRUs (downslope cells)
 border_df <- border_df %>%
@@ -127,8 +125,8 @@ mfr_by_hru <- full_join(gw_mfr, hortn_mfr, by = c("Date", "HRU_ID"), suffix = c(
 mfr_by_hru <- mfr_by_hru[mfr_by_hru$Date > origin_date,]
 
 # Map cells to catchments -------------------------------------------------------
-prms_catchments <- read_sf(file.path(gis_dir,'PRMS','PRMS_Grid_ScottWatershedOutsideSVIHM_catchments.shp'))
-mf_catchments <- read_sf(file.path(gis_dir,'MODFLOW','grid_outmostcells_catchments.shp'))
+prms_catchments <- read_sf(file.path(data_dir['ref_data_dir','loc'],'PRMS_Grid_ScottWatershedOutsideSVIHM_catchments.shp'))
+mf_catchments <- read_sf(file.path(data_dir['ref_data_dir','loc'],'grid_outmostcells_catchments.shp'))
 sfr_cells <- read.table(file.path(data_dir['ref_data_dir','loc'], 'SFR_network_template.txt'), skip = 1,
                         col.names = c('lay','row','column','seg','rch','len','elev','slope','thk','cond'))
 

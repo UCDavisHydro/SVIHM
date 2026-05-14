@@ -6,7 +6,7 @@ library(dplyr)
 
 #-------------------------------------------------------------------------------------------------#
 #-- Settings
-model_output_dir <- "C:/Users/lelan/Box/Research/Scott Valley/Models/PRMS/2025-09-25/output/"
+model_output_dir <- "C:/Users/lelan/Documents/ModelRuns/SVPRMS/PRMS_2026-02-27/output/"
 update_dir <- latest_dir(data_dir['update_dir','loc'])
 out_dir <- file.path(data_dir['input_files_dir','loc'],'PRMS')
 plot_dir <- file.path(out_dir, 'Plots')
