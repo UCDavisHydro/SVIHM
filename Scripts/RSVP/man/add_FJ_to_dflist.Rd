@@ -6,9 +6,6 @@
 \usage{
 add_FJ_to_dflist(gaugelist, FJ_id = 1, ...)
 }
-\arguments{
-\item{FJ_id}{}
-}
 \description{
 Add FJ (standardized) Streamflow to dataframe to use as regression dependant variable
 }

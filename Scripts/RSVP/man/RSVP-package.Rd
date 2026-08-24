@@ -13,6 +13,7 @@ R functions for pre-processing, post-processing, and scenario development for th
 
 Authors:
 \itemize{
+  \item Leland Scantlebury \email{lscantle@ucdavis.edu}
   \item Claire Kouba \email{cmkouba@ucdavis.edu}
 }
 

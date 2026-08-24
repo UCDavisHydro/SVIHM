@@ -78,7 +78,7 @@ write_SWBM_main_input_file(
 
 \item{nSubws}{Integer. Number of sub-watersheds (\code{NSUBWS}). Default: \code{8}.}
 
-\item{nMfrWells}{Integer. Number of managed-recharge wells (\code{NMFRWELLS}). Default: \code{1163}.}
+\item{nMfrWells}{Integer. Number of managed-recharge wells (\code{NMFRWELLS}). Default: \code{1008}.}
 
 \item{inflow_is_vol}{Logical. Whether inflow is volume-based. Default: \code{FALSE}.}
 

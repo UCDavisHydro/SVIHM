@@ -12,9 +12,6 @@ gauge_prep(
   monthly = TRUE
 )
 }
-\arguments{
-\item{date_col}{}
-}
 \description{
 Title
 }

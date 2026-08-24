@@ -259,7 +259,7 @@ write_SWBM_sp_days_file <- function(num_days_df, output_dir, filename='stress_pe
 #' @param nAgWells Integer. Number of agricultural wells (`NAGWELLS`). Default: `167`.
 #' @param nSpecWells Integer. Number of special wells (`NSPECWELLS`). Default: `0`.
 #' @param nSubws Integer. Number of sub-watersheds (`NSUBWS`). Default: `8`.
-#' @param nMfrWells Integer. Number of managed-recharge wells (`NMFRWELLS`). Default: `1163`.
+#' @param nMfrWells Integer. Number of managed-recharge wells (`NMFRWELLS`). Default: `1008`.
 #' @param inflow_is_vol Logical. Whether inflow is volume-based. Default: `FALSE`.
 #' @param daily_sw Logical. Write daily soil-water budget output (`DAILY_SW`). Default: `TRUE`.
 #' @param nSFR_inflow_segs Integer. Number of SFR inflow segments (`NSFR_INFLOW_SEGS`). Default: `12`.
