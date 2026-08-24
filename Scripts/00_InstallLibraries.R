@@ -9,6 +9,8 @@
 
 # List of CRAN packages to be installed
 list.of.packages <- c('RColorBrewer',
+                      'roxygen2',
+                      'pak',
                       'zoo',
                       'sf',
                       'sp',
@@ -31,9 +33,10 @@ if(length(new.packages)) install.packages(new.packages)
 # GitHub Install ----------------------------------------------------------
 
 #-- May prompt asking to install various packages
-#remotes::install_github("rogiersbart/RMODFLOW")
-devtools::install_github("ropensci/rnoaa")
-devtools::install_github("cneyens/RMODFLOW@develop")
+library(pak)
+#pak("rogiersbart/RMODFLOW")
+pak("ropensci/rnoaa")
+pak("cneyens/RMODFLOW@develop")
 
 # Assuming that all worked, you should now be able to build the RSVP Package
 # Build -> Install Package (Ctrl+Shift+B on Windows)

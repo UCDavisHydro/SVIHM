@@ -15,9 +15,6 @@ gauge_regression_prep(
   col_rename = "normLogAF"
 )
 }
-\arguments{
-\item{col_rename}{}
-}
 \description{
 Title
 }
