@@ -6,9 +6,6 @@
 \usage{
 days_in_month_diff(start, end)
 }
-\arguments{
-\item{end}{}
-}
 \description{
 Days in each month between two dates
 }

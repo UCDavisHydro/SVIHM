@@ -6,9 +6,6 @@
 \usage{
 gauge_reg_obs_merge(regression_df, obs_df, obs_cols = c("AF"))
 }
-\arguments{
-\item{obs_cols}{}
-}
 \description{
 Title
 }

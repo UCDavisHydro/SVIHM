@@ -14,9 +14,6 @@ complete_ts(
   keep_col_order = F
 )
 }
-\arguments{
-\item{keep_col_order}{}
-}
 \description{
 Complete time series by filling with NA values
 }
