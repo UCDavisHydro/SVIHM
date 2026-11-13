@@ -44,10 +44,8 @@ get_water_year <- function(dates, wy_start_month=10){
 #' @param start_year Integer year
 #' @param water_years Boolean
 #'
-#' @return
+#' @return Date of first day of the (water) year
 #' @export
-#'
-#' @examples
 get_model_start <- function(start_year, water_years=TRUE) {
   return(water_year_start_date(year = start_year, water_years = water_years))
 }
@@ -59,10 +57,8 @@ get_model_start <- function(start_year, water_years=TRUE) {
 #' @param end_year Integer year
 #' @param water_years Boolean
 #'
-#' @return
+#' @return Date of last day of the (water) year
 #' @export
-#'
-#' @examples
 get_model_end <- function(end_year, water_years=TRUE) {
   return(water_year_end_date(year = end_year, water_years = water_years))
 }
@@ -71,13 +67,11 @@ get_model_end <- function(end_year, water_years=TRUE) {
 
 #' Days in each month between two dates
 #'
-#' @param start
-#' @param end
+#' @param start Date of first month
+#' @param end Date in last month
 #'
-#' @return
+#' @return Numeric vector of the number of days in each month
 #' @export
-#'
-#' @examples
 days_in_month_diff <- function(start, end) {
   # Prep
   end_year <- as.numeric(format(end, '%Y'))
@@ -107,8 +101,6 @@ days_in_month_diff <- function(start, end) {
 #' @return Dataframe resampled by FUN to monthly interval
 #' @author Leland Scantlebury
 #' @export
-#'
-#' @examples
 resample2monthly <- function(df, value_col, date_col='Date', FUN, ...) {
   mnthly <- do.call(data.frame, aggregate(df[,value_col], by=list(format(df[,date_col], '%Y-%m')), FUN=FUN, ...))
   # "Fix" column names
@@ -177,10 +169,8 @@ aggregate.Date <- function(dates, values, interval, date_col='Date', FUN, ...) {
 #' @param date_col Column with Date-type values
 #' @param include_end T/F switch if end date is inclusive (less than or equal to, default=F)
 #'
-#' @return
+#' @return Subset of df
 #' @export
-#'
-#' @examples
 subset.DateTwoSided <- function(df, start=NULL, end=NULL, date_col='Date', include_end=F) {
   # Subset
   df <- df
@@ -201,17 +191,16 @@ subset.DateTwoSided <- function(df, start=NULL, end=NULL, date_col='Date', inclu
 
 #' Complete time series by filling with NA values
 #'
-#' @param df
-#' @param date_col
-#' @param start_date
-#' @param end_date
-#' @param drop_extra
-#' @param keep_col_order
+#' @param df Dataframe of time series data
+#' @param date_col Column with Date-type values (default: 'Date')
+#' @param by Interval of the complete series, see seq.Date argument "by" (default: "month")
+#' @param start_date First date of complete series (optional, default: earliest date in df)
+#' @param end_date Last date of complete series (optional, default: latest date in df)
+#' @param drop_extra T/F drop rows outside of start_date and end_date (default: TRUE)
+#' @param keep_col_order T/F keep original column order of df (default: FALSE)
 #'
-#' @return
+#' @return df merged onto complete date sequence, NA where data is missing
 #' @export
-#'
-#' @examples
 complete_ts <- function(df, date_col='Date', by="month", start_date=NULL, end_date=NULL, drop_extra=T, keep_col_order=F) {
   col_order <- names(df)
   if (drop_extra) {
@@ -287,8 +276,6 @@ find_data_periods <- function(df, max_missing_days, date_col='Date', value_col='
 #' @return Dataframe with added statistic attributes
 #' @author Leland Scantlebury
 #' @export
-#'
-#' @examples
 df.add_stats <- function(df, value_col, na.rm=FALSE) {
   df.mean <- mean(df[,value_col], na.rm=na.rm)
   df.sd   <- sd(df[,value_col], na.rm=na.rm)
@@ -309,8 +296,6 @@ df.add_stats <- function(df, value_col, na.rm=FALSE) {
 #' @return dataframe with mean & sd as attributes
 #' @author Leland Scantlebury
 #' @export
-#'
-#' @examples
 df.copy_stats <- function(df1, df2, overwrite=T) {
   if (!overwrite) {
     # Check if stats exist before copying
@@ -339,8 +324,6 @@ df.copy_stats <- function(df1, df2, overwrite=T) {
 #' @return Dataframe with added statistic attributes
 #' @author Leland Scantlebury
 #' @export
-#'
-#' @examples
 df.add_stats.byDate <- function(df, value_col, date_col='Date',
                                 start_date=NULL, end_date=NULL, na.rm=F) {
   # Subset
@@ -368,8 +351,6 @@ df.add_stats.byDate <- function(df, value_col, date_col='Date',
 #' @return dataframe with standardized value_col
 #' @author Leland Scantlebury
 #' @export
-#'
-#' @examples
 df.standardarize <- function(df, value_col) {
   if (!value_col %in% names(df)) {
     stop('Missing value_col from input dataframe.')
@@ -394,8 +375,6 @@ df.standardarize <- function(df, value_col) {
 #' @return dataframe with de-standarized data
 #' @author Leland Scantlebury
 #' @export
-#'
-#' @examples
 df.destandarize <- function(df, value_col, new_col=NULL) {
   new <- df[,value_col] * attr(df, 'sd') + attr(df, 'mean')
   if (is.null(new_col)) {
@@ -416,10 +395,8 @@ df.destandarize <- function(df, value_col, new_col=NULL) {
 #' @param model_end Date of model end
 #' @param interval increment of the sequence, see seq.Date argument "by". "month" by default.
 #'
-#' @return
+#' @return Integer number of stress periods
 #' @export
-#'
-#' @examples
 calc_num_stress_periods <- function(model_start, model_end, interval='month') {
   return(length(seq.Date(from = model_start, to = model_end, by = interval)))
 }
@@ -475,13 +452,15 @@ mftime2date <- function(sp, ts, origin_date) {
 #' Create Update Directory
 #'
 #' For 01_InputDataUpdate.R to create/check if update directory exists. File formula is
-#' SVIHM_Input_Files/Updates/[current date]
+#' SVIHM_Input_Files/Updates/end_date
+#'
+#' @param end_date Date used to name the update directory
 #'
 #' @return new or existing update directory
 #' @export
 #'
 #' @examples
-#' create_update_dir()
+#' create_update_dir(end_date = as.Date('2025-10-01'))
 create_update_dir <- function(end_date) {
   update_dir <- file.path(data_dir['update_dir','loc'], end_date)
   if (!dir.exists(update_dir)) {
@@ -525,8 +504,6 @@ create_scenario_dir <- function(dir_name) {
 #' @return Latest directory full filepath
 #' @author Leland Scantlebury
 #' @export
-#'
-#' @examples
 latest_dir <- function(dir) {
   fdf <- file.info(list.files(path=dir, include.dirs = T, full.names = T))
   fdf <- fdf[fdf[['isdir']]==T,]
@@ -555,8 +532,6 @@ latest_dir <- function(dir) {
 #'
 #' @return dataframe of Date, Obs, Sim, group and save_cols
 #' @export
-#'
-#' @examples
 ts_obs_sim_combine <- function(obs_df_list, sim_df_list, group_names, date_cols=c('Date','Date'),
                    val_cols, col_rename=T, save_cols=c()) {
   # Verify

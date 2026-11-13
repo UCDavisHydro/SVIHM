@@ -14,8 +14,6 @@
 #' @author Leland Scantlebury
 #' @import lubridate
 #' @export
-#'
-#' @examples
 import_HOB <- function(hob_input, hob_output, origin_date) {
 
   # Read MODFLOW input file for loc/stress period
@@ -63,8 +61,6 @@ import_HOB <- function(hob_input, hob_output, origin_date) {
 #' @return dataframe of gage data
 #' @author Leland Scantlebury
 #' @export
-#'
-#' @examples
 import_sfr_gauge <- function(gag_out, origin_date) {
 
   # Read first line to get gauge info

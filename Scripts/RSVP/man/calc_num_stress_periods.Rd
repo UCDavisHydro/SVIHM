@@ -13,6 +13,9 @@ calc_num_stress_periods(model_start, model_end, interval = "month")
 
 \item{interval}{increment of the sequence, see seq.Date argument "by". "month" by default.}
 }
+\value{
+Integer number of stress periods
+}
 \description{
 Calculate Number of Stress Periods
 }

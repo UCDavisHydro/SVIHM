@@ -2,7 +2,7 @@
 % Please edit documentation in R/riverRegression_old.R
 \name{generate_streamflow_input}
 \alias{generate_streamflow_input}
-\title{Read in River Gauge Daily Means}
+\title{Generate SVIHM Streamflow Inputs}
 \usage{
 generate_streamflow_input(
   end_date,
@@ -22,38 +22,11 @@ generate_streamflow_input(
 \item{max_missing_days}{Maximum number of missing daily flow data before month is removed from
 the regression (optional, default = 3)}
 
-\item{historical}{DataFrame of historical (1941 - ) data}
+\item{stat_cutoff_date}{Date after which data is not included in the normalization mean and sd}
 }
 \value{
-List of daily mean dataframes (FJ followed by order above)
-
-DataFrame of single, combined dataset
+Dataframe of monthly average tributary flows (m3/day) for each model month
 }
 \description{
-Reads in primary gauge (Fort Jones) and input/tributary gauge daily.
-}
-\details{
-Input/Tributary Gauges included:
-\itemize{
-\item East Fork Scott River
-\item South Fork Scott River
-\item Sugar Creek
-\item Etna Creek
-\item French Creek
-\item Patterson Creek
-\item Kidder Creek
-\item Moffett Creek
-\item Mill Creek
-\item Shackleford Creek
-}
-
-No Data for Clark, Johnson, Crystal, or Oro Fino Creeks.
-}
-\examples{
-Assimilate Fort Jones Historical & New Updated Data
-
-Assumes that fj_update is the more accurate dataset (will drop historical days with overlap)
-
 Generate SVIHM Streamflow Inputs
-
 }

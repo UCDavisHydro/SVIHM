@@ -2,9 +2,16 @@
 % Please edit documentation in R/riverData.R
 \name{download_USGS_flow}
 \alias{download_USGS_flow}
-\title{Download USGS Flow Data for Specified Gauge. Thin wrapper for \code{\link[dataRetrieval]{readNWISdv}}.}
+\title{Download USGS Daily Mean Flow Data for Specified Gauge. Wrapper for
+\code{\link[dataRetrieval]{read_waterdata_daily}} (USGS Water Data API, replaces NWIS).}
 \usage{
-download_USGS_flow(site_no, start_date, end_date, parameterCd = "00060")
+download_USGS_flow(
+  site_no,
+  start_date,
+  end_date,
+  parameterCd = "00060",
+  statCd = "00003"
+)
 }
 \arguments{
 \item{site_no}{USGS Site Number}
@@ -14,13 +21,16 @@ download_USGS_flow(site_no, start_date, end_date, parameterCd = "00060")
 \item{end_date}{End of data period}
 
 \item{parameterCd}{Parameter codes of data to download (daily flow=00060 by default)}
+
+\item{statCd}{Statistic code (daily mean=00003 by default)}
 }
 \value{
 dataframe
 }
 \description{
-Download USGS Flow Data for Specified Gauge. Thin wrapper for \code{\link[dataRetrieval]{readNWISdv}}.
+Output keeps the old readNWISdv/renameNWISColumns layout (agency_cd, site_no, Date, Flow, Flow_cd)
+since downstream functions (e.g. assimilate_fj_update) rely on column order.
 }
 \seealso{
-\code{\link[dataRetrieval]{readNWISdv}}
+\code{\link[dataRetrieval]{read_waterdata_daily}}
 }

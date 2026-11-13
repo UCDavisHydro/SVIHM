@@ -23,6 +23,10 @@ fill_fj_cal_gv_gaps_regression_table(
 
 \item{end_date}{End of data period}
 }
+\value{
+daily_precip subset to the data period, with gap-filled fj_interp, cal_interp, and gv_interp
+columns (and matching *_color station attribution columns)
+}
 \description{
 Use best available regression to fill in gaps in precip records for FJ and Cal
 }

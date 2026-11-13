@@ -151,8 +151,6 @@ get_tributary_flows <- function(start_date=as.Date('1990-10-01'),
 #'
 #' @return List of daily mean dataframes (With E and S forks replaced by Scott River)
 #' @export
-#'
-#' @examples
 
 combine_east_and_south_fork= function(tribs_list){
   # Combine East Fork and South Fork tributary flows,
@@ -207,8 +205,6 @@ combine_east_and_south_fork= function(tribs_list){
 #'
 #' @return List of daily mean dataframes (FJ followed by order above)
 #' @export
-#'
-#' @examples
 read_gauge_daily_data <-  function(stream_df, sf_reg_dir=data_dir['sf_reg_dir', 'loc']){
 
   # Loop over streams reading in pre-downloaded time series datasets
@@ -247,8 +243,6 @@ read_gauge_daily_data <-  function(stream_df, sf_reg_dir=data_dir['sf_reg_dir', 
 #'
 #' @return DataFrame of single, combined dataset
 #' @export
-#'
-#' @examples
 assimilate_fj_update <- function(historical, fj_update) {
   colnames(fj_update) <-  c('Data_Source','site_no','Date','mean_cfs','Qual_Flag')
   fj_update$AF <- fj_update$mean_cfs * 86400 * 2.2957e-5
@@ -260,17 +254,19 @@ assimilate_fj_update <- function(historical, fj_update) {
 #-------------------------------------------------------------------------------------------------#
 
 # Maybe this should be incorporated into gauge_regression_prep?
-#' Title
+#' Prepare Gauge Data for Regression
 #'
-#' @param df
-#' @param max_missing_days
-#' @param value_col
-#' @param date_col
+#' Drops NAs, replaces zero/negative values with a very small value, and optionally aggregates to
+#' monthly totals, dropping months with too many missing days.
 #'
-#' @return
+#' @param df Dataframe of daily gauge data
+#' @param max_missing_days Maximum number of missing days before a month is dropped (default: 3)
+#' @param value_col Column containing values (default: 'AF')
+#' @param date_col Date column (default: 'Date')
+#' @param monthly T/F aggregate to monthly totals (default: TRUE)
+#'
+#' @return Dataframe of cleaned daily (or monthly) gauge data
 #' @export
-#'
-#' @examples
 gauge_prep <- function(df, max_missing_days=3, value_col='AF', date_col='Date', monthly=TRUE) {
 
   # Drop NAs
@@ -296,20 +292,23 @@ gauge_prep <- function(df, max_missing_days=3, value_col='AF', date_col='Date', 
 
 #-------------------------------------------------------------------------------------------------#
 
-#' Title
+#' Transform and Standardize Gauge Data for Regression
 #'
-#' @param gauge
-#' @param start_date
-#' @param end_date
-#' @param value_col
-#' @param date_col
-#' @param transform
-#' @param col_rename
+#' Subsets to date range, applies optional transform and column rename, then standardizes using
+#' the gauge's own mean and sd (or those of stats_donor).
 #'
-#' @return
+#' @param gauge Dataframe of gauge data, e.g. from \code{\link{gauge_prep}}
+#' @param stats_donor Dataframe with 'mean' and 'sd' attributes to standardize with (optional,
+#'                    default: calculated from gauge)
+#' @param start_date Start of data period (optional)
+#' @param end_date End of data period (optional, exclusive)
+#' @param value_col Column containing values (default: 'AF')
+#' @param date_col Date column (default: 'Date')
+#' @param transform Function applied before standardizing (default: log10, NULL for none)
+#' @param col_rename New name for value column (default: 'normLogAF', NULL to keep)
+#'
+#' @return Standardized dataframe with 'mean' and 'sd' attributes
 #' @export
-#'
-#' @examples
 gauge_regression_prep <- function(gauge, stats_donor=NULL, start_date=NULL, end_date=NULL, value_col='AF',
                                   date_col='Date', transform=log10, col_rename='normLogAF') {
 
@@ -342,13 +341,12 @@ gauge_regression_prep <- function(gauge, stats_donor=NULL, start_date=NULL, end_
 
 #' Add FJ (standardized) Streamflow to dataframe to use as regression dependant variable
 #'
-#' @param gaugelist
-#' @param FJ_id
+#' @param gaugelist List of standardized gauge dataframes, including FJ
+#' @param FJ_id Index of FJ in gaugelist (default: 1)
+#' @param ... further arguments passed to merge
 #'
-#' @return
+#' @return List of tributary dataframes merged with FJ by Date (suffixes _trib, _FJ), FJ removed
 #' @export
-#'
-#' @examples
 add_FJ_to_dflist <- function(gaugelist, FJ_id=1, ...) {
   i <- 1  # Stream id counter
   # Loop over streams, skipping FJ (i == 1)
@@ -374,17 +372,15 @@ add_FJ_to_dflist <- function(gaugelist, FJ_id=1, ...) {
 
 #-------------------------------------------------------------------------------------------------#
 
-#' Title
+#' Predict Tributary Flow and Destandardize
 #'
-#' @param gauge
-#' @param lm_object
-#' @param lm_nodata
+#' @param gauge Dataframe with normLogAF_trib column, e.g. from \code{\link{add_FJ_to_dflist}}
+#' @param lm_object Fitted regression (lm)
+#' @param lm_nodata Alternate regression used when gauge has no observed data (optional)
 #' @param use_obs (T/F) overwrite predictions with recorded (observed) data
 #'
-#' @return
+#' @return gauge with added pred, source ('Observed'/'Predicted'), and pred_AF (flow in AF) columns
 #' @export
-#'
-#' @examples
 predict_and_destandardize <- function(gauge, lm_object, lm_nodata=NULL, use_obs=TRUE) {
   # By default, use the main lm_object
   lm_use <- lm_object
@@ -412,16 +408,14 @@ predict_and_destandardize <- function(gauge, lm_object, lm_nodata=NULL, use_obs=
 
 #-------------------------------------------------------------------------------------------------#
 
-#' Title
+#' Merge Regression Results with Observations
 #'
-#' @param regression_df
-#' @param obs_df
-#' @param obs_cols
+#' @param regression_df Dataframe of regression results with Date column
+#' @param obs_df Dataframe of observed data with Date column
+#' @param obs_cols Column(s) of obs_df to merge, renamed with 'obs_' prefix (default: 'AF')
 #'
-#' @return
+#' @return regression_df with observed column(s) added (NA where no observations)
 #' @export
-#'
-#' @examples
 gauge_reg_obs_merge <- function(regression_df, obs_df, obs_cols=c('AF')) {
   merge_df <- merge(regression_df, obs_df[,c('Date', obs_cols)], by='Date', all.x = T)
   names(merge_df)[names(merge_df) == obs_cols] <- paste0('obs_', obs_cols)
@@ -452,8 +446,6 @@ gauge_percent_model <- function(source_gauge, percent, stream_name, date_col='Da
 #'
 #' @return None
 #' @export
-#'
-#' @examples
 write_tributary_input_file_2_forks_old <- function(gauges,
                                         output_dir,
                                         start_date,
@@ -519,8 +511,6 @@ write_tributary_input_file_2_forks_old <- function(gauges,
 #'
 #' @return None
 #' @export
-#'
-#' @examples
 write_trib_file <- function(gauges,
                             output_dir,
                             start_date,
@@ -618,8 +608,6 @@ write_trib_file <- function(gauges,
 #'
 #' @return None
 #' @export
-#'
-#' @examples
 write_streamflow_by_subws_input_file <- function(gauges=NA, tribs_df = NA, # function call provides either gauges (list) or tribs_df (dataframe)
                                                  output_dir,
                                                  start_date,

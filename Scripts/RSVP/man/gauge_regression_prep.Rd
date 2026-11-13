@@ -2,7 +2,7 @@
 % Please edit documentation in R/riverRegression.R
 \name{gauge_regression_prep}
 \alias{gauge_regression_prep}
-\title{Title}
+\title{Transform and Standardize Gauge Data for Regression}
 \usage{
 gauge_regression_prep(
   gauge,
@@ -15,6 +15,28 @@ gauge_regression_prep(
   col_rename = "normLogAF"
 )
 }
+\arguments{
+\item{gauge}{Dataframe of gauge data, e.g. from \code{\link{gauge_prep}}}
+
+\item{stats_donor}{Dataframe with 'mean' and 'sd' attributes to standardize with (optional,
+default: calculated from gauge)}
+
+\item{start_date}{Start of data period (optional)}
+
+\item{end_date}{End of data period (optional, exclusive)}
+
+\item{value_col}{Column containing values (default: 'AF')}
+
+\item{date_col}{Date column (default: 'Date')}
+
+\item{transform}{Function applied before standardizing (default: log10, NULL for none)}
+
+\item{col_rename}{New name for value column (default: 'normLogAF', NULL to keep)}
+}
+\value{
+Standardized dataframe with 'mean' and 'sd' attributes
+}
 \description{
-Title
+Subsets to date range, applies optional transform and column rename, then standardizes using
+the gauge's own mean and sd (or those of stats_donor).
 }

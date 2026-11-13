@@ -26,7 +26,7 @@ create_SWBM_landcover_df(
 alfalfa to grain rotation on alfalfa-coded fields every \code{alfalfa_grain_rotate_years}.
 \item \code{"natveg_all"}: replace \emph{all} irrigated landcover codes with the native vegetation code.
 \item \code{"natveg_expanded"}: replace \emph{some} irrigated landcover codes with the native vegetation code, based on
-existing crop type, random number of acres to replace, or water source (options are groundwater \link{2}, mixed \link{3}, or unknown \link{999}).
+existing crop type, random number of acres to replace, or water source (options are groundwater (2), mixed (3), or unknown (999)).
 \item \code{"crop_change"}: replace irrigated crop acres with a different crop.
 }}
 

@@ -2,10 +2,20 @@
 % Please edit documentation in R/riverRegression.R
 \name{gauge_reg_obs_merge}
 \alias{gauge_reg_obs_merge}
-\title{Title}
+\title{Merge Regression Results with Observations}
 \usage{
 gauge_reg_obs_merge(regression_df, obs_df, obs_cols = c("AF"))
 }
+\arguments{
+\item{regression_df}{Dataframe of regression results with Date column}
+
+\item{obs_df}{Dataframe of observed data with Date column}
+
+\item{obs_cols}{Column(s) of obs_df to merge, renamed with 'obs_' prefix (default: 'AF')}
+}
+\value{
+regression_df with observed column(s) added (NA where no observations)
+}
 \description{
-Title
+Merge Regression Results with Observations
 }

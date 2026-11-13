@@ -10,6 +10,11 @@ calc_mean_sd_before_date(df_daily_mean, stat_cutoff_date, Max_Num_Missing_Days)
 \item{df_daily_mean}{dataframe of daily average flows (columns: Date, mean_cfs, Qual_Flag)}
 
 \item{stat_cutoff_date}{date after which data should not be included in the mean and sd}
+
+\item{Max_Num_Missing_Days}{Maximum number of missing daily flow data before month is removed}
+}
+\value{
+List of the mean and standard deviation of log10 monthly volume (AF)
 }
 \description{
 Very case-specific function created to ensure the means & std devs used for normalization do
