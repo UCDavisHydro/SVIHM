@@ -12,6 +12,8 @@ save_scen_param_file(scen, working_dir)
 \item \code{name} - character; scenario name (used for output directory naming).
 \item \code{type} - character; scenario type: one of \code{"BASECASE"}, \code{"UPDATE"}, or \code{"PRMS"} (case-insensitive).
 }}
+
+\item{working_dir}{Directory in which to save the CSV file.}
 }
 \value{
 None. Saves a .csv file in the working directory.

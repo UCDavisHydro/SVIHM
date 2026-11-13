@@ -17,6 +17,9 @@
 
 \item{include_end}{T/F switch if end date is inclusive (less than or equal to, default=F)}
 }
+\value{
+Subset of df
+}
 \description{
 Two-Sided date subset
 }

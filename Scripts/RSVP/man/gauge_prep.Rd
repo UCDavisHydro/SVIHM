@@ -2,7 +2,7 @@
 % Please edit documentation in R/riverRegression.R
 \name{gauge_prep}
 \alias{gauge_prep}
-\title{Title}
+\title{Prepare Gauge Data for Regression}
 \usage{
 gauge_prep(
   df,
@@ -12,6 +12,21 @@ gauge_prep(
   monthly = TRUE
 )
 }
+\arguments{
+\item{df}{Dataframe of daily gauge data}
+
+\item{max_missing_days}{Maximum number of missing days before a month is dropped (default: 3)}
+
+\item{value_col}{Column containing values (default: 'AF')}
+
+\item{date_col}{Date column (default: 'Date')}
+
+\item{monthly}{T/F aggregate to monthly totals (default: TRUE)}
+}
+\value{
+Dataframe of cleaned daily (or monthly) gauge data
+}
 \description{
-Title
+Drops NAs, replaces zero/negative values with a very small value, and optionally aggregates to
+monthly totals, dropping months with too many missing days.
 }

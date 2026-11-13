@@ -6,13 +6,16 @@
 \usage{
 create_update_dir(end_date)
 }
+\arguments{
+\item{end_date}{Date used to name the update directory}
+}
 \value{
 new or existing update directory
 }
 \description{
 For 01_InputDataUpdate.R to create/check if update directory exists. File formula is
-SVIHM_Input_Files/Updates/\link{current date}
+SVIHM_Input_Files/Updates/end_date
 }
 \examples{
-create_update_dir()
+create_update_dir(end_date = as.Date('2025-10-01'))
 }

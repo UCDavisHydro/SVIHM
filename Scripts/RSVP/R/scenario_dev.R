@@ -131,8 +131,7 @@ scenario_setup <- function(scen, start_year=1991) {
 #'     \item `type` - character; scenario type: one of `"BASECASE"`, `"UPDATE"`, or `"PRMS"` (case-insensitive).
 #'   }
 #'
-#' @working_dir Directory in which to save the CSV file.
-#'
+#' @param working_dir Directory in which to save the CSV file.
 #'
 #' @return None. Saves a .csv file in the working directory.
 #'

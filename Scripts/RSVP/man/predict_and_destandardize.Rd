@@ -2,13 +2,22 @@
 % Please edit documentation in R/riverRegression.R
 \name{predict_and_destandardize}
 \alias{predict_and_destandardize}
-\title{Title}
+\title{Predict Tributary Flow and Destandardize}
 \usage{
 predict_and_destandardize(gauge, lm_object, lm_nodata = NULL, use_obs = TRUE)
 }
 \arguments{
+\item{gauge}{Dataframe with normLogAF_trib column, e.g. from \code{\link{add_FJ_to_dflist}}}
+
+\item{lm_object}{Fitted regression (lm)}
+
+\item{lm_nodata}{Alternate regression used when gauge has no observed data (optional)}
+
 \item{use_obs}{(T/F) overwrite predictions with recorded (observed) data}
 }
+\value{
+gauge with added pred, source ('Observed'/'Predicted'), and pred_AF (flow in AF) columns
+}
 \description{
-Title
+Predict Tributary Flow and Destandardize
 }

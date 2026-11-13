@@ -30,4 +30,4 @@ Suggests:
 Depends: 
     R (>= 3.5),
     lubridate
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1

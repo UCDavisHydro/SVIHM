@@ -11,6 +11,9 @@ get_model_start(start_year, water_years = TRUE)
 
 \item{water_years}{Boolean}
 }
+\value{
+Date of first day of the (water) year
+}
 \description{
 Get Model Start Date
 }

@@ -12,7 +12,7 @@ swbm_landuse_update(lu_df, update_table, verbose = TRUE)
 
 \item{update_table}{Table of land use updates, where each column has a name of the form
 'landuse_XX' where XX is year 20XX, each row is a field, in order, and the
-cells contain valid land use codes (see \link{swbm_lutype})}
+cells contain valid land use codes (see \code{swbm_lutype})}
 
 \item{verbose}{T/F write # of yearly changed to console (default: TRUE)}
 }

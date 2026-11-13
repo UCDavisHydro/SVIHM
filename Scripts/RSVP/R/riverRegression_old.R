@@ -3,31 +3,29 @@
 
 #-------------------------------------------------------------------------------------------------#
 
-#' Read in River Gauge Daily Means
-#'
-#' Reads in primary gauge (Fort Jones) and input/tributary gauge daily.
-#'
-#' @param sf_reg_dir streamflow regression directory (optional, default: SVIHM/Streamflow_Regression_Model)
-#'
-#' @details Input/Tributary Gauges included:
-#' * East Fork Scott River
-#' * South Fork Scott River
-#' * Sugar Creek
-#' * Etna Creek
-#' * French Creek
-#' * Patterson Creek
-#' * Kidder Creek
-#' * Moffett Creek
-#' * Mill Creek
-#' * Shackleford Creek
-#'
-#' No Data for Clark, Johnson, Crystal, or Oro Fino Creeks.
-#' @md
-#'
-#' @return List of daily mean dataframes (FJ followed by order above)
-#' @export
-#'
-#' @examples
+# Read in River Gauge Daily Means
+#
+# Reads in primary gauge (Fort Jones) and input/tributary gauge daily.
+#
+# @param sf_reg_dir streamflow regression directory (optional, default: SVIHM/Streamflow_Regression_Model)
+#
+# @details Input/Tributary Gauges included:
+# * East Fork Scott River
+# * South Fork Scott River
+# * Sugar Creek
+# * Etna Creek
+# * French Creek
+# * Patterson Creek
+# * Kidder Creek
+# * Moffett Creek
+# * Mill Creek
+# * Shackleford Creek
+#
+# No Data for Clark, Johnson, Crystal, or Oro Fino Creeks.
+# @md
+#
+# @return List of daily mean dataframes (FJ followed by order above)
+# @export
 # read_gauge_daily_data <-  function(sf_reg_dir=data_dir['sf_reg_dir', 'loc']){
 #
 #   #-- LS Replaced with internal RSVP data
@@ -46,17 +44,15 @@
 
 #-------------------------------------------------------------------------------------------------#
 
-#' Assimilate Fort Jones Historical & New Updated Data
-#'
-#' Assumes that fj_update is the more accurate dataset (will drop historical days with overlap)
-#'
-#' @param historical DataFrame of historical (1941 - ) data
-#' @param fj_update DataFrame of more recent data
-#'
-#' @return DataFrame of single, combined dataset
-#' @export
-#'
-#' @examples
+# Assimilate Fort Jones Historical & New Updated Data
+#
+# Assumes that fj_update is the more accurate dataset (will drop historical days with overlap)
+#
+# @param historical DataFrame of historical (1941 - ) data
+# @param fj_update DataFrame of more recent data
+#
+# @return DataFrame of single, combined dataset
+# @export
 # assimilate_fj_update <- function(historical, fj_update) {
 #   colnames(fj_update) <-  c('Data_Source','site_no','Date','mean_cfs','Qual_Flag')
 #   merged <- rbind(historical[historical$Date < min(fj_update$Date),],
@@ -73,11 +69,10 @@
 #' @param sf_reg_dir streamflow regression directory (optional, default: SVIHM/Streamflow_Regression_Model)
 #' @param max_missing_days Maximum number of missing daily flow data before month is removed from
 #'                         the regression (optional, default = 3)
+#' @param stat_cutoff_date Date after which data is not included in the normalization mean and sd
 #'
-#' @return
+#' @return Dataframe of monthly average tributary flows (m3/day) for each model month
 #' @export
-#'
-#' @examples
 generate_streamflow_input <- function(end_date,
                                       fj_update=NULL,
                                       sf_reg_dir=data_dir['sf_reg_dir', 'loc'],
@@ -261,11 +256,10 @@ preproflow = function(daily_means_all, Max_Num_Missing_Days, Streams, stat_cutof
 #'
 #' @param df_daily_mean dataframe of daily average flows (columns: Date, mean_cfs, Qual_Flag)
 #' @param stat_cutoff_date date after which data should not be included in the mean and sd
+#' @param Max_Num_Missing_Days Maximum number of missing daily flow data before month is removed
 #'
-#' @return
+#' @return List of the mean and standard deviation of log10 monthly volume (AF)
 #' @export
-#'
-#' @examples
 calc_mean_sd_before_date <- function(df_daily_mean, stat_cutoff_date, Max_Num_Missing_Days) {
   # Subset to previous analysis date to keep mean/sd constant
   df_daily_mean <- df_daily_mean[df_daily_mean$Date <= stat_cutoff_date,]
@@ -512,8 +506,6 @@ populate_SVIHM_flows = function(monthly_cleaned_all, Streams, SVIHM_months, NumD
 #'
 #' @return None
 #' @export
-#'
-#' @examples
 write_streamflow_input_file <- function(stream_out,
                                         output_dir,
                                         filename='streamflow_input.txt',

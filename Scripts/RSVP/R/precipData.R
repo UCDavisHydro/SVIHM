@@ -13,11 +13,10 @@
 #' @param use_corrected_fj T/F use local file to correct Fort Jones (FJ) precip data (NOAA API has missing values present in file)
 #' @param verbose T/F write status info to console (default: TRUE)
 #'
-#' @return
+#' @return Dataframe of daily precipitation (mm) by station, with gap-filled (*_interp) and
+#'         station-averaged (interp_*_mean) columns
 #' @author Claire Kouba, Leland Scantlebury
 #' @export
-#'
-#' @examples
 get_daily_precip_table <- function(start_date,
                                    end_date,
                                    ref_data_dir=data_dir['ref_data_dir','loc'],
@@ -194,8 +193,6 @@ download_meteo_data <- function(station_ids, start_date, end_date, datatypeid="a
 #'
 #' @return Symmetric Matrix of distances between stations
 #' @export
-#'
-#' @examples
 calc_station_dist_matrix = function(stations){
 
   # Make station_table a SpatialPointsDataFrame and add proj
@@ -231,8 +228,6 @@ calc_station_dist_matrix = function(stations){
 #' @author Claire Kouba, Leland Scantlebury
 #' @return DataFrame with all data sources and no missing days (but may have missing data)
 #' @export
-#'
-#' @examples
 make_daily_precip = function(weather_table,
                              station_table,
                              daily_precip_start_date,
@@ -318,8 +313,6 @@ make_daily_precip = function(weather_table,
 #' @return DataFrame of coeffients
 #' @author Claire Kouba, Leland Scantlebury
 #' @export
-#'
-#' @examples
 make_model_coeffs_table <- function(months = 1:12,
                                     station_table,
                                     daily_precip,
@@ -380,11 +373,10 @@ make_model_coeffs_table <- function(months = 1:12,
 #' @param start_date Start of data period
 #' @param end_date End of data period
 #'
-#' @return
+#' @return daily_precip subset to the data period, with gap-filled fj_interp, cal_interp, and gv_interp
+#'         columns (and matching *_color station attribution columns)
 #' @author Claire Kouba
 #' @export
-#'
-#' @examples
 fill_fj_cal_gv_gaps_regression_table = function(model_coeff,
                                                 station_table,
                                                 daily_precip,
@@ -520,8 +512,6 @@ fill_fj_cal_gv_gaps_regression_table = function(model_coeff,
 #' @return None
 #' @author Leland Scantlebury
 #' @export
-#'
-#' @examples
 write_swbm_precip_input_file <- function(p_record,
                                          output_dir,
                                          merge_dataset=NULL,
@@ -571,7 +561,6 @@ write_swbm_precip_input_file <- function(p_record,
 #' @author Leland Scantlebury and Claire Kouba
 #' @export
 #'
-#' @examples
 #'
 calc_swbm_spatial_precip_factors <- function(
                                           poly_tab_filename = "polygons_table.txt",
@@ -617,8 +606,6 @@ calc_swbm_spatial_precip_factors <- function(
 #' @return None
 #' @author Leland Scantlebury and Claire Kouba
 #' @export
-#'
-#' @examples
 write_swbm_precip_factor_file <- function(output_dir,
                                           filename = "precip_factors.txt",
                                           precip_factors_df,

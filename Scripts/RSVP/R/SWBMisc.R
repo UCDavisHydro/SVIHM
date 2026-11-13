@@ -9,8 +9,6 @@
 #' @return dataframe
 #' @author Claire Kouba
 #' @export
-#'
-#' @examples
 build_cdfw_instream_flow_cal <- function(model_start_date,
                                          model_end_date,
                                          fort_jones_flows,

@@ -28,6 +28,10 @@ pass a numeric value to fill NA with that value, or NA for no filling (default: 
 
 \item{verbose}{T/F write status info to console (default: TRUE)}
 }
+\value{
+Dataframe of daily precipitation (mm) by station, with gap-filled (\emph{\emph{interp) and
+station-averaged (interp}}_mean) columns
+}
 \description{
 Get table of daily precipitation
 }

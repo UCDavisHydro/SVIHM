@@ -923,7 +923,7 @@ swbm_build_field_value_df <- function(nfields=2119, model_start_date, model_end_
 #'              [swbm_build_field_value_df()]
 #' @param update_table Table of land use updates, where each column has a name of the form
 #'                     'landuse_XX' where XX is year 20XX, each row is a field, in order, and the
-#'                     cells contain valid land use codes (see [swbm_lutype])
+#'                     cells contain valid land use codes (see \code{swbm_lutype})
 #' @param verbose T/F write # of yearly changed to console (default: TRUE)
 #'
 #' @return Updated lu_df
@@ -1152,7 +1152,7 @@ write_muni_pumping_file <- function(start_date, n_stress, output_dir,
 #'     alfalfa to grain rotation on alfalfa-coded fields every \code{alfalfa_grain_rotate_years}.
 #'   - `"natveg_all"`: replace *all* irrigated landcover codes with the native vegetation code.
 #'   - `"natveg_expanded"`: replace *some* irrigated landcover codes with the native vegetation code, based on
-#'   existing crop type, random number of acres to replace, or water source (options are groundwater [2], mixed [3], or unknown [999]).
+#'   existing crop type, random number of acres to replace, or water source (options are groundwater (2), mixed (3), or unknown (999)).
 #'   - `"crop_change"`: replace irrigated crop acres with a different crop.
 #'
 #' @param start_date Date. Model start date (first stress period).
